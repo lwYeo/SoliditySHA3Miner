@@ -1,0 +1,153 @@
+﻿using System;
+using System.Threading.Tasks;
+using Nethereum.Hex.HexTypes;
+using Nethereum.Util;
+using Newtonsoft.Json.Linq;
+
+namespace SoliditySHA3Miner.NetworkInterface
+{
+    public class PoolInterface : INetworkInterface
+    {
+        private readonly string s_MinerAddress;
+        private readonly string s_PoolURL;
+
+        public bool IsPool => true;
+        public ulong SubmittedShares { get; private set; }
+        public ulong RejectedShares { get; private set; }
+
+        public PoolInterface SecondaryPool { get; }
+
+        private bool m_runFailover;
+
+        private int m_maxScanRetry = 0;
+        private int m_retryCount = 0;
+
+        public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, PoolInterface secondaryPool = null)
+        {
+            m_maxScanRetry = maxScanRetry;
+            SecondaryPool = secondaryPool;
+
+            var addressUtil = new AddressUtil();
+            if (!addressUtil.IsValidAddressLength(minerAddress) || !addressUtil.IsChecksumAddress(minerAddress))
+            {
+                throw new Exception("Invalid miner address provided (case sensitive).");
+            }
+            s_MinerAddress = minerAddress;
+            s_PoolURL = poolURL;
+            SubmittedShares = 0ul;
+            RejectedShares = 0ul;
+        }
+
+        public MiningParameters GetMiningParameters()
+        {
+            var getPoolEthAddress = GetPoolParameter("getPoolEthAddress");
+            var getPoolChallengeNumber = GetPoolParameter("getChallengeNumber");
+            var getPoolMinimumShareDifficulty = GetPoolParameter("getMinimumShareDifficulty", s_MinerAddress);
+            var getPoolMinimumShareTarget = GetPoolParameter("getMinimumShareTarget", s_MinerAddress);
+
+            try
+            {
+                return MiningParameters.GetPoolMiningParameters(s_PoolURL, getPoolEthAddress, getPoolChallengeNumber,
+                                                                getPoolMinimumShareDifficulty, getPoolMinimumShareTarget);
+            }
+            catch (Exception ex)
+            {
+                m_retryCount++;
+                if (m_retryCount < m_maxScanRetry) Program.Print("[ERROR] " + ex.Message);
+                else
+                {
+                    if (SecondaryPool == null) throw ex;
+                    else
+                    {
+                        Program.Print("[ERROR] Failed getting mining parameters from primary pool, getting from secondary pool...");
+                        m_runFailover = true;
+                        return SecondaryPool.GetMiningParameters();
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        void INetworkInterface.SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, bool isCustomDifficulty)
+        {
+            if (m_runFailover)
+            {
+                ((INetworkInterface)SecondaryPool).SubmitSolution(digest, fromAddress, challenge, difficulty, target, solution, isCustomDifficulty);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(solution) || solution == "0x") return;
+
+            difficulty = new HexBigInteger(difficulty).Value.ToString();
+
+            var submitted = false;
+            int retryCount = 0, maxRetries = 10;
+            var donate = (ulong)Math.Round(100 / Math.Abs(Donation.UserPercent));
+            do
+            {
+                try
+                {
+                    var poolAddress = fromAddress;
+                    lock (this)
+                    {
+                        if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0u;
+                        var minerAddress = ((SubmittedShares) % donate) == 0 ? Donation.Address : s_MinerAddress;
+
+                        JObject submitShare;
+                        submitShare = GetPoolParameter("submitShare", solution, minerAddress, digest, difficulty, challenge, isCustomDifficulty ? "true" : "false");
+
+                        var response = Utils.Json.InvokeJObjectRPC(s_PoolURL, submitShare);
+                        var result = response.SelectToken("$.result")?.Value<string>();
+
+                        var success = (result ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
+                        if (!success) RejectedShares++;
+                        SubmittedShares++;
+
+                        Program.Print(string.Format("[INFO] {0} [{1}] submitted: {2}", 
+                                                    (minerAddress == Donation.Address ? "Dev. share" : "Share"),
+                                                    SubmittedShares, 
+                                                    (success ? "success" : "failed")));
+#if DEBUG
+                        Program.Print(submitShare.ToString());
+                        Program.Print(response.ToString());
+#endif
+                    }
+                    submitted = true;
+                }
+                catch (Exception ex)
+                {
+                    Program.Print(string.Format("[ERROR] {0}", ex.Message));
+
+                    retryCount += 1;
+                    if (retryCount < maxRetries) Task.Delay(500);
+                }
+            } while (!submitted && retryCount < maxRetries);
+        }
+
+        private JObject GetPoolParameter(string method, params string[] parameters)
+        {
+            var paramObject = new JObject
+            {
+                ["jsonrpc"] = "2.0",
+                ["id"] = "1",
+                ["method"] = method
+            };
+            if (parameters != null)
+            {
+                if (parameters.Length > 0)
+                {
+                    JArray props = new JArray();
+                    foreach (var p in parameters) { props.Add(p); }
+                    paramObject.Add(new JProperty("params", props));
+                }
+            }
+            return paramObject;
+        }
+
+        public void Dispose()
+        {
+            if (SecondaryPool != null) SecondaryPool.Dispose();
+        }
+    }
+}
