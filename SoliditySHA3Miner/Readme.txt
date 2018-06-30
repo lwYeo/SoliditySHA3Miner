@@ -4,16 +4,18 @@ Solves proof of work to mine supported ERC20/918 tokens.
 Built with C#.NET 4.7.1, VC++ 2017 and nVidia CUDA SDK 9.2 64-bits (Windows 10 64-bit)
 .NET 4.7.1 can be downloaded from https://microsoft.com/en-us/download/details.aspx?id=56116
 VC++ 2017 can be downloaded from https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads
+CUDA 9.2 requires a minimum nVidia driver version of 396.xx [https://nvidia.com/drivers/results/134068]
 
 LICENSE
+SoliditySHA3Miner is licensed under the MIT license.
 Include CUDA kernel from Mikers, Azlehria and LtTofu (Mag517)
 Libraries are included in the Software under the following license terms:
--Satoshi Nakamoto and The Bitcoin Core developers (uint256) https://github.com/bitcoin/bitcoin/blob/master/COPYING
--Projet RNRT SAPHIR (sphlib) http://www.saphir2.com/sphlib/
--Nethereum https://github.com/Nethereum/Nethereum/blob/master/LICENSE.md
--Json.NET https://github.com/JamesNK/Newtonsoft.Json/blob/master/LICENSE.md
--Common Infrastructure Libraries for .NET http://netcommon.sourceforge.net/license.html
--Bouncy Castle https://www.bouncycastle.org/licence.html
+- Satoshi Nakamoto and The Bitcoin Core developers (uint256) https://github.com/bitcoin/bitcoin/blob/master/COPYING
+- Projet RNRT SAPHIR (sphlib) http://www.saphir2.com/sphlib/
+- Nethereum https://github.com/Nethereum/Nethereum/blob/master/LICENSE.md
+- Json.NET https://github.com/JamesNK/Newtonsoft.Json/blob/master/LICENSE.md
+- Common Infrastructure Libraries for .NET http://netcommon.sourceforge.net/license.html
+- Bouncy Castle https://www.bouncycastle.org/licence.html
 
 Donation addresses
 ETH (or any ERC 20/918 tokens)	: 0x9172ff7884cefed19327adace9c470ef1796105c

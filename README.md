@@ -7,11 +7,14 @@ Built with C#.NET 4.7.1, VC++ 2017 and nVidia CUDA SDK 9.2 64-bits (Windows 10 6
 
 - VC++ 2017 can be downloaded from [https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads]
 
+- CUDA 9.2 requires a minimum nVidia driver version of 396.xx [https://nvidia.com/drivers/results/134068]
 
 ### Releases can be found [here](https://github.com/lwYeo/SoliditySHA3Miner/releases).
 
 
 ## LICENSE
+
+SoliditySHA3Miner is licensed under the [MIT license](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/LICENSE).
 
 Include CUDA kernel from Mikers, Azlehria and LtTofu (Mag517)
 
