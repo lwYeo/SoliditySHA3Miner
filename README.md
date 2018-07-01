@@ -57,6 +57,8 @@ Options:
     minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: http://127.0.0.1:4078), 0 disabled
     
     minerCcminerAPI         'IP:port' for the ccminer-style API (default: 127.0.0.1:4068), 0 disabled
+	
+    overrideMaxDiff         (Pool only) Use maximum difficulty and skips query from web3
     
     customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)
     
