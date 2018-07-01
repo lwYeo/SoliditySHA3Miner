@@ -17,7 +17,6 @@ typedef std::array<uint8_t, UINT256_LENGTH> byte32_t;
 typedef std::array<uint8_t, PREFIX_LENGTH> prefix_t;
 typedef std::array<uint8_t, MESSAGE_LENGTH> message_t;
 typedef std::array<uint8_t, STATE_LENGTH> state_t;
-//typedef std::array<uint8_t, 8u> solution_t; // ?
 
 static char constexpr ascii[][3] = {
 	"00","01","02","03","04","05","06","07","08","09","0a","0b","0c","0d","0e","0f",

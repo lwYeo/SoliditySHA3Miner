@@ -30,6 +30,7 @@ Options:
   cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)
   minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: http://127.0.0.1:4078), 0 disabled
   minerCcminerAPI         'IP:port' for the ccminer-style API (default: 127.0.0.1:4068), 0 disabled
+  overrideMaxDiff         (Pool only) Use maximum difficulty and skips query from web3
   customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)
   maxScanRetry            Number of retries to scan for new work (default: 5)
   pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)

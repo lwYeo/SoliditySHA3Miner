@@ -9,7 +9,6 @@
 // Static
 // --------------------------------------------------------------------
 
-//std::atomic<bool> CUDASolver::m_stopRequest;
 std::atomic<bool> CUDASolver::m_newTarget;
 std::atomic<bool> CUDASolver::m_newMessage;
 

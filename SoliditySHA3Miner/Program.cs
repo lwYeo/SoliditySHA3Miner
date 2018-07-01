@@ -2,9 +2,11 @@
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Nethereum.Hex.HexTypes;
 
 namespace SoliditySHA3Miner
 {
@@ -120,6 +122,7 @@ namespace SoliditySHA3Miner
                 "  cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)\n" +
                 "  minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: " + Defaults.JsonAPIPath + "), 0 disabled\n" +
                 "  minerCcminerAPI         'IP:port' for the ccminer-style API (default: " + Defaults.CcminerAPIPath + "), 0 disabled\n" +
+                "  overrideMaxDiff         (Pool only) Use maximum difficulty and skips query from web3\n" +
                 "  customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)\n" +
                 "  maxScanRetry            Number of retries to scan for new work (default: " + Defaults.MaxScanRetry + ")\n" +
                 "  pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)\n" +
@@ -203,6 +206,7 @@ namespace SoliditySHA3Miner
             Miner.Device[] cudaDevices = null;
             var minerJsonAPI = string.Empty;
             var minerCcminerAPI = string.Empty;
+            var overrideMaxDiff = new HexBigInteger(BigInteger.Zero);
             var customDifficulty = 0u;
             var maxScanRetry = Defaults.MaxScanRetry;
             var pauseOnFailedScans = Defaults.PauseOnFailedScan;
@@ -240,6 +244,9 @@ namespace SoliditySHA3Miner
                         case "minerCcminerAPI":
                             minerCcminerAPI = arg.Split('=')[1];
                             break;
+                        case "overrideMaxDiff":
+                            overrideMaxDiff = new HexBigInteger(BigInteger.Parse((arg.Split('=')[1])));
+                            break;
                         case "customDifficulty":
                             customDifficulty = uint.Parse(arg.Split('=')[1]);
                             break;
@@ -262,10 +269,10 @@ namespace SoliditySHA3Miner
                             contractAddress = arg.Split('=')[1];
                             break;
                         case "networkUpdateInterval":
-                            networkUpdateInterval = Int32.Parse(arg.Split('=')[1]);
+                            networkUpdateInterval = int.Parse(arg.Split('=')[1]);
                             break;
                         case "hashrateUpdateInterval":
-                            hashrateUpdateInterval = Int32.Parse(arg.Split('=')[1]);
+                            hashrateUpdateInterval = int.Parse(arg.Split('=')[1]);
                             break;
                         case "address":
                             minerAddress = arg.Split('=')[1];
@@ -352,8 +359,13 @@ namespace SoliditySHA3Miner
 
                 var secondaryPoolInterface = string.IsNullOrWhiteSpace(secondaryPool) ? null : new NetworkInterface.PoolInterface(minerAddress, secondaryPool, maxScanRetry);
                 var primaryPoolInterface = new NetworkInterface.PoolInterface(minerAddress, primaryPool, maxScanRetry, secondaryPoolInterface);
-                
-                m_cudaMiner = new Miner.CUDA(primaryPoolInterface, cudaDevices, web3Interface.GetMaxDifficulity(), customDifficulty, submitStale, pauseOnFailedScans);
+
+                if (overrideMaxDiff.Value > 0u)
+                    Print("[INFO] Override maximum difficulty: " + overrideMaxDiff.Value);
+
+                m_cudaMiner = new Miner.CUDA(primaryPoolInterface, cudaDevices,
+                                             (overrideMaxDiff .Value > 0u ) ? overrideMaxDiff : web3Interface.GetMaxDifficulity(), 
+                                             customDifficulty, submitStale, pauseOnFailedScans);
 
                 if (m_cudaMiner.HasAssignedDevices) m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
                                                                             hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
