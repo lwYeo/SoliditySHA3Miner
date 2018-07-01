@@ -3,13 +3,13 @@
 
 int Device::CoreOC()
 {
-	int tempDeviceID{ deviceID };
+	int& tempDeviceID{ deviceID };
 	return NVAPI::getCoreOC(tempDeviceID);
 }
 
 int Device::MemoryOC()
 {
-	int tempDeviceID{ deviceID };
+	int& tempDeviceID{ deviceID };
 	return NVAPI::getMemoryOC(tempDeviceID);
 }
 

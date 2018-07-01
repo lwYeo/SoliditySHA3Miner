@@ -129,6 +129,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>del "$(TargetDir)*.xml", "$(TargetDir)*.pdb"</PostBuildEvent>
+    <PostBuildEvent>if $(ConfigurationName) == Release del "$(TargetDir)*.xml", "$(TargetDir)*.pdb"</PostBuildEvent>
   </PropertyGroup>
 </Project>

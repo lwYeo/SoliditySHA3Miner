@@ -8,16 +8,28 @@ int NVAPI::getCoreOC(int& deviceID)
 	auto NvUnload = (NvAPI_Unload_t)NvQueryInterface(0xD22BDD7E);
 	auto NvEnumGPUs = (NvAPI_EnumPhysicalGPUs_t)NvQueryInterface(0xE5AC921F);
 	auto NvGetPstates = (NvAPI_GPU_GetPstates20_t)NvQueryInterface(0x6FF81213);
+	auto NvGetFreq = (NvAPI_GPU_GetAllClockFrequencies_t)NvQueryInterface(0xDCB616C3);
 
 	NvInit();
 
+	int allGPUCount{ 0 };
 	int *hdlGPU[64] = { 0 };
-	NvEnumGPUs(hdlGPU, &deviceID);
+	NvEnumGPUs(hdlGPU, &allGPUCount);
 
-	NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
-	NvGetPstates(hdlGPU[0], &pstates_info);
+	NV_GPU_PERF_PSTATES20_INFO_V1 pstatesInfo{ 0 };
+	pstatesInfo.version = NV_GPU_PERF_PSTATES20_INFO_VER1;
+	pstatesInfo.numPstates = 1;
+	pstatesInfo.numClocks = 1;
+	pstatesInfo.pstates[0].clocks[0].domainId = NVAPI_GPU_PUBLIC_CLOCK_GRAPHICS;
 
-	int coreOC{ ((pstates_info.pstates[0].clocks[0]).freqDelta_kHz.value) / 1000 };
+	auto response{ (NvAPI_Status)NvGetPstates(hdlGPU[deviceID], &pstatesInfo) };
+	if (response != NVAPI::NVAPI_OK)
+	{
+		std::cout << "[ERROR] NVML response ID: " << response << "\n";
+		return 0;
+	}
+
+	int coreOC{ ((pstatesInfo.pstates[0].clocks[0]).freqDelta_kHz.value) / 1000 };
 
 	NvUnload();
 
@@ -31,16 +43,28 @@ int NVAPI::getMemoryOC(int& deviceID)
 	auto NvUnload = (NvAPI_Unload_t)NvQueryInterface(0xD22BDD7E);
 	auto NvEnumGPUs = (NvAPI_EnumPhysicalGPUs_t)NvQueryInterface(0xE5AC921F);
 	auto NvGetPstates = (NvAPI_GPU_GetPstates20_t)NvQueryInterface(0x6FF81213);
+	auto NvGetFreq = (NvAPI_GPU_GetAllClockFrequencies_t)NvQueryInterface(0xDCB616C3);
 
 	NvInit();
 
+	int allGPUCount = { 0 };
 	int *hdlGPU[64] = { 0 };
-	NvEnumGPUs(hdlGPU, &deviceID);
+	NvEnumGPUs(hdlGPU, &allGPUCount);
 
-	NV_GPU_PERF_PSTATES20_INFO_V1 pstates_info;
-	NvGetPstates(hdlGPU[0], &pstates_info);
+	NV_GPU_PERF_PSTATES20_INFO_V1 pstatesInfo{ 0 };
+	pstatesInfo.version = NV_GPU_PERF_PSTATES20_INFO_VER1;
+	pstatesInfo.numPstates = 1;
+	pstatesInfo.numClocks = 1;
+	pstatesInfo.pstates[0].clocks[0].domainId = NVAPI_GPU_PUBLIC_CLOCK_MEMORY;
 
-	int memoryOC = { ((pstates_info.pstates[0].clocks[1]).freqDelta_kHz.value) / 1000 };
+	auto response{ (NvAPI_Status)NvGetPstates(hdlGPU[deviceID], &pstatesInfo) };
+	if (response != NVAPI::NVAPI_OK)
+	{
+		std::cout << "[ERROR] NVML response ID: " << response << "\n";
+		return 0;
+	}
+
+	int memoryOC{ ((pstatesInfo.pstates[0].clocks[1]).freqDelta_kHz.value) / 1000 };
 
 	NvUnload();
 

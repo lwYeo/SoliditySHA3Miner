@@ -127,16 +127,16 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 	assignDevice->intensity = (intensity < 1.000F) ? defaultIntensity : intensity;
 
 	std::string message = "Assigned CUDA device (" + assignDevice->name + ")...";
-#ifdef _DEBUG
+#ifndef NDEBUG
 	message += "\n Compute capability: " + std::to_string(deviceProp.major) + "." + std::to_string(deviceProp.minor);
-#endif // !_DEBUG
+#endif // !NDEBUG
 	message += "\n Intensity: " + std::to_string(assignDevice->intensity);
 
 	if (!assignDevice->foundNvAPI64()) message += "NvAPI library not found.";
 	else
 	{
 		message += "\n Core OC: " + std::to_string(assignDevice->CoreOC()) + "MHz";
-		if (assignDevice->CoreOC() <= 0)
+		//if (assignDevice->CoreOC() <= 0)
 			//message += " (Recommended to OC for improved performance)";
 
 		message += "\n Memory OC: " + std::to_string(assignDevice->MemoryOC()) + "MHz";

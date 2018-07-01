@@ -73,7 +73,7 @@ namespace SoliditySHA3Miner
 
             if (m_manualResetEvent != null) m_manualResetEvent.Set();
 
-            return false;
+            return true;
         }
 
         #endregion
