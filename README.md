@@ -1,5 +1,5 @@
 # SoliditySHA3Miner
-Solves proof of work to mine supported ERC20/918 tokens.
+Multi-GPU miner solves proof of work to mine supported ERC20/918 tokens (With API).
 
 Built with C#.NET 4.7.1, VC++ 2017 and nVidia CUDA SDK 9.2 64-bits (Windows 10 64-bit)
 
