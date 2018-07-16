@@ -382,7 +382,7 @@ namespace SoliditySHA3Miner
                     Environment.Exit(1);
                 }
 
-                m_apiJson = new API.Json(m_cudaMiner);
+                m_apiJson = new API.Json(m_allMiners);
                 if (m_apiJson.IsSupported) m_apiJson.Start(minerJsonAPI);
 
                 API.Ccminer.StartListening(minerCcminerAPI, m_allMiners);
@@ -392,7 +392,12 @@ namespace SoliditySHA3Miner
                 m_waitCheckTimer.Start();
                 WaitSeconds = (ulong)(LaunchTime - DateTime.Now).TotalSeconds;
             }
-            catch (Exception ex) { Print("[ERROR] " + ex.Message); }
+            catch (Exception ex)
+            {
+                Print("[ERROR] " + ex.Message);
+                m_manualResetEvent.Set();
+                Environment.Exit(1);
+            }
 
             m_manualResetEvent.WaitOne();
             Print("[INFO] Exiting application...");

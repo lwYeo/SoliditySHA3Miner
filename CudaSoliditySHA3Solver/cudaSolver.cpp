@@ -121,8 +121,11 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 	if (deviceName.find("1180") != std::string::npos || deviceName.find("1080") != std::string::npos
 		|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
 		defaultIntensity = 29.0F;
-	else if (deviceName.find("1070") != std::string::npos)
+	else if (deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
 		defaultIntensity = 28.0F;
+	else if (deviceName.find("1060") != std::string::npos || deviceName.find("1050") != std::string::npos
+		|| deviceName.find("970") != std::string::npos)
+		defaultIntensity = 27.0F;
 
 	assignDevice->intensity = (intensity < 1.000F) ? defaultIntensity : intensity;
 
@@ -153,6 +156,15 @@ bool CUDASolver::isAssigned()
 {
 	for (auto& device : m_devices)
 		if (device->deviceID > -1)
+			return true;
+
+	return false;
+}
+
+bool CUDASolver::isAnyInitialised()
+{
+	for (auto& device : m_devices)
+		if (device->deviceID > -1 && device->initialized)
 			return true;
 
 	return false;
@@ -338,13 +350,13 @@ void CUDASolver::onSolution(byte32_t const solution)
 	arith_uint256 digest = arith_uint256(digestStr);
 	onMessage(-1, "Debug", "Digest: 0x" + digestStr);
 
-	if (digest > m_target)
+	if (digest >= m_target)
 	{
 		for (byte32_t oldChallenge : m_oldChallenges)
 		{
 			std::string oldDigest = keccak256(bytesToHexString(oldChallenge) + bytesToHexString(m_address) + solutionStr);
 			arith_uint256 oldDigest_b = arith_uint256(oldDigest);
-			if (oldDigest_b <= m_target)
+			if (oldDigest_b < m_target)
 			{
 				if (isSubmitStale)
 				{
@@ -358,7 +370,7 @@ void CUDASolver::onSolution(byte32_t const solution)
 				}
 				else
 				{
-					onMessage(-1, "Error", "Verification failed: stale solution" 
+					onMessage(-1, "Error", "Verification failed: stale solution"
 						+ std::string("\nChallenge: ") + s_challenge
 						+ "\nAddress: " + s_address
 						+ "\nSolution: 0x" + solutionStr

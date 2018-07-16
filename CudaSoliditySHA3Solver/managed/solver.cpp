@@ -60,6 +60,11 @@ namespace CudaSolver
 		return m_Instance->isAssigned();
 	}
 
+	bool Solver::isAnyInitialised()
+	{
+		return m_Instance->isAnyInitialised();
+	}
+
 	bool Solver::isMining()
 	{
 		return m_Instance->isMining();

@@ -318,7 +318,7 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 
 	state[0] = chi(state[0], state[6], state[12]) ^ RC[23];
 
-	if (bswap_64(state[0]) <= d_target)
+	if (bswap_64(state[0]) < d_target)
 	{
 		(*solution_count)++;
 		if ((*solution_count) < maxSolutionCount) solutions[(*solution_count) - 1] = nounce;
@@ -387,14 +387,8 @@ void CUDASolver::checkInputs(std::unique_ptr<Device>& device)
 
 void CUDASolver::findSolution(int const deviceID)
 {
-	uint64_t* h_Solutions{ reinterpret_cast<uint64_t *>(malloc(UINT64_LENGTH)) };
-	uint32_t* h_SolutionCount{ reinterpret_cast<uint32_t *>(malloc(UINT32_LENGTH)) };
-	std::memset(h_SolutionCount, 0u, UINT32_LENGTH);
-
-	uint64_t* d_Solutions;
-	uint32_t* d_SolutionCount;
-
 	auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
+	std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
 
 	CudaSafeCall(cudaSetDevice(device->deviceID));
 
@@ -404,17 +398,20 @@ void CUDASolver::findSolution(int const deviceID)
 
 		CudaSafeCall(cudaDeviceReset());
 		CudaSafeCall(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync | cudaDeviceMapHost));
-		//CudaSafeCall(cudaSetDeviceFlags(cudaDeviceScheduleYield | cudaDeviceMapHost));
 
-		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&h_SolutionCount), UINT32_LENGTH, cudaHostAllocMapped));
-		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&h_Solutions), MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH, cudaHostAllocMapped));
+		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&device->h_SolutionCount), UINT32_LENGTH, cudaHostAllocMapped));
+		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&device->h_Solutions), MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH, cudaHostAllocMapped));
 
-		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&d_SolutionCount), reinterpret_cast<void *>(h_SolutionCount), 0));
-		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&d_Solutions), reinterpret_cast<void *>(h_Solutions), 0));
+		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&device->d_SolutionCount), reinterpret_cast<void *>(device->h_SolutionCount), 0));
+		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&device->d_Solutions), reinterpret_cast<void *>(device->h_Solutions), 0));
+
+		device->initialized = true;
 	}
 
 	onMessage(device->deviceID, "Info", "Start mining...");
 	onMessage(device->deviceID, "Debug", "Threads: " + std::to_string(device->threads()) + " Grid size: " + std::to_string(device->grid().x) + " Block size:" + std::to_string(device->block().x));
+
+	uint64_t currentSearchSpace = UINT64_MAX;
 
 	device->mining = true;
 	device->hashCount.store(0ull);
@@ -423,25 +420,37 @@ void CUDASolver::findSolution(int const deviceID)
 	{
 		checkInputs(device);
 
-		cuda_mine<<<device->grid(), device->block()>>>(d_Solutions, d_SolutionCount, getNextSearchSpace(device));
+		if (currentSearchSpace == UINT64_MAX) currentSearchSpace = getNextSearchSpace(device);
+
+		cuda_mine<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, currentSearchSpace);
 
 		CudaCheckError();
 
 		cudaError_t response = cudaDeviceSynchronize();
-		if (response != cudaSuccess)
+		if (response == cudaSuccess) currentSearchSpace = UINT64_MAX;
+		else
 		{
-			onMessage(device->deviceID, "Error", "Kernel launch failed: " + std::string(cudaGetErrorString(response)));
+			std::string cudaErrors;
+			cudaError_t lastError = cudaGetLastError();
+			while (lastError != cudaSuccess)
+			{
+				if (!cudaErrors.empty()) cudaErrors += " <- ";
+				cudaErrors += cudaGetErrorString(lastError);
+				lastError = cudaGetLastError();
+			}
+			onMessage(device->deviceID, "Error", "Kernel launch failed: " + cudaErrors);
+
 			device->mining = false;
 			break;
 		}
 
-		if (*h_SolutionCount > 0u)
+		if (*device->h_SolutionCount > 0u)
 		{
 			std::set<uint64_t> uniqueSolutions;
 
-			for (uint32_t i{ 0u }; i < MAX_SOLUTION_COUNT_DEVICE && i < *h_SolutionCount; i++)
+			for (uint32_t i{ 0u }; i < MAX_SOLUTION_COUNT_DEVICE && i < *device->h_SolutionCount; i++)
 			{
-				uint64_t const tempSolution{ h_Solutions[i] };
+				uint64_t const tempSolution{ device->h_Solutions[i] };
 
 				if (uniqueSolutions.find(tempSolution) == uniqueSolutions.end())
 					uniqueSolutions.emplace(tempSolution);
@@ -449,18 +458,17 @@ void CUDASolver::findSolution(int const deviceID)
 
 			submitSolutions(uniqueSolutions);
 
-			std::memset(h_SolutionCount, 0u, UINT32_LENGTH);
+			std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
 		}
 	} while (device->mining);
 
 	onMessage(device->deviceID, "Info", "Stop mining...");
-	device->initialized = false;
 	device->hashCount.store(0ull);
 
 	CudaSafeCall(cudaSetDevice(device->deviceID));
 
-	CudaSafeCall(cudaFreeHost(h_SolutionCount));
-	CudaSafeCall(cudaFreeHost(h_Solutions));
+	CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
+	CudaSafeCall(cudaFreeHost(device->h_Solutions));
 	CudaSafeCall(cudaDeviceReset());
 	onMessage(device->deviceID, "Info", "Mining stopped.");
 }

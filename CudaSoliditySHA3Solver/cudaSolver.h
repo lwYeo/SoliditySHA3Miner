@@ -84,6 +84,7 @@ public:
 
 	bool assignDevice(int const deviceID, float const intensity);
 	bool isAssigned();
+	bool isAnyInitialised();
 	bool isMining();
 
 	void updatePrefix(std::string const prefix);

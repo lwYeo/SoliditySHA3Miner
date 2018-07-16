@@ -43,19 +43,20 @@ namespace SoliditySHA3Miner.Miner
         }
 
         #endregion
-        
+
         private Timer m_hashPrintTimer;
         private Timer m_updateMinerTimer;
         private int m_pauseOnFailedScan;
         private int m_failedScanCount;
 
-        public Device[] Devices { get; }
         public Solver Solver { get; }
 
         #region IMiner
 
         public NetworkInterface.INetworkInterface NetworkInterface { get; }
+        public Device[] Devices { get; }
         public bool HasAssignedDevices => (bool)Solver?.isAssigned();
+        public bool IsAnyInitialised => (bool)Solver?.isAnyInitialised();
         public bool IsMining => (bool)Solver?.isMining();
 
         private NetworkInterface.MiningParameters lastMiningParameters;
@@ -64,6 +65,8 @@ namespace SoliditySHA3Miner.Miner
         {
             try
             {
+                if (NetworkInterface.IsPool) Program.Print("[INFO] Waiting for pool to respond...");
+                else Program.Print("[INFO] Waiting for network to respond...");
                 UpdateMiner(Solver).Wait();
 
                 m_updateMinerTimer = new Timer(networkUpdateInterval);
@@ -79,7 +82,7 @@ namespace SoliditySHA3Miner.Miner
             catch (Exception ex)
             {
                 Program.Print(string.Format("[ERROR] {0}", ex.Message));
-                Environment.Exit(1);
+                StopMining();
             }
         }
 
@@ -93,16 +96,15 @@ namespace SoliditySHA3Miner.Miner
             catch (Exception ex)
             {
                 Program.Print(string.Format("[ERROR] {0}", ex.Message));
-                Environment.Exit(1);
             }
         }
-        
+
         public ulong GetTotalHashrate()
         {
             return Solver.getTotalHashRate();
         }
 
-        public ulong GetHashrateByDeviceID(int deviceID)
+        public ulong GetHashrateByDevice(string platformName, int deviceID)
         {
             return Solver.getHashRateByDeviceID(deviceID);
         }
@@ -123,7 +125,6 @@ namespace SoliditySHA3Miner.Miner
             catch (Exception ex)
             {
                 Program.Print(string.Format("[ERROR] {0}", ex.Message));
-                Environment.Exit(1);
             }
         }
 
@@ -159,7 +160,6 @@ namespace SoliditySHA3Miner.Miner
             catch (Exception ex)
             {
                 Program.Print(string.Format("[ERROR] {0}", ex.Message));
-                Environment.Exit(1);
             }
         }
 
@@ -188,10 +188,14 @@ namespace SoliditySHA3Miner.Miner
                     }
                     catch (Exception ex)
                     {
-                        Program.Print(string.Format("[ERROR] {0}", ex.Message));
-                        m_failedScanCount += 1;
-                        if (m_failedScanCount > m_pauseOnFailedScan && Solver.isMining())
-                            Solver.stopFinding();
+                        try
+                        {
+                            Program.Print(string.Format("[ERROR] {0}", ex.Message));
+
+                            m_failedScanCount += 1;
+                            if (m_failedScanCount > m_pauseOnFailedScan && Solver.isMining()) Solver.stopFinding();
+                        }
+                        catch (Exception) { }
                     }
                 }
             });

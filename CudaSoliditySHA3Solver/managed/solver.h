@@ -30,6 +30,7 @@ namespace CudaSolver
 		void setSubmitStale(bool submitStale);
 		bool assignDevice(int const deviceID, float const intensity);
 		bool isAssigned();
+		bool isAnyInitialised();
 		bool isMining();
 
 		// must be in challenge (byte32) + address (byte20) hexadecimal format with "0x" prefix

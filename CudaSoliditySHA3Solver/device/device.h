@@ -16,7 +16,7 @@
 
 #pragma managed(pop)
 
-#define DEFALUT_INTENSITY 25
+#define DEFALUT_INTENSITY 25.0F
 
 struct Device
 {
@@ -35,6 +35,11 @@ public:
 	std::thread miningThread;
 	std::atomic<uint64_t> hashCount{ 0ull };
 	std::atomic<std::chrono::steady_clock::time_point> hashStartTime{ std::chrono::steady_clock::now() };
+
+	uint64_t* d_Solutions;
+	uint32_t* d_SolutionCount;
+	uint64_t* h_Solutions{ reinterpret_cast<uint64_t *>(malloc(UINT64_LENGTH)) };
+	uint32_t* h_SolutionCount{ reinterpret_cast<uint32_t *>(malloc(UINT32_LENGTH)) };
 
 	int CoreOC();
 	int MemoryOC();
