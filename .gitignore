@@ -130,3 +130,11 @@ x64/Release/Readme.txt
 x64/Release/sha3Kernel.cl
 x64/Release/SoliditySHA3Miner.exe
 x64/Release/SoliditySHA3Miner.exe.config
+x64/Debug/0xCATE.abi
+x64/Debug/0xLTC.abi
+x64/Debug/ATA.abi
+x64/Debug/SKO.abi
+x64/Release/0xCATE.abi
+x64/Release/0xLTC.abi
+x64/Release/ATA.abi
+x64/Release/SKO.abi

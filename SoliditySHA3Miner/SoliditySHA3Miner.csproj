@@ -90,20 +90,32 @@
     <Compile Include="NetworkInterface\Web3Interface.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="0xbch.abi">
+    <None Include="0xBCH.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="0xbtc.abi">
+    <None Include="0xBTC.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="0xbtcPool.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="0xCATE.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="0xLTC.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="App.config" />
-    <None Include="kiwi.abi">
+    <None Include="ATA.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="KIWI.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <None Include="SKO.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CudaSoliditySHA3Solver\CudaSoliditySHA3Solver.vcxproj">
