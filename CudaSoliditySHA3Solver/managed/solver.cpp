@@ -19,7 +19,8 @@ namespace CudaSolver
 
 	Solver::~Solver()
 	{
-		m_Instance->~CUDASolver();
+		try { m_Instance->~CUDASolver(); }
+		catch(...) {}
 	}
 
 	int Solver::getDeviceCount(System::String^% errorMessage)

@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CudaSoliditySHA3Solver", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoliditySHA3Miner", "SoliditySHA3Miner\SoliditySHA3Miner.csproj", "{30E511DF-50C6-4E5A-99E1-A07C34AB3D50}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenCLSoliditySHA3Solver", "OpenCLSoliditySHA3Solver\OpenCLSoliditySHA3Solver.vcxproj", "{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,10 @@ Global
 		{30E511DF-50C6-4E5A-99E1-A07C34AB3D50}.Debug|x64.Build.0 = Debug|x64
 		{30E511DF-50C6-4E5A-99E1-A07C34AB3D50}.Release|x64.ActiveCfg = Release|x64
 		{30E511DF-50C6-4E5A-99E1-A07C34AB3D50}.Release|x64.Build.0 = Release|x64
+		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Debug|x64.ActiveCfg = Debug|x64
+		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Debug|x64.Build.0 = Debug|x64
+		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Release|x64.ActiveCfg = Release|x64
+		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

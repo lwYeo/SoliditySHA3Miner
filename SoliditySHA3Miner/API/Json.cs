@@ -112,11 +112,7 @@ namespace SoliditySHA3Miner.API
                 ulong totalHashRate = 0ul;
                 foreach (var miner in m_miners)
                 {
-                    foreach (var device in miner.Devices)
-                    {
-                        if (device.DeviceID < 0) continue;
-                        totalHashRate += ((Miner.CUDA)miner).Solver.getHashRateByDeviceID(device.DeviceID);
-                    }
+                    totalHashRate += miner.GetTotalHashrate();
                 }
 
                 var sTotalHashRate = totalHashRate.ToString();
@@ -154,7 +150,7 @@ namespace SoliditySHA3Miner.API
                             Type = device.Type,
                             DeviceID = device.DeviceID,
                             ModelName = device.Name,
-                            HashRate = ((Miner.CUDA)miner).Solver.getHashRateByDeviceID(device.DeviceID) / divisor
+                            HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor
                         };
                         api.Miners.Add(newMiner);
                     }

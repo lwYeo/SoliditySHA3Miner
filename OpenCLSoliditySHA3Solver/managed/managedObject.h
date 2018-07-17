@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-namespace CudaSolver
+namespace OpenCLSolver
 {
 	template<class T>
 	public ref class ManagedObject

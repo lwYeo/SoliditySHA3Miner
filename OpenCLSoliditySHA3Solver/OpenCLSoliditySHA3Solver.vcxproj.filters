@@ -1,7 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="cudaSolver.cpp" />
+    <ClCompile Include="sph\keccak.cpp">
+      <Filter>sph</Filter>
+    </ClCompile>
     <ClCompile Include="uint256\arith_uint256.cpp">
       <Filter>uint256</Filter>
     </ClCompile>
@@ -14,20 +16,18 @@
     <ClCompile Include="managed\solver.cpp">
       <Filter>managed</Filter>
     </ClCompile>
-    <ClCompile Include="cudaErrorCheck.cu" />
-    <ClCompile Include="sph\keccak.cpp">
-      <Filter>sph</Filter>
-    </ClCompile>
+    <ClCompile Include="openCLSolver.cpp" />
     <ClCompile Include="device\device.cpp">
-      <Filter>device</Filter>
-    </ClCompile>
-    <ClCompile Include="device\nvapi.cpp">
       <Filter>device</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cudaSolver.h" />
-    <ClInclude Include="types.h" />
+    <ClInclude Include="sph\sph_keccak.h">
+      <Filter>sph</Filter>
+    </ClInclude>
+    <ClInclude Include="sph\sph_types.h">
+      <Filter>sph</Filter>
+    </ClInclude>
     <ClInclude Include="uint256\arith_uint256.h">
       <Filter>uint256</Filter>
     </ClInclude>
@@ -49,42 +49,35 @@
     <ClInclude Include="uint256\utilstrencodings.h">
       <Filter>uint256</Filter>
     </ClInclude>
-    <ClInclude Include="managed\solver.h">
+    <ClInclude Include="types.h" />
+    <ClInclude Include="openCLSolver.h" />
+    <ClInclude Include="managed\managedObject.h">
       <Filter>managed</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="sph\sph_keccak.h">
-      <Filter>sph</Filter>
-    </ClInclude>
-    <ClInclude Include="sph\sph_types.h">
-      <Filter>sph</Filter>
+    <ClInclude Include="managed\solver.h">
+      <Filter>managed</Filter>
     </ClInclude>
     <ClInclude Include="device\device.h">
       <Filter>device</Filter>
     </ClInclude>
-    <ClInclude Include="device\nvapi.h">
-      <Filter>device</Filter>
-    </ClInclude>
-    <ClInclude Include="managed\managedObject.h">
-      <Filter>managed</Filter>
-    </ClInclude>
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <Filter Include="sph">
+      <UniqueIdentifier>{df1f8e1e-64e3-4ca7-9449-65f0d8fcdd70}</UniqueIdentifier>
+    </Filter>
     <Filter Include="uint256">
-      <UniqueIdentifier>{cdfe2092-30be-4c15-aebf-8c6f025f7a28}</UniqueIdentifier>
+      <UniqueIdentifier>{9e554012-3d3d-4ac3-bf66-c67ac50e4870}</UniqueIdentifier>
     </Filter>
     <Filter Include="managed">
-      <UniqueIdentifier>{9d7ddaf4-43cd-4e1b-a47d-544a502c4931}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sph">
-      <UniqueIdentifier>{1cf4fdd3-4db2-4be5-988c-7d6766f8918b}</UniqueIdentifier>
+      <UniqueIdentifier>{a3f1fbe1-1ab7-4a34-805b-35f1d9b1bc5c}</UniqueIdentifier>
     </Filter>
     <Filter Include="device">
-      <UniqueIdentifier>{96171b9a-3e05-4dcb-8583-ab73ddcc0e8d}</UniqueIdentifier>
+      <UniqueIdentifier>{38830ddd-4e18-4b61-99dd-acd18b0f005a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="cudaSha3.cu" />
+    <None Include="sha3Kernel.cl" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />

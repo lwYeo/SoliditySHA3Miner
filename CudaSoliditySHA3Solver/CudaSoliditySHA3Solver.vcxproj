@@ -15,7 +15,7 @@
     <ClInclude Include="device\device.h" />
     <ClInclude Include="device\nvapi.h" />
     <ClInclude Include="managed\solver.h" />
-    <ClInclude Include="managed\ManagedObject.h" />
+    <ClInclude Include="managed\managedObject.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sph\sph_keccak.h" />
     <ClInclude Include="sph\sph_types.h" />

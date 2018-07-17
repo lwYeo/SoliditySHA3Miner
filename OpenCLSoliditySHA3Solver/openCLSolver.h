@@ -1,5 +1,8 @@
 #pragma once
 
+#define ROTL64(x, y) (((x) << (y)) ^ ((x) >> (64 - (y))))
+#define ROTR64(x, y) (((x) >> (y)) ^ ((x) << (64 - (y))))
+
 #include <algorithm>
 #include <chrono>
 #include <memory>
@@ -15,27 +18,48 @@
 
 #ifdef _M_CEE 
 #	undef _M_CEE 
-#	include <thread> 
+#	include <thread>
+
+#if defined(__APPLE__) || defined(__MACOSX)
+#	include <OpenCL/cl.hpp>
+//	#include <OpenCL/opencl.h>
+#else
+#	include <CL/cl.hpp>
+//	#include <CL/opencl.h>
+#endif
+
 #	define _M_CEE 001 
 #else 
-#	include <thread> 
+#	include <thread>
+
+#if defined(__APPLE__) || defined(__MACOSX)
+#	include <OpenCL/cl.hpp>
+//	#include <OpenCL/opencl.h>
+#else
+#	include <CL/cl.hpp>
+//	#include <CL/opencl.h>
+#endif
+
 #endif 
 
 #pragma managed(pop)
 
-#ifdef __INTELLISENSE__
-// reduce vstudio warnings (__byteperm, blockIdx...)
-#include <device_functions.h>
-#include <device_launch_parameters.h>
-#endif //__INTELLISENSE__
-
-class CUDASolver
+class openCLSolver
 {
 public:
-	typedef void(*MessageCallback)(int, const char*, const char*);
+	typedef void(*MessageCallback)(const char*, int, const char*, const char*);
 	typedef void(*SolutionCallback)(const char*, const char*, const char*, const char*, const char*, const char*, bool);
+	typedef struct { cl_platform_id id; std::string name; } Platform;
+
+	static void preInitialize(bool allowIntel, std::string &errorMessage);
+	static std::string getPlatformNames();
+	static int getDeviceCount(std::string platformName, std::string &errorMessage);
+	static std::string getDeviceName(std::string platformName, int deviceEnum, std::string &errorMessage);
 
 	bool isSubmitStale;
+
+private:
+	static std::vector<Platform> platforms;
 
 private:
 	MessageCallback m_messageCallback;
@@ -50,7 +74,7 @@ private:
 	std::string s_target;
 	std::string s_difficulty;
 	std::string s_customDifficulty;
-	
+
 	address_t m_address;
 	byte32_t m_challenge;
 	byte32_t m_solution;
@@ -71,42 +95,37 @@ private:
 	std::thread m_runThread;
 
 public:
-	static std::string getCudaErrorString(cudaError_t &error);
-	static int getDeviceCount(std::string &errorMessage);
-	static std::string getDeviceName(int deviceID, std::string &errorMessage);
-	
 	// require web3 contract getMethod -> _MAXIMUM_TARGET
-	CUDASolver(std::string const maxDifficulty) noexcept;
-	~CUDASolver() noexcept;
+	openCLSolver(std::string const maxDifficulty) noexcept;
+	~openCLSolver() noexcept;
 
 	void setMessageCallback(MessageCallback messageCallback);
 	void setSolutionCallback(SolutionCallback solutionCallback);
 
-	bool assignDevice(int const deviceID, float const intensity);
 	bool isAssigned();
 	bool isAnyInitialised();
 	bool isMining();
+	bool assignDevice(std::string platformName, int deviceEnum, float const intensity);
 
 	void updatePrefix(std::string const prefix);
 	void updateTarget(std::string const target);
 	void updateDifficulty(std::string const difficulty);
 	void setCustomDifficulty(uint32_t customDifficulty);
 
+	uint64_t getTotalHashRate();
+	uint64_t getHashRateByDevice(std::string platformName, int const deviceEnum);
+
 	void startFinding();
 	void stopFinding();
 
-	uint64_t getTotalHashRate();
-	uint64_t getHashRateByDeviceID(int const deviceID);
-
 private:
-	void onMessage(int deviceID, const char* type, const char* message);
-	void onMessage(int deviceID, std::string type, std::string message);
+	void onMessage(std::string platformName, int deviceEnum, std::string type, std::string message);
 
 	const std::string keccak256(std::string const message); // for CPU verification
 	void onSolution(byte32_t const solution);
 
-	void findSolution(int const deviceID);
-	void checkInputs(std::unique_ptr<Device>& device);
+	void findSolution(std::string platformName, int const deviceEnum);
+	void checkInputs(std::unique_ptr<Device> &device);
 	void pushTarget();
 	void pushMessage();
 	void submitSolutions(std::set<uint64_t> solutions);

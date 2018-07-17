@@ -3,38 +3,49 @@ using System.Linq;
 using System.Text;
 using System.Timers;
 using System.Threading.Tasks;
-using CudaSolver;
+using OpenCLSolver;
 using Nethereum.Hex.HexTypes;
 
 namespace SoliditySHA3Miner.Miner
 {
-    public class CUDA : IMiner
+    public class OpenCL : IMiner
     {
-        #region Static
+        #region static
 
-        public static int GetDeviceCount(out string errorMessage)
+        public static void PreInitialize(bool allowIntel, out string errorMessage)
         {
             errorMessage = string.Empty;
-            return Solver.getDeviceCount(ref errorMessage);
+            Solver.preInitialize(allowIntel, ref errorMessage);
         }
 
-        public static string GetDeviceName(int deviceID, out string errorMessage)
+        public static string[] GetPlatformNames()
+        {
+            return Solver.getPlatformNames().Split('\n');
+        }
+
+        public static int GetDeviceCount(string platformName, out string errorMessage)
         {
             errorMessage = string.Empty;
-            return Solver.getDeviceName(deviceID, ref errorMessage);
+            return Solver.getDeviceCount(platformName, ref errorMessage);
         }
 
-        public static string GetDevices(out string errorMessage)
+        public static string GetDeviceName(string platformName, int deviceEnum, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            return Solver.getDeviceName(platformName, deviceEnum, ref errorMessage);
+        }
+
+        public static string GetDevices(string platformName, out string errorMessage)
         {
             errorMessage = string.Empty;
             var devicesString = new StringBuilder();
-            var cudaCount = Solver.getDeviceCount(ref errorMessage);
+            var deviceCount = Solver.getDeviceCount(platformName, ref errorMessage);
 
             if (!string.IsNullOrEmpty(errorMessage)) return string.Empty;
 
-            for (int i = 0; i < cudaCount; i++)
+            for (int i = 0; i < deviceCount; i++)
             {
-                var deviceName = Solver.getDeviceName(i, ref errorMessage);
+                var deviceName = Solver.getDeviceName(platformName, i, ref errorMessage);
                 if (!string.IsNullOrEmpty(errorMessage)) return string.Empty;
 
                 devicesString.AppendLine(string.Format("{0}: {1}", i, deviceName));
@@ -54,12 +65,45 @@ namespace SoliditySHA3Miner.Miner
         #region IMiner
 
         public NetworkInterface.INetworkInterface NetworkInterface { get; }
-        public Device[] Devices { get; }
+
         public bool HasAssignedDevices => (bool)Solver?.isAssigned();
+
+        public Device[] Devices { get; }
+
         public bool IsAnyInitialised => (bool)Solver?.isAnyInitialised();
+
         public bool IsMining => (bool)Solver?.isMining();
 
         private NetworkInterface.MiningParameters lastMiningParameters;
+
+        public void Dispose()
+        {
+            try
+            {
+                m_updateMinerTimer.Dispose();
+                Solver.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+            }
+        }
+
+        public long GetDifficulty()
+        {
+            try { return (long)lastMiningParameters.MiningDifficulty.Value; }
+            catch (OverflowException) { return long.MaxValue; }
+        }
+
+        public ulong GetHashrateByDevice(string platformName, int deviceID)
+        {
+            return Solver.getHashRateByDevice(platformName, deviceID);
+        }
+
+        public ulong GetTotalHashrate()
+        {
+            return Solver.getTotalHashRate();
+        }
 
         public void StartMining(int networkUpdateInterval, int hashratePrintInterval)
         {
@@ -99,63 +143,34 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        public ulong GetTotalHashrate()
-        {
-            return Solver.getTotalHashRate();
-        }
-
-        public ulong GetHashrateByDevice(string platformName, int deviceID)
-        {
-            return Solver.getHashRateByDeviceID(deviceID);
-        }
-
-        public long GetDifficulty()
-        {
-            try { return (long)lastMiningParameters.MiningDifficulty.Value; }
-            catch (OverflowException) { return long.MaxValue; }
-        }
-
-        public void Dispose()
-        {
-            try
-            {
-                Solver.Dispose();
-                m_updateMinerTimer.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
-            }
-        }
-
         #endregion
 
-        public CUDA(NetworkInterface.INetworkInterface networkInterface, Device[] cudaDevices, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
+        public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device[] devices, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {
-                Devices = cudaDevices;
+                Devices = devices;
                 NetworkInterface = networkInterface;
                 m_pauseOnFailedScan = pauseOnFailedScans;
                 m_failedScanCount = 0;
 
                 Solver = new Solver(maxDifficulty.HexValue)
                 {
-                    OnMessageHandler = m_cudaSolver_OnMessage,
-                    OnSolutionHandler = m_cudaSolver_OnSolution
+                    OnMessageHandler = m_openCLSolver_OnMessage,
+                    OnSolutionHandler = m_openCLSolver_OnSolution
                 };
                 if (customDifficulty > 0u) Solver.setCustomDifficulty(customDifficulty);
                 Solver.setSubmitStale(isSubmitStale);
 
-                if (cudaDevices.All(d => d.DeviceID == -1))
+                if (devices.All(d => d.DeviceID == -1))
                 {
-                    Program.Print("[INFO] CUDA device not set.");
+                    Program.Print("[INFO] OpenCL device not set.");
                     return;
                 }
 
                 for (int i = 0; i < Devices.Length; i++)
                     if (Devices[i].DeviceID > -1)
-                        Solver.assignDevice(Devices[i].DeviceID, Devices[i].Intensity);
+                        Solver.assignDevice(Devices[i].Platform, Devices[i].DeviceID, Devices[i].Intensity);
             }
             catch (Exception ex)
             {
@@ -204,14 +219,14 @@ namespace SoliditySHA3Miner.Miner
         private void m_hashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             var hashString = new StringBuilder();
-            hashString.Append("CUDA [INFO] Hashrates:");
+            hashString.Append("OpenCL [INFO] Hashrates:");
 
             foreach (var device in Devices)
                 if (device.DeviceID > -1)
-                    hashString.AppendFormat(" {0} MH/s", Solver.getHashRateByDeviceID(device.DeviceID) / 1000000.0f);
+                    hashString.AppendFormat(" {0} MH/s", Solver.getHashRateByDevice(device.Platform, device.DeviceID) / 1000000.0f);
 
             Program.Print(hashString.ToString());
-            Program.Print(string.Format("CUDA [INFO] Total Hashrate: {0} MH/s", Solver.getTotalHashRate() / 1000000.0f));
+            Program.Print(string.Format("OpenCL [INFO] Total Hashrate: {0} MH/s", Solver.getTotalHashRate() / 1000000.0f));
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
         }
 
@@ -220,39 +235,40 @@ namespace SoliditySHA3Miner.Miner
             var updateTask = UpdateMiner(Solver);
         }
 
-        private void m_cudaSolver_OnSolution(string digest, string address, string challenge, string difficulty, string target, string solution, bool isCustomDifficulty)
+        private void m_openCLSolver_OnSolution(string digest, string address, string challenge, string difficulty, string target, string solution, bool isCustomDifficulty)
         {
             var updateTask = UpdateMiner(Solver);
             NetworkInterface.SubmitSolution(digest, address, challenge, difficulty, target, solution, isCustomDifficulty);
         }
 
-        private void m_cudaSolver_OnMessage(int deviceID, string type, string message)
+        private void m_openCLSolver_OnMessage(string platformName, int deviceEnum, string type, string message)
         {
             var sFormat = new StringBuilder();
-            if (deviceID > -1) sFormat.Append("CUDA ID: {0} ");
-            
+            if (!string.IsNullOrWhiteSpace(platformName)) sFormat.Append(platformName + " ");
+            if (deviceEnum > -1) sFormat.Append("ID: {0} ");
+
             switch (type.ToUpperInvariant())
             {
                 case "INFO":
-                    sFormat.Append(deviceID > -1 ? "[INFO] {1}" : "[INFO] {0}");
+                    sFormat.Append(deviceEnum > -1 ? "[INFO] {1}" : "[INFO] {0}");
                     break;
                 case "WARN":
-                    sFormat.Append(deviceID > -1 ? "[WARN] {1}" : "[WARN] {0}");
+                    sFormat.Append(deviceEnum > -1 ? "[WARN] {1}" : "[WARN] {0}");
                     break;
                 case "ERROR":
-                    sFormat.Append(deviceID > -1 ? "[ERROR] {1}" : "[ERROR] {0}");
+                    sFormat.Append(deviceEnum > -1 ? "[ERROR] {1}" : "[ERROR] {0}");
                     break;
                 case "DEBUG":
                 default:
 #if DEBUG
-                    sFormat.Append(deviceID > -1 ? "[DEBUG] {1}" : "[DEBUG] {0}");
+                    sFormat.Append(deviceEnum > -1 ? "[DEBUG] {1}" : "[DEBUG] {0}");
                     break;
 #else
                     return;
 #endif
             }
-            Program.Print(deviceID > -1
-                ? string.Format(sFormat.ToString(), deviceID, message)
+            Program.Print(deviceEnum > -1
+                ? string.Format(sFormat.ToString(), deviceEnum, message)
                 : string.Format(sFormat.ToString(), message));
         }
     }

@@ -25,6 +25,11 @@ LTC                             : LbFkAto1qYt8RdTFHL871H4djendcHyCyB
 Usage: SoliditySHA3Miner [OPTIONS]
 Options:
   help                    Display this help text and exit
+  allowIntel              Allow to use Intel iGPU (default: true)
+  intelIntensity          iGPU (Intel OpenCL) intensity (default: 21, decimals allowed)
+  listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)
+  amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
+  amdIntensity            GPU (AMD OpenCL) intensity (default: 25, decimals allowed)
   listCudaDevices         List of all CUDA devices in this system (device ID: GPU name)
   cudaDevice              Comma separated list of CUDA devices to use (default: all devices)
   cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)
@@ -43,4 +48,4 @@ Options:
   address                 Miner's ethereum address (default: developer's address)
   pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
   secondaryPool           (Optional) URL of failover pool mining server
-  donate                  Set donaton in percentage (default: 2%, minimum: 1.5)
+  donate                  Set donation in percentage (default: 2%, minimum: 1.5)

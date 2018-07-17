@@ -79,7 +79,7 @@ CUDASolver::CUDASolver(std::string const maxDifficulty) noexcept :
 	}
 }
 
-CUDASolver::~CUDASolver()
+CUDASolver::~CUDASolver() noexcept
 {
 	stopFinding();
 }
