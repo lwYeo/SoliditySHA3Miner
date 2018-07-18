@@ -51,6 +51,12 @@ public:
 	typedef void(*SolutionCallback)(const char*, const char*, const char*, const char*, const char*, const char*, bool);
 	typedef struct { cl_platform_id id; std::string name; } Platform;
 
+	typedef union
+	{
+		uint64_t ulong_t;
+		uint32_t uint_t;
+	} solution_t;
+
 	static void preInitialize(bool allowIntel, std::string &errorMessage);
 	static std::string getPlatformNames();
 	static int getDeviceCount(std::string platformName, std::string &errorMessage);

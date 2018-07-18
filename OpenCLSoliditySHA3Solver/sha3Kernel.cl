@@ -31,6 +31,12 @@ typedef union
 	nounce_t	nounce_s[STATE_LENGTH / sizeof(nounce_t)];
 } state_t;
 
+typedef union
+{
+	ulong		ulong_s;
+	uint		uint_s;
+} solution_t;
+
 __constant static uint2 const Keccak_f1600_RC[24] = {
 	(uint2)(0x00000001, 0x00000000),
 	(uint2)(0x00008082, 0x00000000),
@@ -62,16 +68,16 @@ static inline nounce_t bswap64(const nounce_t input)
 {
 	nounce_t output;
 
-#if PLATFORM == OPENCL_PLATFORM_UNKNOWN
-
-	output.ulong_s = as_ulong(as_uchar8(input.ulong_s).s76543210);
-
-#else
+#if PLATFORM == OPENCL_PLATFORM_NVIDIA
 
 	asm("{"
 		"  prmt.b32 %0, %3, 0, 0x0123;"
 		"  prmt.b32 %1, %2, 0, 0x0123;"
 		"}" : "=r"(output.uint2_s.x), "=r"(output.uint2_s.y) : "r"(input.uint2_s.x), "r"(input.uint2_s.y));
+
+#else
+
+	output.ulong_s = as_ulong(as_uchar8(input.ulong_s).s76543210);
 
 #endif
 
@@ -311,7 +317,7 @@ static void keccak_skip_first_round(uint2* state)
 	}
 }
 
-__kernel void mineSolidity(__constant uint2 const* midstate, __global volatile ulong* restrict solutions, ulong target, ulong startPosition)
+__kernel void mineSolidity(__constant uint2 const* midstate, __global volatile solution_t* restrict solutions, ulong target, ulong startPosition)
 {
 	state_t state;
 	nounce_t nounce;
@@ -324,12 +330,12 @@ __kernel void mineSolidity(__constant uint2 const* midstate, __global volatile u
 	if (bswap64(state.nounce_s[0]).ulong_s < target)
 	{
 #ifdef cl_khr_int64_base_atomics
-		uint position = atomic_inc(&solutions[0]) + 1;
+		uint position = atomic_inc(&solutions[0]).uint_s + 1;
 #else
-		uint position = solutions[0];
-		solutions[0]++;
+		uint position = solutions[0].uint_s;
+		solutions[0].uint_s++;
 		position++;
 #endif
-		if (position < (MAX_SOLUTION_COUNT + 1)) solutions[position] = nounce.ulong_s;
+		if (position < (MAX_SOLUTION_COUNT + 1)) solutions[position].ulong_s = nounce.ulong_s;
 	}
 }
