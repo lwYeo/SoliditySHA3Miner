@@ -34,7 +34,7 @@ typedef union
 typedef union
 {
 	ulong		ulong_s;
-	uint		uint_s;
+	int			int_s;
 } solution_t;
 
 __constant static uint2 const Keccak_f1600_RC[24] = {
@@ -330,10 +330,10 @@ __kernel void mineSolidity(__constant uint2 const* midstate, __global volatile s
 	if (bswap64(state.nounce_s[0]).ulong_s < target)
 	{
 #ifdef cl_khr_int64_base_atomics
-		uint position = atomic_inc(&solutions[0]).uint_s + 1;
+		uint position = atomic_inc(&solutions[0]).int_s + 1;
 #else
-		uint position = solutions[0].uint_s;
-		solutions[0].uint_s++;
+		uint position = solutions[0].int_s;
+		solutions[0].int_s++;
 		position++;
 #endif
 		if (position < (MAX_SOLUTION_COUNT + 1)) solutions[position].ulong_s = nounce.ulong_s;

@@ -141,7 +141,7 @@ namespace SoliditySHA3Miner
                 "  hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: " + Defaults.HashrateUpdateInterval + ")\n" +
                 "  networkUpdateInterval   Interval (miliseconds) to scan for new work (default: " + Defaults.NetworkUpdateInterval + ")\n" +
                 "  address                 Miner's ethereum address (default: developer's address)\n" +
-                //"  privateKey              (Solo only) Miner's private key\n" +
+                "  privateKey              (Solo only) Miner's private key\n" +
                 "  pool                    (Pool only) URL of pool mining server (default: " + Defaults.PoolPrimary + ")\n" +
                 "  secondaryPool           (Optional) URL of failover pool mining server\n" +
                 "  donate                  Set donation in percentage (default: " + Donation.Percent + "%, minimum: " + Donation.MinimumPercent + "%)\n";
@@ -303,6 +303,7 @@ namespace SoliditySHA3Miner
             var primaryPool = string.Empty;
             var secondaryPool = string.Empty;
             var privateKey = string.Empty;
+            var gasToMine = 0.0f;
             var allowIntel = true;
 
             foreach (var arg in args)
@@ -376,6 +377,9 @@ namespace SoliditySHA3Miner
                         case "privateKey":
                             privateKey = arg.Split('=')[1];
                             break;
+                        case "gasToMine":
+                            gasToMine = float.Parse(arg.Split('=')[1]);
+                            break;
                         case "pool":
                             primaryPool = arg.Split('=')[1];
                             break;
@@ -404,8 +408,6 @@ namespace SoliditySHA3Miner
             if (!string.IsNullOrWhiteSpace(privateKey))
             {
                 Print("[INFO] Solo mining mode.");
-
-                //TODO: Solo mining
             }
             else if (string.IsNullOrWhiteSpace(primaryPool))
             {
@@ -521,25 +523,27 @@ namespace SoliditySHA3Miner
                     Environment.Exit(1);
                 }
             }
-
+            
             try
             {
-                var web3Interface = new NetworkInterface.Web3Interface(web3api, contractAddress, minerAddress, privateKey, abiFile);
+                var web3Interface = new NetworkInterface.Web3Interface(web3api, contractAddress, minerAddress, privateKey, gasToMine, abiFile);
 
                 var secondaryPoolInterface = string.IsNullOrWhiteSpace(secondaryPool) ? null : new NetworkInterface.PoolInterface(minerAddress, secondaryPool, maxScanRetry);
                 var primaryPoolInterface = new NetworkInterface.PoolInterface(minerAddress, primaryPool, maxScanRetry, secondaryPoolInterface);
 
+                var mainNetworkInterface = (string.IsNullOrWhiteSpace(privateKey)) ? primaryPoolInterface : (NetworkInterface.INetworkInterface)web3Interface;
+
                 if (overrideMaxDiff.Value > 0u)
                     Print("[INFO] Override maximum difficulty: " + overrideMaxDiff.Value);
 
-                m_cudaMiner = new Miner.CUDA(primaryPoolInterface, cudaDevices,
+                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices,
                                              (overrideMaxDiff.Value > 0u) ? overrideMaxDiff : web3Interface.GetMaxDifficulity(),
                                              customDifficulty, submitStale, pauseOnFailedScans);
 
                 if (m_cudaMiner.HasAssignedDevices) m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
                                                                             hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
 
-                m_openCLMiner = new Miner.OpenCL(primaryPoolInterface, intelDevices.Union(amdDevices).ToArray(),
+                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(),
                                                  (overrideMaxDiff.Value > 0u) ? overrideMaxDiff : web3Interface.GetMaxDifficulity(),
                                                  customDifficulty, submitStale, pauseOnFailedScans);
 

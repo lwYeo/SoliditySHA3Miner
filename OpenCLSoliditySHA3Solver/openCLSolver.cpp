@@ -690,7 +690,7 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 
 			std::set<uint64_t> uniqueSolutions;
 
-			for (uint32_t i{ 1u }; i < (MAX_SOLUTION_COUNT_DEVICE + 1) && i < solutionCount.uint_t; i++)
+			for (int32_t i{ 1 }; i < (MAX_SOLUTION_COUNT_DEVICE + 1) && i < solutionCount.int_t; i++)
 			{
 				uint64_t const tempSolution{ device->h_Solutions[i] };
 				if (uniqueSolutions.find(tempSolution) == uniqueSolutions.end()) uniqueSolutions.emplace(tempSolution);

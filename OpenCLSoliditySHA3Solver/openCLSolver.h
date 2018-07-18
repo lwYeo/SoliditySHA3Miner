@@ -54,7 +54,7 @@ public:
 	typedef union
 	{
 		uint64_t ulong_t;
-		uint32_t uint_t;
+		int32_t int_t;
 	} solution_t;
 
 	static void preInitialize(bool allowIntel, std::string &errorMessage);
