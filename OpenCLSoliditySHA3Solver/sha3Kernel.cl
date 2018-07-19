@@ -330,7 +330,7 @@ __kernel void mineSolidity(__constant uint2 const* midstate, __global volatile s
 	if (bswap64(state.nounce_s[0]).ulong_s < target)
 	{
 #ifdef cl_khr_int64_base_atomics
-		uint position = atomic_inc(&solutions[0]).int_s + 1;
+		uint position = atomic_inc(&solutions[0].int_s) + 1;
 #else
 		uint position = solutions[0].int_s;
 		solutions[0].int_s++;
