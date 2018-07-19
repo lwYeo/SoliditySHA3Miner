@@ -140,8 +140,9 @@ namespace SoliditySHA3Miner
                 "  contract                Token contract address (default: 0xbtc contract address)\n" +
                 "  hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: " + Defaults.HashrateUpdateInterval + ")\n" +
                 "  networkUpdateInterval   Interval (miliseconds) to scan for new work (default: " + Defaults.NetworkUpdateInterval + ")\n" +
-                "  address                 Miner's ethereum address (default: developer's address)\n" +
+                "  address                 (Pool only) Miner's ethereum address (default: developer's address)\n" +
                 "  privateKey              (Solo only) Miner's private key\n" +
+                "  gasToMine               (Solo only) Gas price to mine in GWei\n" +
                 "  pool                    (Pool only) URL of pool mining server (default: " + Defaults.PoolPrimary + ")\n" +
                 "  secondaryPool           (Optional) URL of failover pool mining server\n" +
                 "  donate                  Set donation in percentage (default: " + Donation.Percent + "%, minimum: " + Donation.MinimumPercent + "%)\n";

@@ -67,10 +67,10 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             var abi = File.ReadAllText(Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), abiFileName));
 
+            m_Contract = m_Web3.Eth.GetContract(abi, contractAddress);
+
             if (!string.IsNullOrWhiteSpace(privateKey))
             {
-                m_Contract = m_Web3.Eth.GetContract(abi, contractAddress);
-
                 m_MintMethod = m_Contract.GetFunction("mint");
 
                 m_TransferMethod = m_Contract.GetFunction("transfer");
