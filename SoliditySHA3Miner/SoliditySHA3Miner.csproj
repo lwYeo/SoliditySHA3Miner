@@ -99,6 +99,9 @@
     <None Include="0xbtcPool.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="0xbtcSolo.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="0xCATE.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
