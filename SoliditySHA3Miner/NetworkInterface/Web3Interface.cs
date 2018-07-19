@@ -114,12 +114,6 @@ namespace SoliditySHA3Miner.NetworkInterface
                     return;
                 }
 
-                if (!m_submittedChallengeList.Contains(challenge))
-                {
-                    m_submittedChallengeList.Insert(0, challenge);
-                    if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
-                }
-
                 var transactionID = string.Empty;
                 var gasLimit = new HexBigInteger(1704624ul);
                 var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasToMine), UnitConversion.EthUnit.Gwei));
@@ -156,8 +150,17 @@ namespace SoliditySHA3Miner.NetworkInterface
                             throw new Exception("Failed to verify transaction.");
 
                         transactionID = m_web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encodedTx).Result;
+                        
+                        if (!string.IsNullOrWhiteSpace(transactionID))
+                        {
+                            if (!m_submittedChallengeList.Contains(challenge))
+                            {
+                                m_submittedChallengeList.Insert(0, challenge);
+                                if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
+                            }
 
-                        if (!string.IsNullOrWhiteSpace(transactionID)) Task.Factory.StartNew(() => GetTransactionReciept(transactionID, fromAddress, gasLimit, userGas));
+                            Task.Factory.StartNew(() => GetTransactionReciept(transactionID, fromAddress, gasLimit, userGas));
+                        }
                     }
                     catch (AggregateException ex)
                     {

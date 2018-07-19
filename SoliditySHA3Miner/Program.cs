@@ -37,7 +37,7 @@ namespace SoliditySHA3Miner
         public const string JsonAPIPath = "http://127.0.0.1:4078";
         public const string CcminerAPIPath = "127.0.0.1:4068";
 
-        public const bool SubmitStale = true;
+        public const bool SubmitStale = false;
         public const int MaxScanRetry = 5;
         public const int PauseOnFailedScan = 3;
         public const int NetworkUpdateInterval = 15000;
@@ -120,7 +120,9 @@ namespace SoliditySHA3Miner
                 "Usage: SoliditySHA3Miner [OPTIONS]\n" +
                 "Options:\n" +
                 "  help                    Display this help text and exit\n" +
-                "  allowIntel              Allow to use Intel GPU (default: true)\n" +
+                "  allowIntel              Allow to use Intel GPU (OpenCL) (default: true)\n" +
+                "  allowAMD                Allow to use AMD GPU (OpenCL) (default: true)\n" +
+                "  allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)\n" +
                 "  intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)\n" +
                 "  listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)\n" +
                 "  amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)\n" +
@@ -306,6 +308,8 @@ namespace SoliditySHA3Miner
             var privateKey = string.Empty;
             var gasToMine = 0.0f;
             var allowIntel = true;
+            var allowAMD = true;
+            var allowCUDA = true;
 
             foreach (var arg in args)
             {
@@ -320,6 +324,12 @@ namespace SoliditySHA3Miner
                             break;
                         case "allowIntel":
                             allowIntel = bool.Parse(arg.Split('=')[1]);
+                            break;
+                        case "allowAMD":
+                            allowAMD = bool.Parse(arg.Split('=')[1]);
+                            break;
+                        case "allowCUDA":
+                            allowCUDA = bool.Parse(arg.Split('=')[1]);
                             break;
                         case "listAmdDevices":
                             PrintAmdDevices();
@@ -400,7 +410,7 @@ namespace SoliditySHA3Miner
                     Environment.Exit(1);
                 }
             }
-
+            
             if (string.IsNullOrWhiteSpace(minerAddress))
             {
                 Print("[INFO] Miner address not specified, donating 100% to dev.");
@@ -417,7 +427,7 @@ namespace SoliditySHA3Miner
                 primaryPool = Defaults.PoolPrimary;
             }
 
-            if ((cudaDevices == null || !cudaDevices.Any()) && args.All(a => !a.StartsWith("cudaDevice")))
+            if (allowCUDA && (cudaDevices == null || !cudaDevices.Any()) && args.All(a => !a.StartsWith("cudaDevice")))
             {
                 Print("[INFO] CUDA device not specified, default assign all CUDA devices.");
                 var cudaDeviceCount = Miner.CUDA.GetDeviceCount(out string cudaCountErrorMessage);
@@ -470,7 +480,7 @@ namespace SoliditySHA3Miner
                     }
                 }
 
-                if ((amdDevices == null || !amdDevices.Any()) && args.All(a => !a.StartsWith("openclDevices")))
+                if (allowAMD && (amdDevices == null || !amdDevices.Any()) && args.All(a => !a.StartsWith("openclDevices")))
                 {
                     Print("[INFO] OpenCL device not specified, default assign all AMD APP devices.");
 

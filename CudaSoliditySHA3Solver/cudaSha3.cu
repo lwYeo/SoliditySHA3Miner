@@ -18,7 +18,7 @@ based off of https://github.com/Dunhili/SHA3-gpu-brute-force-cracker/blob/master
 #include "cudaErrorCheck.cu"
 #include "cudasolver.h"
 
-#define MAX_SOLUTION_COUNT_DEVICE 256
+#define MAX_SOLUTION_COUNT_DEVICE 32
 __constant__ uint32_t maxSolutionCount = MAX_SOLUTION_COUNT_DEVICE;
 
 __constant__ uint64_t d_midState[MIDSTATE_LENGTH];
@@ -458,7 +458,7 @@ void CUDASolver::findSolution(int const deviceID)
 			{
 				uint64_t const tempSolution{ device->h_Solutions[i] };
 
-				if (uniqueSolutions.find(tempSolution) == uniqueSolutions.end())
+				if (tempSolution != 0u && uniqueSolutions.find(tempSolution) == uniqueSolutions.end())
 					uniqueSolutions.emplace(tempSolution);
 			}
 

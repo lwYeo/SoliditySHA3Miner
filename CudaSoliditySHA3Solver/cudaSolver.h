@@ -53,7 +53,6 @@ private:
 	std::string s_customDifficulty;
 	
 	address_t m_address;
-	byte32_t m_challenge;
 	byte32_t m_solution;
 	prefix_t m_prefix; // challenge32 + address20
 	message_t m_miningMessage; // challenge32 + address20 + solution32
@@ -66,7 +65,6 @@ private:
 	std::atomic<uint64_t> m_solutionHashCount;
 	std::atomic<std::chrono::steady_clock::time_point> m_solutionHashStartTime;
 
-	std::mutex m_onSolutionMutex;
 	std::mutex m_checkInputsMutex;
 	std::mutex m_searchSpaceMutex;
 	std::set<byte32_t> m_oldChallenges;
@@ -107,7 +105,7 @@ private:
 	void onMessage(int deviceID, std::string type, std::string message);
 
 	const std::string keccak256(std::string const message); // for CPU verification
-	void onSolution(byte32_t const solution);
+	void onSolution(byte32_t const solution, std::string challenge);
 
 	void findSolution(int const deviceID);
 	void checkInputs(std::unique_ptr<Device>& device);

@@ -135,7 +135,6 @@ openCLSolver::openCLSolver(std::string const maxDifficulty) noexcept :
 	s_target{ "" },
 	s_difficulty{ "" },
 	m_address{ 0 },
-	m_challenge{ 0 },
 	m_solution{ 0 },
 	m_prefix{ 0 },
 	m_miningMessage{ 0 },
@@ -412,9 +411,9 @@ const std::string openCLSolver::keccak256(std::string const message)
 	return bytesToHexString(out);
 }
 
-void openCLSolver::onSolution(byte32_t const solution)
+void openCLSolver::onSolution(byte32_t const solution, std::string challenge)
 {
-	std::lock_guard<std::mutex> lock(m_onSolutionMutex);
+	if (!isSubmitStale && challenge != s_challenge) return;
 
 	prefix_t prefix;
 	std::memcpy(&prefix, &m_miningMessage, PREFIX_LENGTH);
@@ -426,7 +425,7 @@ void openCLSolver::onSolution(byte32_t const solution)
 	if (solution == emptySolution)
 	{
 		onMessage("", -1, "Error", "Verification failed: empty solution"
-			+ std::string("\nChallenge: ") + s_challenge
+			+ std::string("\nChallenge: ") + challenge
 			+ "\nAddress: " + s_address
 			+ "\nTarget: " + s_target);
 		return;
@@ -450,17 +449,17 @@ void openCLSolver::onSolution(byte32_t const solution)
 				if (isSubmitStale)
 				{
 					onMessage("", -1, "Warn", "Verified stale solution, submitting"
-						+ std::string("\nChallenge: ") + s_challenge
+						+ std::string("\nChallenge: ") + challenge
 						+ "\nAddress: " + s_address
 						+ "\nSolution: 0x" + solutionStr
 						+ "\nDigest: 0x" + digestStr
 						+ "\nTarget: " + s_target);
-					m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), s_challenge.c_str(), s_difficulty.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str(), m_customDifficulty > 0u);
+					m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_difficulty.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str(), m_customDifficulty > 0u);
 				}
 				else
 				{
 					onMessage("", -1, "Error", "Verification failed: stale solution"
-						+ std::string("\nChallenge: ") + s_challenge
+						+ std::string("\nChallenge: ") + challenge
 						+ "\nAddress: " + s_address
 						+ "\nSolution: 0x" + solutionStr
 						+ "\nDigest: 0x" + digestStr
@@ -470,7 +469,7 @@ void openCLSolver::onSolution(byte32_t const solution)
 			}
 		}
 		onMessage("", -1, "Error", "Verification failed: invalid solution"
-			+ std::string("\nChallenge: ") + s_challenge
+			+ std::string("\nChallenge: ") + challenge
 			+ "\nAddress: " + s_address
 			+ "\nSolution: 0x" + solutionStr
 			+ "\nDigest: 0x" + digestStr
@@ -479,18 +478,20 @@ void openCLSolver::onSolution(byte32_t const solution)
 	else
 	{
 		onMessage("", -1, "Info", "Solution verified, submitting nonce 0x" + solutionStr + "...");
-		m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), s_challenge.c_str(), s_difficulty.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str(), m_customDifficulty > 0u);
+		m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_difficulty.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str(), m_customDifficulty > 0u);
 	}
 }
 
 void openCLSolver::submitSolutions(std::set<uint64_t> solutions)
 {
+	auto currentChallenge{ s_challenge };
+
 	for (uint64_t midStateSolution : solutions)
 	{
 		byte32_t solution{ m_solution };
 		std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH);
 
-		onSolution(solution);
+		onSolution(solution, currentChallenge);
 	}
 }
 
@@ -707,7 +708,8 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 			for (int32_t i{ 1 }; i < (MAX_SOLUTION_COUNT_DEVICE + 1) && i < solutionCount.int_t; i++)
 			{
 				uint64_t const tempSolution{ device->h_Solutions[i] };
-				if (uniqueSolutions.find(tempSolution) == uniqueSolutions.end()) uniqueSolutions.emplace(tempSolution);
+				if (tempSolution != 0u && uniqueSolutions.find(tempSolution) == uniqueSolutions.end())
+					uniqueSolutions.emplace(tempSolution);
 			}
 
 			std::thread t{ &openCLSolver::submitSolutions, this, uniqueSolutions };

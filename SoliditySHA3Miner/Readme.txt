@@ -25,7 +25,9 @@ LTC                             : LbFkAto1qYt8RdTFHL871H4djendcHyCyB
 Usage: SoliditySHA3Miner [OPTIONS]
 Options:
   help                    Display this help text and exit
-  allowIntel              Allow to use Intel GPU (default: true)
+  allowIntel              Allow to use Intel GPU (OpenCL) (default: true)
+  allowAMD                Allow to use AMD GPU (OpenCL) (default: true)
+  allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)
   intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)
   listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)
   amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
@@ -39,7 +41,7 @@ Options:
   customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)
   maxScanRetry            Number of retries to scan for new work (default: 5)
   pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)
-  submitStale             Submit stale jobs, may create more rejected shares (default: true)
+  submitStale             Submit stale jobs, may create more rejected shares (default: false)
   abiFile                 Token abi in a file (default: '0xbtc.abi' in the same folder as this miner)
   web3api                 User-defined web3 provider URL (default: Infura mainnet provider)
   contract                Token contract address (default: 0xbtc contract address)
