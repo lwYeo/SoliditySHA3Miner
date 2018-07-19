@@ -38,8 +38,8 @@ public:
 
 	uint64_t* d_Solutions;
 	uint32_t* d_SolutionCount;
-	uint64_t* h_Solutions{ reinterpret_cast<uint64_t *>(malloc(UINT64_LENGTH)) };
-	uint32_t* h_SolutionCount{ reinterpret_cast<uint32_t *>(malloc(UINT32_LENGTH)) };
+	uint64_t* h_Solutions;
+	uint32_t* h_SolutionCount;
 
 	int CoreOC();
 	int MemoryOC();

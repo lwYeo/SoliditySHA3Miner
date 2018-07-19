@@ -87,6 +87,11 @@ namespace OpenCLSolver
 		return m_Instance->isMining();
 	}
 
+	bool Solver::isPaused()
+	{
+		return m_Instance->isPaused();
+	}
+
 	void Solver::updatePrefix(System::String ^prefix)
 	{
 		m_Instance->updatePrefix(ToNativeString(prefix));
@@ -109,7 +114,12 @@ namespace OpenCLSolver
 
 	void Solver::stopFinding()
 	{
-		m_Instance->startFinding();
+		m_Instance->stopFinding();
+	}
+
+	void Solver::pauseFinding(bool pauseFinding)
+	{
+		m_Instance->pauseFinding(pauseFinding);
 	}
 
 	uint64_t Solver::getTotalHashRate()

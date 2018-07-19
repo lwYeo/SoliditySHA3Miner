@@ -11,6 +11,7 @@
 
 std::atomic<bool> CUDASolver::m_newTarget;
 std::atomic<bool> CUDASolver::m_newMessage;
+std::atomic<bool> CUDASolver::m_pause;
 
 std::string CUDASolver::getCudaErrorString(cudaError_t &error)
 {
@@ -61,6 +62,7 @@ CUDASolver::CUDASolver(std::string const maxDifficulty) noexcept :
 {
 	m_newTarget.store(false);
 	m_newMessage.store(false);
+	m_pause.store(false);
 
 	m_solutionHashCount.store(0);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
@@ -179,6 +181,11 @@ bool CUDASolver::isMining()
 	return false;
 }
 
+bool CUDASolver::isPaused()
+{
+	return CUDASolver::m_pause.load();
+}
+
 void CUDASolver::updatePrefix(std::string const prefix)
 {
 	assert(prefix.length() == (PREFIX_LENGTH * 2 + 2));
@@ -256,6 +263,7 @@ void CUDASolver::startFinding()
 	for (auto& device : m_devices)
 	{
 		device->miningThread = std::thread(&CUDASolver::findSolution, this, device->deviceID);
+		device->miningThread.detach();
 		std::this_thread::sleep_for(100ms);
 	}
 }
@@ -265,17 +273,17 @@ void CUDASolver::stopFinding()
 	using namespace std::chrono_literals;
 
 	for (auto& device : m_devices) device->mining = false;
-
-	for (auto& device : m_devices)
-	{
-		while (!device->miningThread.joinable()) std::this_thread::sleep_for(100ms);
-		device->miningThread.join();
-	}
+	std::this_thread::sleep_for(1s);
 
 	m_newMessage.store(false);
 	m_newTarget.store(false);
 	try { if (m_oldChallenges.size() > 0) m_oldChallenges.clear(); }
 	catch (const std::exception&) {}
+}
+
+void CUDASolver::pauseFinding(bool pauseFinding)
+{
+	m_pause.store(pauseFinding);
 }
 
 uint64_t CUDASolver::getTotalHashRate()
@@ -327,6 +335,8 @@ const std::string CUDASolver::keccak256(std::string const message)
 
 void CUDASolver::onSolution(byte32_t const solution)
 {
+	std::lock_guard<std::mutex> lock(m_onSolutionMutex);
+
 	prefix_t prefix;
 	std::memcpy(&prefix, &m_miningMessage, PREFIX_LENGTH);
 	
@@ -401,8 +411,7 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions)
 		byte32_t solution{ m_solution };
 		std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH);
 
-		std::thread t{ &CUDASolver::onSolution, this, solution };
-		t.join();
+		onSolution(solution);
 	}
 }
 

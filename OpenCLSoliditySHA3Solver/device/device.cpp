@@ -178,7 +178,6 @@ Device::Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platf
 	deviceType{ devType },
 	hashCount{ 0ull },
 	hashStartTime{ std::chrono::steady_clock::now() },
-	h_Solutions{ reinterpret_cast<uint64_t *>(malloc(UINT64_LENGTH * (MAX_SOLUTION_COUNT_DEVICE + 1))) },
 	initialized{ false },
 	kernelWaitSleepDuration{ 1000u },
 	mining{ false },
@@ -296,6 +295,7 @@ void Device::initialize(std::string& errorMessage)
 		return;
 	}
 
+	h_Solutions = reinterpret_cast<uint64_t *>(malloc(UINT64_LENGTH * (MAX_SOLUTION_COUNT_DEVICE + 1)));
 	std::memset(h_Solutions, 0u, UINT64_LENGTH * (MAX_SOLUTION_COUNT_DEVICE + 1));
 
 	solutionsBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, UINT64_LENGTH * (MAX_SOLUTION_COUNT_DEVICE + 1), h_Solutions, &status);

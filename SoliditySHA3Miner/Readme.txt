@@ -25,8 +25,8 @@ LTC                             : LbFkAto1qYt8RdTFHL871H4djendcHyCyB
 Usage: SoliditySHA3Miner [OPTIONS]
 Options:
   help                    Display this help text and exit
-  allowIntel              Allow to use Intel iGPU (default: true)
-  intelIntensity          iGPU (Intel OpenCL) intensity (default: 21, decimals allowed)
+  allowIntel              Allow to use Intel GPU (default: true)
+  intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)
   listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)
   amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
   amdIntensity            GPU (AMD OpenCL) intensity (default: 25, decimals allowed)
@@ -45,7 +45,17 @@ Options:
   contract                Token contract address (default: 0xbtc contract address)
   hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: 30000)
   networkUpdateInterval   Interval (miliseconds) to scan for new work (default: 15000)
-  address                 Miner's ethereum address (default: developer's address)
+  address                 (Pool only) Miner's ethereum address (default: developer's address)
+  privateKey              (Solo only) Miner's private key
+  gasToMine               (Solo only) Gas price to mine in GWei
   pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
   secondaryPool           (Optional) URL of failover pool mining server
-  donate                  Set donation in percentage (default: 2%, minimum: 1.5)
+  devFee                  Set dev fee in percentage (default: 2%, minimum: 1.5%)
+
+NOTES
+Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
+A sample CLI launch parameter can be found in the ".bat" file found together with this miner, please refer to it if you need help.
+You will have to supply your own Ethereum address (or Private key if you solo mine). It is your own responsibility to mine to the correct address/account.
+It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
+There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st if Pool mine, or starting from 50th if Solo mine).
+You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nounce mod devFee) = 0").

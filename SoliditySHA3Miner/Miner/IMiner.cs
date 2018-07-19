@@ -9,6 +9,7 @@ namespace SoliditySHA3Miner.Miner
         Device[] Devices { get; }
         bool IsAnyInitialised { get; }
         bool IsMining { get; }
+        bool IsPaused { get; }
 
         void StartMining(int networkUpdateInterval, int hashratePrintInterval);
         void StopMining();

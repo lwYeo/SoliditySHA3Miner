@@ -32,6 +32,7 @@ namespace CudaSolver
 		bool isAssigned();
 		bool isAnyInitialised();
 		bool isMining();
+		bool isPaused();
 
 		// must be in challenge (byte32) + address (byte20) hexadecimal format with "0x" prefix
 		void updatePrefix(System::String^ prefix);
@@ -42,6 +43,7 @@ namespace CudaSolver
 
 		void startFinding();
 		void stopFinding();
+		void pauseFinding(bool pauseFinding);
 
 		// combined hashrate, in H/s
 		uint64_t getTotalHashRate();

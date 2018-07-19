@@ -10,20 +10,19 @@ namespace SoliditySHA3Miner.NetworkInterface
     {
         private readonly string s_MinerAddress;
         private readonly string s_PoolURL;
+        private readonly int m_maxScanRetry;
+        private bool m_runFailover;
+        private int m_retryCount;
 
         public bool IsPool => true;
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
-
         public PoolInterface SecondaryPool { get; }
 
-        private bool m_runFailover;
-
-        private int m_maxScanRetry = 0;
-        private int m_retryCount = 0;
 
         public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, PoolInterface secondaryPool = null)
         {
+            m_retryCount = 0;
             m_maxScanRetry = maxScanRetry;
             SecondaryPool = secondaryPool;
 
@@ -83,7 +82,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             var submitted = false;
             int retryCount = 0, maxRetries = 10;
-            var donate = (ulong)Math.Round(100 / Math.Abs(Donation.UserPercent));
+            var devFee = (ulong)Math.Round(100 / Math.Abs(DevFee.UserPercent));
             do
             {
                 try
@@ -92,7 +91,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     lock (this)
                     {
                         if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0u;
-                        var minerAddress = ((SubmittedShares) % donate) == 0 ? Donation.Address : s_MinerAddress;
+                        var minerAddress = ((SubmittedShares) % devFee) == 0 ? DevFee.Address : s_MinerAddress;
 
                         JObject submitShare;
                         submitShare = GetPoolParameter("submitShare", solution, minerAddress, digest, difficulty, challenge, isCustomDifficulty ? "true" : "false");
@@ -105,7 +104,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         SubmittedShares++;
 
                         Program.Print(string.Format("[INFO] {0} [{1}] submitted: {2}", 
-                                                    (minerAddress == Donation.Address ? "Dev. share" : "Share"),
+                                                    (minerAddress == DevFee.Address ? "Dev. share" : "Share"),
                                                     SubmittedShares, 
                                                     (success ? "success" : "failed")));
 #if DEBUG

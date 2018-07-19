@@ -11,7 +11,7 @@ using Nethereum.Hex.HexTypes;
 
 namespace SoliditySHA3Miner
 {
-    public class Donation
+    public class DevFee
     {
         public const string Address = "0x9172ff7884CEFED19327aDaCe9C470eF1796105c";
         public const float Percent = 2.0F;
@@ -120,8 +120,8 @@ namespace SoliditySHA3Miner
                 "Usage: SoliditySHA3Miner [OPTIONS]\n" +
                 "Options:\n" +
                 "  help                    Display this help text and exit\n" +
-                "  allowIntel              Allow to use Intel iGPU (default: true)\n" +
-                "  intelIntensity          iGPU (Intel OpenCL) intensity (default: 21, decimals allowed)\n" +
+                "  allowIntel              Allow to use Intel GPU (default: true)\n" +
+                "  intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)\n" +
                 "  listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)\n" +
                 "  amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)\n" +
                 "  amdIntensity            GPU (AMD OpenCL) intensity (default: 25, decimals allowed)\n" +
@@ -145,7 +145,7 @@ namespace SoliditySHA3Miner
                 "  gasToMine               (Solo only) Gas price to mine in GWei\n" +
                 "  pool                    (Pool only) URL of pool mining server (default: " + Defaults.PoolPrimary + ")\n" +
                 "  secondaryPool           (Optional) URL of failover pool mining server\n" +
-                "  donate                  Set donation in percentage (default: " + Donation.Percent + "%, minimum: " + Donation.MinimumPercent + "%)\n";
+                "  devFee                  Set dev fee in percentage (default: " + DevFee.Percent + "%, minimum: " + DevFee.MinimumPercent + "%)\n";
             Console.WriteLine(help);
         }
 
@@ -324,6 +324,7 @@ namespace SoliditySHA3Miner
                         case "listAmdDevices":
                             PrintAmdDevices();
                             m_manualResetEvent.Set();
+                            Environment.Exit(0);
                             break;
                         case "amdDevice":
                             SetAmdDevices(arg.Split('=')[1].Split(','), ref amdDevices);
@@ -387,8 +388,8 @@ namespace SoliditySHA3Miner
                         case "secondaryPool":
                             secondaryPool = arg.Split('=')[1];
                             break;
-                        case "donate":
-                            Donation.UserPercent = float.Parse(arg.Split('=')[1]);
+                        case "devFee":
+                            DevFee.UserPercent = float.Parse(arg.Split('=')[1]);
                             break;
                     }
                 }
@@ -403,7 +404,7 @@ namespace SoliditySHA3Miner
             if (string.IsNullOrWhiteSpace(minerAddress))
             {
                 Print("[INFO] Miner address not specified, donating 100% to dev.");
-                minerAddress = Donation.Address;
+                minerAddress = DevFee.Address;
             }
 
             if (!string.IsNullOrWhiteSpace(privateKey))
@@ -568,7 +569,7 @@ namespace SoliditySHA3Miner
                 API.Ccminer.StartListening(minerCcminerAPI, m_allMiners);
 
                 m_waitCheckTimer = new System.Timers.Timer(1000);
-                m_waitCheckTimer.Elapsed += delegate { if (m_allMiners.All(m => m != null && !m.IsMining)) WaitSeconds++; };
+                m_waitCheckTimer.Elapsed += delegate { if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPaused))) WaitSeconds++; };
                 m_waitCheckTimer.Start();
                 WaitSeconds = (ulong)(LaunchTime - DateTime.Now).TotalSeconds;
             }

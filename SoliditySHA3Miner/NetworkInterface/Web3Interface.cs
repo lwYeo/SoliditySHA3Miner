@@ -1,6 +1,9 @@
 ﻿using System;
-using System.Numerics;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Threading.Tasks;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
@@ -16,26 +19,25 @@ namespace SoliditySHA3Miner.NetworkInterface
         private const int MAX_TIMEOUT = 10;
         private const string DEFAULT_WEB3_API = "https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE";
 
-        private readonly Web3 m_Web3;
-        private readonly Contract m_Contract;
-        private readonly Account m_Account;
-        private readonly float m_GasToMine;
-        private readonly string m_MinerAddress;
-        private readonly BigInteger m_MiningReward;
-        private readonly Function m_MintMethod;
-        private readonly Function m_TransferMethod;
+        private readonly Web3 m_web3;
+        private readonly Contract m_contract;
+        private readonly Account m_account;
+        private readonly float m_gasToMine;
+        private readonly string m_minerAddress;
+        private readonly BigInteger m_miningReward;
+        private readonly Function m_mintMethod;
+        private readonly Function m_transferMethod;
+        private readonly List<string> m_submittedChallengeList;
 
         public bool IsPool => false;
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
 
-        public long GetDifficulty()
-        {
-            return 0;
-        }
+        public bool IsChallengedSubmitted(string challenge) => m_submittedChallengeList.Contains(challenge);
 
         public Web3Interface(string web3ApiPath, string contractAddress, string minerAddress, string privateKey, float gasToMine, string abiFileName)
         {
+            m_submittedChallengeList = new List<string>();
             Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout = MAX_TIMEOUT * 1000;
 
             if (string.IsNullOrWhiteSpace(contractAddress))
@@ -52,8 +54,8 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             if (!string.IsNullOrWhiteSpace(privateKey))
             {
-                m_Account = new Account(privateKey);
-                minerAddress = m_Account.Address;
+                m_account = new Account(privateKey);
+                minerAddress = m_account.Address;
             }
 
             if (!addressUtil.IsValidAddressLength(minerAddress))
@@ -61,23 +63,23 @@ namespace SoliditySHA3Miner.NetworkInterface
                 throw new Exception("Invalid miner address provided.");
             }
 
-            m_MinerAddress = minerAddress;
+            m_minerAddress = minerAddress;
 
-            m_Web3 = new Web3(string.IsNullOrWhiteSpace(web3ApiPath) ? DEFAULT_WEB3_API : web3ApiPath);
+            m_web3 = new Web3(string.IsNullOrWhiteSpace(web3ApiPath) ? DEFAULT_WEB3_API : web3ApiPath);
 
             var abi = File.ReadAllText(Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), abiFileName));
 
-            m_Contract = m_Web3.Eth.GetContract(abi, contractAddress);
+            m_contract = m_web3.Eth.GetContract(abi, contractAddress);
 
             if (!string.IsNullOrWhiteSpace(privateKey))
             {
-                m_MintMethod = m_Contract.GetFunction("mint");
+                m_mintMethod = m_contract.GetFunction("mint");
 
-                m_TransferMethod = m_Contract.GetFunction("transfer");
+                m_transferMethod = m_contract.GetFunction("transfer");
 
-                m_MiningReward = GetMiningReward();
+                m_miningReward = GetMiningReward();
 
-                m_GasToMine = gasToMine;
+                m_gasToMine = gasToMine;
             }
         }
 
@@ -88,7 +90,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 try
                 {
-                    return new HexBigInteger(m_Contract.GetFunction("_MAXIMUM_TARGET").CallAsync<BigInteger>().Result);
+                    return new HexBigInteger(m_contract.GetFunction("_MAXIMUM_TARGET").CallAsync<BigInteger>().Result);
                 }
                 catch (AggregateException ex)
                 {
@@ -99,17 +101,28 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public MiningParameters GetMiningParameters()
         {
-            return MiningParameters.GetSoloMiningParameters(m_Contract, m_MinerAddress);
+            return MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
         }
 
         void INetworkInterface.SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, bool isCustomDifficulty)
         {
-            lock(this)
+            lock (this)
             {
-                var success = false;
+                if (m_submittedChallengeList.Contains(challenge))
+                {
+                    Program.Print(string.Format("[INFO] Submission cancelled, nonce has been submitted for the current challenge."));
+                    return;
+                }
+
+                if (!m_submittedChallengeList.Contains(challenge))
+                {
+                    m_submittedChallengeList.Insert(0, challenge);
+                    if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
+                }
+
                 var transactionID = string.Empty;
                 var gasLimit = new HexBigInteger(1704624ul);
-                var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_GasToMine), UnitConversion.EthUnit.Gwei));
+                var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasToMine), UnitConversion.EthUnit.Gwei));
                 var dataInput = new object[] { new HexBigInteger(solution).Value, HexByteConvertorExtensions.HexToByteArray(digest) };
 
                 while (string.IsNullOrWhiteSpace(transactionID))
@@ -118,21 +131,21 @@ namespace SoliditySHA3Miner.NetworkInterface
                     {
                         System.Threading.Thread.Sleep(1000);
 
-                        var txCount = m_Web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
+                        var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
 
-                        var estimatedGasLimit = m_MintMethod.EstimateGasAsync(from: fromAddress,
+                        var estimatedGasLimit = m_mintMethod.EstimateGasAsync(from: fromAddress,
                                                                               gas: gasLimit,
                                                                               value: new HexBigInteger(0),
                                                                               functionInput: dataInput).Result;
 
-                        var transaction = m_MintMethod.CreateTransactionInput(from: fromAddress,
+                        var transaction = m_mintMethod.CreateTransactionInput(from: fromAddress,
                                                                               gas: estimatedGasLimit,
                                                                               gasPrice: userGas,
                                                                               value: new HexBigInteger(0),
                                                                               functionInput: dataInput);
 
-                        var encodedTx = Web3.OfflineTransactionSigner.SignTransaction(privateKey: m_Account.PrivateKey,
-                                                                                      to: m_Contract.Address,
+                        var encodedTx = Web3.OfflineTransactionSigner.SignTransaction(privateKey: m_account.PrivateKey,
+                                                                                      to: m_contract.Address,
                                                                                       amount: 0,
                                                                                       nonce: txCount.Value,
                                                                                       gasPrice: userGas,
@@ -142,51 +155,9 @@ namespace SoliditySHA3Miner.NetworkInterface
                         if (!Web3.OfflineTransactionSigner.VerifyTransaction(encodedTx))
                             throw new Exception("Failed to verify transaction.");
 
-                        transactionID = m_Web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encodedTx).Result;
+                        transactionID = m_web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encodedTx).Result;
 
-                        if (string.IsNullOrWhiteSpace(transactionID)) continue;
-                        else
-                        {
-                            TransactionReceipt reciept = null;
-                            while (reciept == null)
-                            {
-                                try
-                                {
-                                    System.Threading.Thread.Sleep(3000);
-                                    reciept = m_Web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionID).Result;
-                                }
-                                catch (AggregateException ex)
-                                {
-                                    var errorMessage = "[ERROR] " + ex.Message;
-
-                                    foreach (var iEx in ex.InnerExceptions)
-                                        errorMessage += "\n " + iEx.Message;
-
-                                    Program.Print(errorMessage);
-                                }
-                                catch (Exception ex)
-                                {
-                                    var errorMessage = "[ERROR] " + ex.Message;
-
-                                    if (ex.InnerException != null)
-                                        errorMessage += "\n " + ex.InnerException.Message;
-
-                                    Program.Print(errorMessage);
-                                }
-                            }
-
-                            success = (reciept.Status.Value == 1);
-
-                            if (!success) RejectedShares++;
-                            SubmittedShares++;
-
-                            Program.Print(string.Format("[INFO] Share [{0}] submitted: {1}, block: {2}," +
-                                                        "\n transaction ID: {3}",
-                                                        SubmittedShares,
-                                                        success ? "success" : "failed",
-                                                        reciept.BlockNumber.Value,
-                                                        reciept.TransactionHash));
-                        }
+                        if (!string.IsNullOrWhiteSpace(transactionID)) Task.Factory.StartNew(() => GetTransactionReciept(transactionID, fromAddress, gasLimit, userGas));
                     }
                     catch (AggregateException ex)
                     {
@@ -196,6 +167,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                             errorMessage += "\n " + iEx.Message;
 
                         Program.Print(errorMessage);
+                        if (m_submittedChallengeList.Contains(challenge)) return;
                     }
                     catch (Exception ex)
                     {
@@ -205,111 +177,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                             errorMessage += "\n " + ex.InnerException.Message;
 
                         Program.Print(errorMessage);
-                        if (ex.Message == "Failed to verify transaction.") break;
-                    }
-                }
-
-                if (success)
-                {
-                    var devTransactionID = string.Empty;
-                    TransactionReceipt devReciept = null;
-                    var donate = (ulong)Math.Round(100 / Math.Abs(Donation.UserPercent));
-                    if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0u;
-
-                    if (((SubmittedShares) % donate) == 0)
-                    {
-                        try
-                        {
-                            Program.Print(string.Format("[INFO] Transferring donation fee for share [{0}]...", SubmittedShares));
-
-                            var txInput = new object[] { Donation.Address, m_MiningReward };
-
-                            var txCount = m_Web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
-
-                            var estimatedGasLimit = m_TransferMethod.EstimateGasAsync(from: fromAddress,
-                                                                                      gas: gasLimit,
-                                                                                      value: new HexBigInteger(0),
-                                                                                      functionInput: txInput).Result;
-
-                            var transaction = m_TransferMethod.CreateTransactionInput(from: fromAddress,
-                                                                                      gas: estimatedGasLimit,
-                                                                                      gasPrice: userGas,
-                                                                                      value: new HexBigInteger(0),
-                                                                                      functionInput: txInput);
-
-                            var encodedTx = Web3.OfflineTransactionSigner.SignTransaction(privateKey: m_Account.PrivateKey,
-                                                                                          to: m_Contract.Address,
-                                                                                          amount: 0,
-                                                                                          nonce: txCount.Value,
-                                                                                          gasPrice: userGas,
-                                                                                          gasLimit: estimatedGasLimit,
-                                                                                          data: transaction.Data);
-
-                            if (!Web3.OfflineTransactionSigner.VerifyTransaction(encodedTx))
-                                throw new Exception("Failed to verify transaction.");
-
-                            devTransactionID = m_Web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encodedTx).Result;
-
-                            if (string.IsNullOrWhiteSpace(devTransactionID)) throw new Exception("Failed to submit donation fee.");
-
-                            while (devReciept == null)
-                            {
-                                try
-                                {
-                                    System.Threading.Thread.Sleep(3000);
-                                    devReciept = m_Web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(devTransactionID).Result;
-                                }
-                                catch (AggregateException ex)
-                                {
-                                    var errorMessage = "[ERROR] " + ex.Message;
-
-                                    foreach (var iEx in ex.InnerExceptions)
-                                        errorMessage += "\n " + iEx.Message;
-
-                                    Program.Print(errorMessage);
-                                }
-                                catch (Exception ex)
-                                {
-                                    var errorMessage = "[ERROR] " + ex.Message;
-
-                                    if (ex.InnerException != null)
-                                        errorMessage += "\n " + ex.InnerException.Message;
-
-                                    Program.Print(errorMessage);
-                                }
-                            }
-
-                            success = (devReciept.Status.Value == 1);
-
-                            if (!success) throw new Exception("Failed to submit donation fee.");
-                            else
-                            {
-                                Program.Print(string.Format("[INFO] Transferred donation fee for share [{0}] : {1}, block: {2}," +
-                                                            "\n transaction ID: {3}",
-                                                            SubmittedShares,
-                                                            success ? "success" : "failed",
-                                                            devReciept.BlockNumber.Value,
-                                                            devReciept.TransactionHash));
-                            }
-                        }
-                        catch (AggregateException ex)
-                        {
-                            var errorMessage = "[ERROR] " + ex.Message;
-
-                            foreach (var iEx in ex.InnerExceptions)
-                                errorMessage += "\n " + iEx.Message;
-
-                            Program.Print(errorMessage);
-                        }
-                        catch (Exception ex)
-                        {
-                            var errorMessage = "[ERROR] " + ex.Message;
-
-                            if (ex.InnerException != null)
-                                errorMessage += "\n " + ex.InnerException.Message;
-
-                            Program.Print(errorMessage);
-                        }
+                        if (m_submittedChallengeList.Contains(challenge) || ex.Message == "Failed to verify transaction.") return;
                     }
                 }
             }
@@ -328,11 +196,184 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 try
                 {
-                    return m_Contract.GetFunction("getMiningReward").CallAsync<BigInteger>().Result; // including decimals
+                    return m_contract.GetFunction("getMiningReward").CallAsync<BigInteger>().Result; // including decimals
                 }
                 catch (Exception) { failCount++; }
             }
             throw new Exception("Failed getting mining reward amount.");
+        }
+
+        private void GetTransactionReciept(string transactionID, string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas)
+        {
+            try
+            {
+                var success = false;
+                TransactionReceipt reciept = null;
+                while (reciept == null)
+                {
+                    try
+                    {
+                        System.Threading.Thread.Sleep(3000);
+                        reciept = m_web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionID).Result;
+                    }
+                    catch (AggregateException ex)
+                    {
+                        var errorMessage = "[ERROR] " + ex.Message;
+
+                        foreach (var iEx in ex.InnerExceptions)
+                            errorMessage += "\n " + iEx.Message;
+
+                        Program.Print(errorMessage);
+                    }
+                    catch (Exception ex)
+                    {
+                        var errorMessage = "[ERROR] " + ex.Message;
+
+                        if (ex.InnerException != null)
+                            errorMessage += "\n " + ex.InnerException.Message;
+
+                        Program.Print(errorMessage);
+                    }
+                }
+
+                success = (reciept.Status.Value == 1);
+
+                if (!success) RejectedShares++;
+                if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0ul;
+                else SubmittedShares++;
+
+                Program.Print(string.Format("[INFO] Share [{0}] submitted: {1}, block: {2}," +
+                                            "\n transaction ID: {3}",
+                                            SubmittedShares,
+                                            success ? "success" : "failed",
+                                            reciept.BlockNumber.Value,
+                                            reciept.TransactionHash));
+
+                if (success)
+                {
+                    var devFee = (ulong)Math.Round(100 / Math.Abs(DevFee.UserPercent));
+                    if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0u;
+
+                    if (((SubmittedShares) % devFee) == 0) SubmitDevFee(fromAddress, gasLimit, userGas, SubmittedShares);
+                }
+            }
+            catch (AggregateException ex)
+            {
+                var errorMessage = "[ERROR] " + ex.Message;
+
+                foreach (var iEx in ex.InnerExceptions)
+                    errorMessage += "\n " + iEx.Message;
+
+                Program.Print(errorMessage);
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = "[ERROR] " + ex.Message;
+
+                if (ex.InnerException != null)
+                    errorMessage += "\n " + ex.InnerException.Message;
+
+                Program.Print(errorMessage);
+            }
+        }
+
+        private void SubmitDevFee(string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas, ulong shareNo)
+        {
+            var success = false;
+            var devTransactionID = string.Empty;
+            TransactionReceipt devReciept = null;
+            try
+            {
+                Program.Print(string.Format("[INFO] Transferring dev fee for share [{0}]...", shareNo));
+
+                var txInput = new object[] { DevFee.Address, m_miningReward };
+
+                var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
+
+                var estimatedGasLimit = m_transferMethod.EstimateGasAsync(from: fromAddress,
+                                                                          gas: gasLimit,
+                                                                          value: new HexBigInteger(0),
+                                                                          functionInput: txInput).Result;
+
+                var transaction = m_transferMethod.CreateTransactionInput(from: fromAddress,
+                                                                          gas: estimatedGasLimit,
+                                                                          gasPrice: userGas,
+                                                                          value: new HexBigInteger(0),
+                                                                          functionInput: txInput);
+
+                var encodedTx = Web3.OfflineTransactionSigner.SignTransaction(privateKey: m_account.PrivateKey,
+                                                                              to: m_contract.Address,
+                                                                              amount: 0,
+                                                                              nonce: txCount.Value,
+                                                                              gasPrice: userGas,
+                                                                              gasLimit: estimatedGasLimit,
+                                                                              data: transaction.Data);
+
+                if (!Web3.OfflineTransactionSigner.VerifyTransaction(encodedTx))
+                    throw new Exception("Failed to verify transaction.");
+
+                devTransactionID = m_web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encodedTx).Result;
+
+                if (string.IsNullOrWhiteSpace(devTransactionID)) throw new Exception("Failed to submit dev fee.");
+
+                while (devReciept == null)
+                {
+                    try
+                    {
+                        System.Threading.Thread.Sleep(3000);
+                        devReciept = m_web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(devTransactionID).Result;
+                    }
+                    catch (AggregateException ex)
+                    {
+                        var errorMessage = "[ERROR] " + ex.Message;
+
+                        foreach (var iEx in ex.InnerExceptions)
+                            errorMessage += "\n " + iEx.Message;
+
+                        Program.Print(errorMessage);
+                    }
+                    catch (Exception ex)
+                    {
+                        var errorMessage = "[ERROR] " + ex.Message;
+
+                        if (ex.InnerException != null)
+                            errorMessage += "\n " + ex.InnerException.Message;
+
+                        Program.Print(errorMessage);
+                    }
+                }
+
+                success = (devReciept.Status.Value == 1);
+
+                if (!success) throw new Exception("Failed to submit dev fee.");
+                else
+                {
+                    Program.Print(string.Format("[INFO] Transferred dev fee for share [{0}] : {1}, block: {2}," +
+                                                "\n transaction ID: {3}",
+                                                shareNo,
+                                                success ? "success" : "failed",
+                                                devReciept.BlockNumber.Value,
+                                                devReciept.TransactionHash));
+                }
+            }
+            catch (AggregateException ex)
+            {
+                var errorMessage = "[ERROR] " + ex.Message;
+
+                foreach (var iEx in ex.InnerExceptions)
+                    errorMessage += "\n " + iEx.Message;
+
+                Program.Print(errorMessage);
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = "[ERROR] " + ex.Message;
+
+                if (ex.InnerException != null)
+                    errorMessage += "\n " + ex.InnerException.Message;
+
+                Program.Print(errorMessage);
+            }
         }
     }
 }

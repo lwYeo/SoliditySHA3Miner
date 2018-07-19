@@ -74,6 +74,8 @@ namespace SoliditySHA3Miner.Miner
 
         public bool IsMining => (bool)Solver?.isMining();
 
+        public bool IsPaused => (bool)Solver?.isPaused();
+
         private NetworkInterface.MiningParameters lastMiningParameters;
 
         public void Dispose()
@@ -195,10 +197,17 @@ namespace SoliditySHA3Miner.Miner
                         solver.updateTarget(lastMiningParameters.MiningTargetByte32String);
                         solver.updateDifficulty(lastMiningParameters.MiningDifficulty.HexValue);
 
-                        if (m_failedScanCount > m_pauseOnFailedScan && !Solver.isMining())
+                        if (!NetworkInterface.IsPool &&
+                        ((NetworkInterface.Web3Interface)NetworkInterface).IsChallengedSubmitted(miningParameters.ChallengeNumberByte32String))
+                        {
+                            if (!solver.isPaused()) solver.pauseFinding(true);
+                        }
+                        else if (solver.isPaused()) solver.pauseFinding(false);
+
+                        if (m_failedScanCount > m_pauseOnFailedScan && solver.isPaused())
                         {
                             m_failedScanCount = 0;
-                            Solver.startFinding();
+                            solver.pauseFinding(false);
                         }
                     }
                     catch (Exception ex)
@@ -208,7 +217,7 @@ namespace SoliditySHA3Miner.Miner
                             Program.Print(string.Format("[ERROR] {0}", ex.Message));
 
                             m_failedScanCount += 1;
-                            if (m_failedScanCount > m_pauseOnFailedScan && Solver.isMining()) Solver.stopFinding();
+                            if (m_failedScanCount > m_pauseOnFailedScan && solver.isMining()) solver.pauseFinding(true);
                         }
                         catch (Exception) { }
                     }
@@ -237,8 +246,8 @@ namespace SoliditySHA3Miner.Miner
 
         private void m_openCLSolver_OnSolution(string digest, string address, string challenge, string difficulty, string target, string solution, bool isCustomDifficulty)
         {
-            var updateTask = UpdateMiner(Solver);
             NetworkInterface.SubmitSolution(digest, address, challenge, difficulty, target, solution, isCustomDifficulty);
+            UpdateMiner(Solver).Wait();
         }
 
         private void m_openCLSolver_OnMessage(string platformName, int deviceEnum, string type, string message)

@@ -388,13 +388,17 @@ void CUDASolver::checkInputs(std::unique_ptr<Device>& device)
 void CUDASolver::findSolution(int const deviceID)
 {
 	auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
-	std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
 
 	CudaSafeCall(cudaSetDevice(device->deviceID));
 
 	if (!device->initialized)
 	{
 		onMessage(device->deviceID, "Info", "Initializing device...");
+
+		device->h_Solutions = reinterpret_cast<uint64_t *>(malloc(MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH));
+		device->h_SolutionCount = reinterpret_cast<uint32_t *>(malloc(UINT32_LENGTH));
+		std::memset(device->h_Solutions, 0u, MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH);
+		std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
 
 		CudaSafeCall(cudaDeviceReset());
 		CudaSafeCall(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync | cudaDeviceMapHost));
@@ -418,6 +422,8 @@ void CUDASolver::findSolution(int const deviceID)
 	device->hashStartTime.store(std::chrono::steady_clock::now());
 	do
 	{
+		while (m_pause.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(500)); }
+
 		checkInputs(device);
 
 		if (currentSearchSpace == UINT64_MAX) currentSearchSpace = getNextSearchSpace(device);
@@ -456,7 +462,8 @@ void CUDASolver::findSolution(int const deviceID)
 					uniqueSolutions.emplace(tempSolution);
 			}
 
-			submitSolutions(uniqueSolutions);
+			std::thread t{ &CUDASolver::submitSolutions, this, uniqueSolutions };
+			t.detach();
 
 			std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
 		}
@@ -470,5 +477,7 @@ void CUDASolver::findSolution(int const deviceID)
 	CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
 	CudaSafeCall(cudaFreeHost(device->h_Solutions));
 	CudaSafeCall(cudaDeviceReset());
+
+	device->initialized = false;
 	onMessage(device->deviceID, "Info", "Mining stopped.");
 }

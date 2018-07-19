@@ -44,6 +44,7 @@ private:
 
 	static std::atomic<bool> m_newTarget;
 	static std::atomic<bool> m_newMessage;
+	static std::atomic<bool> m_pause;
 
 	std::string s_address;
 	std::string s_challenge;
@@ -65,6 +66,7 @@ private:
 	std::atomic<uint64_t> m_solutionHashCount;
 	std::atomic<std::chrono::steady_clock::time_point> m_solutionHashStartTime;
 
+	std::mutex m_onSolutionMutex;
 	std::mutex m_checkInputsMutex;
 	std::mutex m_searchSpaceMutex;
 	std::set<byte32_t> m_oldChallenges;
@@ -86,6 +88,7 @@ public:
 	bool isAssigned();
 	bool isAnyInitialised();
 	bool isMining();
+	bool isPaused();
 
 	void updatePrefix(std::string const prefix);
 	void updateTarget(std::string const target);
@@ -94,6 +97,7 @@ public:
 
 	void startFinding();
 	void stopFinding();
+	void pauseFinding(bool pauseFinding);
 
 	uint64_t getTotalHashRate();
 	uint64_t getHashRateByDeviceID(int const deviceID);

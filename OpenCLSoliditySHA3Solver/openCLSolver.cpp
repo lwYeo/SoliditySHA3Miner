@@ -8,6 +8,7 @@
 std::vector<openCLSolver::Platform> openCLSolver::platforms;
 std::atomic<bool> openCLSolver::m_newTarget;
 std::atomic<bool> openCLSolver::m_newMessage;
+std::atomic<bool> openCLSolver::m_pause;
 
 void openCLSolver::preInitialize(bool allowIntel, std::string &errorMessage)
 {
@@ -144,6 +145,7 @@ openCLSolver::openCLSolver(std::string const maxDifficulty) noexcept :
 {
 	m_newTarget.store(false);
 	m_newMessage.store(false);
+	m_pause.store(false);
 
 	m_solutionHashCount.store(0);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
@@ -202,6 +204,11 @@ bool openCLSolver::isMining()
 			return true;
 
 	return false;
+}
+
+bool openCLSolver::isPaused()
+{
+	return openCLSolver::m_pause.load();
 }
 
 bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float const intensity)
@@ -357,7 +364,10 @@ void openCLSolver::startFinding()
 	}
 
 	for (auto& device : m_devices)
+	{
 		device->miningThread = std::thread(&openCLSolver::findSolution, this, device->platformName, device->deviceEnum);
+		device->miningThread.detach();
+	}
 }
 
 void openCLSolver::stopFinding()
@@ -365,17 +375,17 @@ void openCLSolver::stopFinding()
 	using namespace std::chrono_literals;
 
 	for (auto& device : m_devices) device->mining = false;
-
-	for (auto& device : m_devices)
-	{
-		while (!device->miningThread.joinable()) std::this_thread::sleep_for(100ms);
-		device->miningThread.join();
-	}
+	std::this_thread::sleep_for(1s);
 
 	m_newMessage.store(false);
 	m_newTarget.store(false);
 	try { if (m_oldChallenges.size() > 0) m_oldChallenges.clear(); }
 	catch (const std::exception&) {}
+}
+
+void openCLSolver::pauseFinding(bool pauseFinding)
+{
+	m_pause.store(pauseFinding);
 }
 
 // --------------------------------------------------------------------
@@ -404,6 +414,8 @@ const std::string openCLSolver::keccak256(std::string const message)
 
 void openCLSolver::onSolution(byte32_t const solution)
 {
+	std::lock_guard<std::mutex> lock(m_onSolutionMutex);
+
 	prefix_t prefix;
 	std::memcpy(&prefix, &m_miningMessage, PREFIX_LENGTH);
 
@@ -478,10 +490,7 @@ void openCLSolver::submitSolutions(std::set<uint64_t> solutions)
 		byte32_t solution{ m_solution };
 		std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH);
 
-		std::thread t{ &openCLSolver::onSolution, this, solution };
-#ifndef NDEBUG
-		t.join();
-#endif // !NDEBUG
+		onSolution(solution);
 	}
 }
 
@@ -607,6 +616,9 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 	
 	if (!device->initialized) return;
 
+	device->h_Solutions = reinterpret_cast<uint64_t *>(malloc((MAX_SOLUTION_COUNT_DEVICE + 1) * UINT64_LENGTH));
+	std::memset(device->h_Solutions, 0u, (MAX_SOLUTION_COUNT_DEVICE + 1) * UINT64_LENGTH);
+
 	onMessage(device->platformName, device->deviceEnum, "Info", "Start mining...");
 	onMessage(device->platformName, device->deviceEnum, "Debug", "Threads: " + std::to_string(device->globalWorkSize) + " Local work size: " + std::to_string(device->localWorkSize) + " Block size:" + std::to_string(device->globalWorkSize / device->localWorkSize));
 
@@ -623,6 +635,8 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 	device->hashStartTime.store(std::chrono::steady_clock::now());
 	do
 	{
+		while (m_pause.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(500)); }
+
 		checkInputs(device);
 
 		if (currentWorkPosition == UINT64_MAX) currentWorkPosition = getNextSearchSpace(device);
@@ -696,7 +710,8 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 				if (uniqueSolutions.find(tempSolution) == uniqueSolutions.end()) uniqueSolutions.emplace(tempSolution);
 			}
 
-			submitSolutions(uniqueSolutions);
+			std::thread t{ &openCLSolver::submitSolutions, this, uniqueSolutions };
+			t.detach();
 
 			std::memset(device->h_Solutions, 0u, UINT64_LENGTH * (MAX_SOLUTION_COUNT_DEVICE + 1));
 
@@ -717,5 +732,6 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 	clReleaseCommandQueue(device->queue);
 	clReleaseContext(device->context);
 
+	device->initialized = false;
 	onMessage(device->platformName, device->deviceEnum, "Info", "Mining stopped.");
 }
