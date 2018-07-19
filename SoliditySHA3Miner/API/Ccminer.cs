@@ -114,7 +114,7 @@ namespace SoliditySHA3Miner.API
                             {
                                 case "summary":
                                     var gpus = m_miners.SelectMany(m => m.Devices).Count(d => d.DeviceID > -1);
-                                    var khs = m_miners.Sum((m => (long)m.GetTotalHashrate()));
+                                    var khs = m_miners.Sum((m => (long)m.GetTotalHashrate())) / 1000.0M;
                                     var solv = m_miners.Select(m => m.NetworkInterface).Distinct().Sum(i => (long)(i.SubmittedShares));
                                     var rej = m_miners.Select(m => m.NetworkInterface).Distinct().Sum(i => (long)(i.RejectedShares));
                                     var acc = solv - rej;
