@@ -130,6 +130,7 @@
     <ClInclude Include="cpuSolver.h" />
     <ClInclude Include="managed\ManagedObject.h" />
     <ClInclude Include="managed\solver.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="sha3.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="uint256\arith_uint256.h" />
@@ -139,6 +140,9 @@
     <ClInclude Include="uint256\tinyformat.h" />
     <ClInclude Include="uint256\uint256.h" />
     <ClInclude Include="uint256\utilstrencodings.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

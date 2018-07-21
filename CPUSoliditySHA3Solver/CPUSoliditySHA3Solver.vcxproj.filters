@@ -47,6 +47,7 @@
     </ClInclude>
     <ClInclude Include="cpuSolver.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="uint256">
@@ -55,5 +56,8 @@
     <Filter Include="managed">
       <UniqueIdentifier>{5588d206-5f16-4f19-8814-0b68a9a612de}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
 </Project>
