@@ -25,6 +25,8 @@ LTC                             : LbFkAto1qYt8RdTFHL871H4djendcHyCyB
 Usage: SoliditySHA3Miner [OPTIONS]
 Options:
   help                    Display this help text and exit
+  cpuMode                 Set this miner to run in CPU mode only, disables GPU (default: false)
+  cpuID                   Comma separated list of CPU thread ID to use (default: all logical CPUs)
   allowIntel              Allow to use Intel GPU (OpenCL) (default: true)
   allowAMD                Allow to use AMD GPU (OpenCL) (default: true)
   allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)
@@ -47,6 +49,7 @@ Options:
   contract                Token contract address (default: 0xbtc contract address)
   hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: 30000)
   networkUpdateInterval   Interval (miliseconds) to scan for new work (default: 15000)
+  kingAddress             Add MiningKing address to nounce (default: none)
   address                 (Pool only) Miner's ethereum address (default: developer's address)
   privateKey              (Solo only) Miner's private key
   gasToMine               (Solo only) Gas price to mine in GWei

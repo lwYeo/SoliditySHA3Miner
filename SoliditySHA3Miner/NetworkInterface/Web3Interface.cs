@@ -117,8 +117,16 @@ namespace SoliditySHA3Miner.NetworkInterface
                 var transactionID = string.Empty;
                 var gasLimit = new HexBigInteger(1704624ul);
                 var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasToMine), UnitConversion.EthUnit.Gwei));
-                var dataInput = new object[] { new HexBigInteger(solution).Value, HexByteConvertorExtensions.HexToByteArray(digest) };
 
+                var oSolution = new BigInteger(new HexBigInteger(solution).ToHexByteArray().Reverse().ToArray());
+                // Note: do not directly use -> new HexBigInteger(solution).Value
+                //Because two's complement representation always interprets the highest-order bit of the last byte in the array
+                //(the byte at position Array.Length- 1) as the sign bit,
+                //the method returns a byte array with an extra element whose value is zero
+                //to disambiguate positive values that could otherwise be interpreted as having their sign bits set.
+
+                var dataInput = new object[] { oSolution, HexByteConvertorExtensions.HexToByteArray(digest) };
+                
                 while (string.IsNullOrWhiteSpace(transactionID))
                 {
                     try

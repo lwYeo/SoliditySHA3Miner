@@ -97,7 +97,6 @@ private:
 
 	std::mutex m_checkInputsMutex;
 	std::mutex m_searchSpaceMutex;
-	std::set<byte32_t> m_oldChallenges;
 	std::thread m_runThread;
 
 public:

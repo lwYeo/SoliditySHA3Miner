@@ -199,13 +199,7 @@ void CUDASolver::updatePrefix(std::string const prefix)
 
 	byte32_t oldChallenge;
 	std::memcpy(&oldChallenge, &m_prefix, UINT256_LENGTH);
-
-	if ((m_oldChallenges.find(oldChallenge) != m_oldChallenges.end()) || m_oldChallenges.size() == 0)
-		m_oldChallenges.emplace(oldChallenge);
-
-	while (m_oldChallenges.size() > 100)
-		m_oldChallenges.erase(m_oldChallenges.begin());
-
+	
 	std::memcpy(&m_prefix, &tempPrefix, PREFIX_LENGTH);
 
 	m_newMessage.store(true);
@@ -278,8 +272,6 @@ void CUDASolver::stopFinding()
 
 	m_newMessage.store(false);
 	m_newTarget.store(false);
-	try { if (m_oldChallenges.size() > 0) m_oldChallenges.clear(); }
-	catch (const std::exception&) {}
 }
 
 void CUDASolver::pauseFinding(bool pauseFinding)
@@ -336,13 +328,16 @@ const std::string CUDASolver::keccak256(std::string const message)
 
 void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 {
-	if (!isSubmitStale && challenge != s_challenge) return;
+	if (!isSubmitStale && challenge != s_challenge)
+		return;
+	else if (isSubmitStale && challenge != s_challenge)
+		onMessage(-1, "Warn", "Found stale solution, verifying...");
+	else
+		onMessage(-1, "Info", "Found solution, verifying...");
 
 	prefix_t prefix;
 	std::memcpy(&prefix, &m_miningMessage, PREFIX_LENGTH);
 	
-	onMessage(-1, "Info", "Found solution, verifying...");
-
 	byte32_t emptySolution;
 	std::memset(&emptySolution, 0u, UINT256_LENGTH);
 	if (solution == emptySolution)
@@ -363,34 +358,6 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 
 	if (digest >= m_target)
 	{
-		for (byte32_t oldChallenge : m_oldChallenges)
-		{
-			std::string oldDigest = keccak256(bytesToHexString(oldChallenge) + bytesToHexString(m_address) + solutionStr);
-			arith_uint256 oldDigest_b = arith_uint256(oldDigest);
-			if (oldDigest_b < m_target)
-			{
-				if (isSubmitStale)
-				{
-					onMessage(-1, "Warn", "Verified stale solution, submitting"
-						+ std::string("\nChallenge: ") + challenge
-						+ "\nAddress: " + s_address
-						+ "\nSolution: 0x" + solutionStr
-						+ "\nDigest: 0x" + digestStr
-						+ "\nTarget: " + s_target);
-					m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_difficulty.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str(), m_customDifficulty > 0u);
-				}
-				else
-				{
-					onMessage(-1, "Error", "Verification failed: stale solution"
-						+ std::string("\nChallenge: ") + challenge
-						+ "\nAddress: " + s_address
-						+ "\nSolution: 0x" + solutionStr
-						+ "\nDigest: 0x" + digestStr
-						+ "\nTarget: " + s_target);
-				}
-				return;
-			}
-		}
 		onMessage(-1, "Error", "Verification failed: invalid solution"
 			+ std::string("\nChallenge: ") + challenge
 			+ "\nAddress: " + s_address
@@ -407,14 +374,15 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 
 void CUDASolver::submitSolutions(std::set<uint64_t> solutions)
 {
-	auto currentChallenge{ s_challenge };
+	char *c_currentChallenge = (char *)malloc(s_challenge.size());
+	strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
 
 	for (uint64_t midStateSolution : solutions)
 	{
 		byte32_t solution{ m_solution };
 		std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH);
 
-		onSolution(solution, currentChallenge);
+		onSolution(solution, c_currentChallenge);
 	}
 }
 

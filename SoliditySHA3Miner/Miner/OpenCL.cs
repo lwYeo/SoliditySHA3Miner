@@ -62,6 +62,8 @@ namespace SoliditySHA3Miner.Miner
 
         public Solver Solver { get; }
 
+        private NetworkInterface.MiningParameters lastMiningParameters;
+
         #region IMiner
 
         public NetworkInterface.INetworkInterface NetworkInterface { get; }
@@ -75,8 +77,6 @@ namespace SoliditySHA3Miner.Miner
         public bool IsMining => (bool)Solver?.isMining();
 
         public bool IsPaused => (bool)Solver?.isPaused();
-
-        private NetworkInterface.MiningParameters lastMiningParameters;
 
         public void Dispose()
         {
@@ -161,6 +161,7 @@ namespace SoliditySHA3Miner.Miner
                     OnMessageHandler = m_openCLSolver_OnMessage,
                     OnSolutionHandler = m_openCLSolver_OnSolution
                 };
+
                 if (customDifficulty > 0u) Solver.setCustomDifficulty(customDifficulty);
                 Solver.setSubmitStale(isSubmitStale);
 

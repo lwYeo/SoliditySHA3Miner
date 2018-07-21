@@ -140,3 +140,5 @@ x64/Release/ATA.abi
 x64/Release/SKO.abi
 x64/Debug/0xbtcSolo.bat
 x64/Release/0xbtcSolo.bat
+x64/Debug/CPUSoliditySHA3Solver.dll
+x64/Release/CPUSoliditySHA3Solver.dll
