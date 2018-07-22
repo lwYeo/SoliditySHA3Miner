@@ -5,6 +5,24 @@ namespace OpenCLSolver
 	Solver::Solver(System::String ^maxDifficulty, System::String ^solutionTemplate, System::String ^kingAddress) :
 		ManagedObject(new openCLSolver(ToNativeString(maxDifficulty), ToNativeString(solutionTemplate), ToNativeString(kingAddress)))
 	{
+		m_managedOnGetWorkPosition = gcnew OnGetWorkPositionDelegate(this, &Solver::OnGetWorkPosition);
+		System::IntPtr getWorkPositionStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetWorkPosition);
+		openCLSolver::GetWorkPositionCallback getWorkPositionFnPtr = static_cast<openCLSolver::GetWorkPositionCallback>(getWorkPositionStubPtr.ToPointer());
+		m_Instance->setGetWorkPositionCallback(getWorkPositionFnPtr);
+		System::GC::KeepAlive(m_managedOnGetWorkPosition);
+
+		m_managedOnResetWorkPosition = gcnew OnResetWorkPositionDelegate(this, &Solver::OnResetWorkPosition);
+		System::IntPtr resetWorkPositionStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnResetWorkPosition);
+		openCLSolver::ResetWorkPositionCallback resetWorkPositionFnPtr = static_cast<openCLSolver::ResetWorkPositionCallback>(resetWorkPositionStubPtr.ToPointer());
+		m_Instance->setResetWorkPositionCallback(resetWorkPositionFnPtr);
+		System::GC::KeepAlive(m_managedOnResetWorkPosition);
+
+		m_managedOnIncrementWorkPosition = gcnew OnIncrementWorkPositionDelegate(this, &Solver::OnIncrementWorkPosition);
+		System::IntPtr incrementWorkPositionStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnIncrementWorkPosition);
+		openCLSolver::IncrementWorkPositionCallback incrementWorkPositionFnPtr = static_cast<openCLSolver::IncrementWorkPositionCallback>(incrementWorkPositionStubPtr.ToPointer());
+		m_Instance->setIncrementWorkPositionCallback(incrementWorkPositionFnPtr);
+		System::GC::KeepAlive(m_managedOnIncrementWorkPosition);
+
 		m_managedOnMessage = gcnew OnMessageDelegate(this, &Solver::OnMessage);
 		System::IntPtr messageStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnMessage);
 		openCLSolver::MessageCallback messageFnPtr = static_cast<openCLSolver::MessageCallback>(messageStubPtr.ToPointer());
@@ -32,7 +50,7 @@ namespace OpenCLSolver
 		errorMessage = ToManagedString(errMsg);
 	}
 
-	System::String ^ Solver::getPlatformNames()
+	System::String ^Solver::getPlatformNames()
 	{
 		std::string platformName;
 		platformName = openCLSolver::getPlatformNames();
@@ -49,7 +67,7 @@ namespace OpenCLSolver
 		return devCount;
 	}
 
-	System::String^ Solver::getDeviceName(System::String ^platformName, int deviceEnum, System::String ^%errorMessage)
+	System::String ^Solver::getDeviceName(System::String ^platformName, int deviceEnum, System::String ^%errorMessage)
 	{
 		std::string errMsg, devName;
 		devName = openCLSolver::getDeviceName(ToNativeString(platformName), deviceEnum, errMsg);
@@ -133,7 +151,22 @@ namespace OpenCLSolver
 		return m_Instance->getHashRateByDevice(ToNativeString(platformName), deviceID);
 	}
 
-	void Solver::OnMessage(System::String ^ platformName, int deviceID, System::String ^type, System::String ^message)
+	void Solver::OnGetWorkPosition(unsigned __int64 %workPosition)
+	{
+		OnGetWorkPositionHandler(workPosition);
+	}
+
+	void Solver::OnResetWorkPosition(unsigned __int64 %lastPosition)
+	{
+		OnResetWorkPositionHandler(lastPosition);
+	}
+
+	void Solver::OnIncrementWorkPosition(unsigned __int64 %lastPosition, unsigned __int64 increment)
+	{
+		OnIncrementWorkPositionHandler(lastPosition, increment);
+	}
+
+	void Solver::OnMessage(System::String ^platformName, int deviceID, System::String ^type, System::String ^message)
 	{
 		OnMessageHandler(platformName, deviceID, type, message);
 	}

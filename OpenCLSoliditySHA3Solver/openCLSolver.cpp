@@ -31,7 +31,7 @@ void openCLSolver::preInitialize(bool allowIntel, std::string &errorMessage)
 		return;
 	}
 
-	for (unsigned int i{ 0 }; i < numPlatforms; i++)
+	for (unsigned int i{ 0 }; i < numPlatforms; ++i)
 	{
 		char platformNameBuf[256];
 		status = clGetPlatformInfo(tempPlatforms[i], CL_PLATFORM_NAME, sizeof(platformNameBuf), platformNameBuf, NULL);
@@ -147,7 +147,6 @@ openCLSolver::openCLSolver(std::string const maxDifficulty, std::string solution
 	m_newMessage.store(false);
 	m_pause.store(false);
 
-	m_solutionHashCount.store(0);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
 	hexStringToBytes(solutionTemplate, m_solutionTemplate);
@@ -156,6 +155,21 @@ openCLSolver::openCLSolver(std::string const maxDifficulty, std::string solution
 openCLSolver::~openCLSolver() noexcept
 {
 	stopFinding();
+}
+
+void openCLSolver::setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback)
+{
+	m_getWorkPositionCallback = workPositionCallback;
+}
+
+void openCLSolver::setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback)
+{
+	m_resetWorkPositionCallback = resetWorkPositionCallback;
+}
+
+void openCLSolver::setIncrementWorkPositionCallback(IncrementWorkPositionCallback incrementWorkPositionCallback)
+{
+	m_incrementWorkPositionCallback = incrementWorkPositionCallback;
 }
 
 void openCLSolver::setMessageCallback(MessageCallback messageCallback)
@@ -330,7 +344,8 @@ void openCLSolver::startFinding()
 {
 	using namespace std::chrono_literals;
 
-	m_solutionHashCount.store(0ull);
+	uint64_t lastPosition;
+	resetWorkPosition(lastPosition);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
 	for (auto& device : m_devices)
@@ -372,6 +387,21 @@ void openCLSolver::pauseFinding(bool pauseFinding)
 // --------------------------------------------------------------------
 // Private
 // --------------------------------------------------------------------
+
+void openCLSolver::getWorkPosition(uint64_t &workPosition)
+{
+	m_getWorkPositionCallback(workPosition);
+}
+
+void openCLSolver::resetWorkPosition(uint64_t &lastPosition)
+{
+	m_resetWorkPositionCallback(lastPosition);
+}
+
+void openCLSolver::incrementWorkPosition(uint64_t &lastPosition, uint64_t increment)
+{
+	m_incrementWorkPositionCallback(lastPosition, increment);
+}
 
 void openCLSolver::onMessage(std::string platformName, int deviceEnum, std::string type, std::string message)
 {
@@ -502,12 +532,14 @@ const state_t openCLSolver::getMidState(message_t &newMessage)
 	return midState;
 }
 
-uint64_t openCLSolver::getNextSearchSpace(std::unique_ptr<Device>& device)
+uint64_t openCLSolver::getNextWorkPosition(std::unique_ptr<Device>& device)
 {
 	std::lock_guard<std::mutex> lock(m_searchSpaceMutex);
 
 	device->hashCount += device->globalWorkSize;
-	return m_solutionHashCount.fetch_add(device->globalWorkSize);
+	uint64_t lastPosition;
+	incrementWorkPosition(lastPosition, device->globalWorkSize);
+	return lastPosition;
 }
 
 void openCLSolver::pushTarget()
@@ -552,7 +584,8 @@ void openCLSolver::checkInputs(std::unique_ptr<Device>& device, char *currentCha
 				device->hashStartTime.store(std::chrono::steady_clock::now());
 			}
 		}
-		m_solutionHashCount.store(0ull);
+		uint64_t lastPosition;
+		resetWorkPosition(lastPosition);
 		m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
 		if (m_newTarget.load()) pushTarget();
@@ -602,7 +635,7 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 
 		checkInputs(device, c_currentChallenge);
 
-		if (currentWorkPosition == UINT64_MAX) currentWorkPosition = getNextSearchSpace(device);
+		if (currentWorkPosition == UINT64_MAX) currentWorkPosition = getNextWorkPosition(device);
 		
 		device->status = clSetKernelArg(device->kernel, 3u, UINT64_LENGTH, (void *)&currentWorkPosition);
 		if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error setting work positon buffer to kernel (" } + Device::getOpenCLErrorCodeStr(device->status) + ")...");
@@ -667,7 +700,7 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 
 			std::set<uint64_t> uniqueSolutions;
 
-			for (int32_t i{ 1 }; i < (MAX_SOLUTION_COUNT_DEVICE + 1) && i < solutionCount.int_t; i++)
+			for (int32_t i{ 1 }; i < (MAX_SOLUTION_COUNT_DEVICE + 1) && i < solutionCount.int_t; ++i)
 			{
 				uint64_t const tempSolution{ device->h_Solutions[i] };
 				if (tempSolution != 0u && uniqueSolutions.find(tempSolution) == uniqueSolutions.end())

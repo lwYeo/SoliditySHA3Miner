@@ -369,7 +369,8 @@ void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChall
 				device->hashStartTime.store(std::chrono::steady_clock::now());
 			}
 		}
-		m_solutionHashCount.store(0ull);
+		uint64_t lastPosition;
+		resetWorkPosition(lastPosition);
 		m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
 		if (m_newTarget.load()) pushTarget();
@@ -414,7 +415,7 @@ void CUDASolver::findSolution(int const deviceID)
 		device->initialized = true;
 	}
 
-	uint64_t currentSearchSpace = UINT64_MAX;
+	uint64_t currentWorkPosition = UINT64_MAX;
 	char *c_currentChallenge = (char *)malloc(s_challenge.size());
 	strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
 
@@ -430,14 +431,14 @@ void CUDASolver::findSolution(int const deviceID)
 
 		checkInputs(device, c_currentChallenge);
 
-		if (currentSearchSpace == UINT64_MAX) currentSearchSpace = getNextSearchSpace(device);
+		if (currentWorkPosition == UINT64_MAX) currentWorkPosition = getNextWorkPosition(device);
 
-		cuda_mine<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, currentSearchSpace);
+		cuda_mine<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, currentWorkPosition);
 
 		CudaCheckError();
 
 		cudaError_t response = cudaDeviceSynchronize();
-		if (response == cudaSuccess) currentSearchSpace = UINT64_MAX;
+		if (response == cudaSuccess) currentWorkPosition = UINT64_MAX;
 		else
 		{
 			std::string cudaErrors;
@@ -458,7 +459,7 @@ void CUDASolver::findSolution(int const deviceID)
 		{
 			std::set<uint64_t> uniqueSolutions;
 
-			for (uint32_t i{ 0u }; i < MAX_SOLUTION_COUNT_DEVICE && i < *device->h_SolutionCount; i++)
+			for (uint32_t i{ 0u }; i < MAX_SOLUTION_COUNT_DEVICE && i < *device->h_SolutionCount; ++i)
 			{
 				uint64_t const tempSolution{ device->h_Solutions[i] };
 

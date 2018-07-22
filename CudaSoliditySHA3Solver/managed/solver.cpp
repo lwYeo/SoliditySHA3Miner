@@ -2,9 +2,27 @@
 
 namespace CudaSolver
 {
-	Solver::Solver(System::String^ maxDifficulty, System::String ^solutionTemplate, System::String ^kingAddress) :
+	Solver::Solver(System::String ^maxDifficulty, System::String ^solutionTemplate, System::String ^kingAddress) :
 		ManagedObject(new CUDASolver(ToNativeString(maxDifficulty), ToNativeString(solutionTemplate), ToNativeString(kingAddress)))
 	{
+		m_managedOnGetWorkPosition = gcnew OnGetWorkPositionDelegate(this, &Solver::OnGetWorkPosition);
+		System::IntPtr getWorkPositionStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetWorkPosition);
+		CUDASolver::GetWorkPositionCallback getWorkPositionFnPtr = static_cast<CUDASolver::GetWorkPositionCallback>(getWorkPositionStubPtr.ToPointer());
+		m_Instance->setGetWorkPositionCallback(getWorkPositionFnPtr);
+		System::GC::KeepAlive(m_managedOnGetWorkPosition);
+
+		m_managedOnResetWorkPosition = gcnew OnResetWorkPositionDelegate(this, &Solver::OnResetWorkPosition);
+		System::IntPtr resetWorkPositionStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnResetWorkPosition);
+		CUDASolver::ResetWorkPositionCallback resetWorkPositionFnPtr = static_cast<CUDASolver::ResetWorkPositionCallback>(resetWorkPositionStubPtr.ToPointer());
+		m_Instance->setResetWorkPositionCallback(resetWorkPositionFnPtr);
+		System::GC::KeepAlive(m_managedOnResetWorkPosition);
+
+		m_managedOnIncrementWorkPosition = gcnew OnIncrementWorkPositionDelegate(this, &Solver::OnIncrementWorkPosition);
+		System::IntPtr incrementWorkPositionStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnIncrementWorkPosition);
+		CUDASolver::IncrementWorkPositionCallback incrementWorkPositionFnPtr = static_cast<CUDASolver::IncrementWorkPositionCallback>(incrementWorkPositionStubPtr.ToPointer());
+		m_Instance->setIncrementWorkPositionCallback(incrementWorkPositionFnPtr);
+		System::GC::KeepAlive(m_managedOnIncrementWorkPosition);
+
 		m_managedOnMessage = gcnew OnMessageDelegate(this, &Solver::OnMessage);
 		System::IntPtr messageStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnMessage);
 		CUDASolver::MessageCallback messageFnPtr = static_cast<CUDASolver::MessageCallback>(messageStubPtr.ToPointer());
@@ -24,7 +42,7 @@ namespace CudaSolver
 		catch(...) {}
 	}
 
-	int Solver::getDeviceCount(System::String^% errorMessage)
+	int Solver::getDeviceCount(System::String ^%errorMessage)
 	{
 		std::string errMsg;
 		int devCount = CUDASolver::getDeviceCount(errMsg);
@@ -33,7 +51,7 @@ namespace CudaSolver
 		return devCount;
 	}
 
-	System::String^ Solver::getDeviceName(int deviceID, System::String^% errorMessage)
+	System::String ^Solver::getDeviceName(int deviceID, System::String ^%errorMessage)
 	{
 		std::string errMsg, devName;
 		devName = CUDASolver::getDeviceName(deviceID, errMsg);
@@ -77,17 +95,17 @@ namespace CudaSolver
 		return m_Instance->isPaused();
 	}
 
-	void Solver::updatePrefix(System::String^ prefix)
+	void Solver::updatePrefix(System::String ^prefix)
 	{
 		m_Instance->updatePrefix(ToNativeString(prefix));
 	}
 
-	void Solver::updateTarget(System::String^ target)
+	void Solver::updateTarget(System::String ^target)
 	{
 		m_Instance->updateTarget(ToNativeString(target));
 	}
 
-	void Solver::updateDifficulty(System::String^ difficulty)
+	void Solver::updateDifficulty(System::String ^difficulty)
 	{
 		m_Instance->updateDifficulty(ToNativeString(difficulty));
 	}
@@ -117,12 +135,27 @@ namespace CudaSolver
 		return m_Instance->getHashRateByDeviceID(deviceID);
 	}
 
-	void Solver::OnMessage(int deviceID, System::String^ type, System::String^ message)
+	void Solver::OnGetWorkPosition(unsigned __int64 %workPosition)
+	{
+		OnGetWorkPositionHandler(workPosition);
+	}
+
+	void Solver::OnResetWorkPosition(unsigned __int64 %lastPosition)
+	{
+		OnResetWorkPositionHandler(lastPosition);
+	}
+
+	void Solver::OnIncrementWorkPosition(unsigned __int64 %lastPosition, unsigned __int64 increment)
+	{
+		OnIncrementWorkPositionHandler(lastPosition, increment);
+	}
+
+	void Solver::OnMessage(int deviceID, System::String ^type, System::String ^message)
 	{
 		OnMessageHandler(deviceID, type, message);
 	}
 
-	void Solver::OnSolution(System::String^ digest, System::String^ address, System::String^ challenge, System::String^ difficulty, System::String^ target, System::String^ solution, bool isCustomDifficulty)
+	void Solver::OnSolution(System::String ^digest, System::String ^address, System::String ^challenge, System::String ^difficulty, System::String ^target, System::String ^solution, bool isCustomDifficulty)
 	{
 		OnSolutionHandler(digest, address, challenge, difficulty, target, solution, isCustomDifficulty);
 	}

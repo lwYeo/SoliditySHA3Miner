@@ -4,26 +4,35 @@
 
 namespace CudaSolver
 {
-	public delegate void OnMessageDelegate(int, System::String^, System::String^);
-	public delegate void OnSolutionDelegate(System::String^, System::String^, System::String^, System::String^, System::String^, System::String^, bool);
-
 	public ref class Solver : public ManagedObject<CUDASolver>
 	{
 	public:
-		OnMessageDelegate ^ OnMessageHandler;
-		OnSolutionDelegate ^ OnSolutionHandler;
+		delegate void OnGetWorkPositionDelegate(unsigned __int64 %);
+		delegate void OnResetWorkPositionDelegate(unsigned __int64 %);
+		delegate void OnIncrementWorkPositionDelegate(unsigned __int64 %, unsigned __int64);
+		delegate void OnMessageDelegate(int, System::String ^, System::String ^);
+		delegate void OnSolutionDelegate(System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, bool);
+
+		OnGetWorkPositionDelegate ^OnGetWorkPositionHandler;
+		OnResetWorkPositionDelegate ^OnResetWorkPositionHandler;
+		OnIncrementWorkPositionDelegate ^OnIncrementWorkPositionHandler;
+		OnMessageDelegate ^OnMessageHandler;
+		OnSolutionDelegate ^OnSolutionHandler;
 
 	private:
-		OnMessageDelegate ^ m_managedOnMessage;
-		OnSolutionDelegate ^ m_managedOnSolution;
+		OnGetWorkPositionDelegate ^m_managedOnGetWorkPosition;
+		OnResetWorkPositionDelegate ^m_managedOnResetWorkPosition;
+		OnIncrementWorkPositionDelegate ^m_managedOnIncrementWorkPosition;
+		OnMessageDelegate ^m_managedOnMessage;
+		OnSolutionDelegate ^m_managedOnSolution;
 
 	public:
-		static int getDeviceCount(System::String^% errorMessage);
-		static System::String^ getDeviceName(int deviceID, System::String^% errorMessage);
+		static int getDeviceCount(System::String ^%errorMessage);
+		static System::String ^getDeviceName(int deviceID, System::String ^%errorMessage);
 
 	public:
 		// require web3 contract getMethod -> _MAXIMUM_TARGET
-		Solver(System::String^ maxDifficulty, System::String ^solutionTemplate, System::String ^kingAddress);
+		Solver(System::String ^maxDifficulty, System::String ^solutionTemplate, System::String ^kingAddress);
 		~Solver();
 
 		void setCustomDifficulty(uint32_t customDifficulty);
@@ -35,11 +44,11 @@ namespace CudaSolver
 		bool isPaused();
 
 		// must be in challenge (byte32) + address (byte20) hexadecimal format with "0x" prefix
-		void updatePrefix(System::String^ prefix);
+		void updatePrefix(System::String ^prefix);
 		// must be in byte32 hexadecimal format with "0x" prefix
-		void updateTarget(System::String^ target);
+		void updateTarget(System::String ^target);
 		// can be in either numeric or hexadecimal format
-		void updateDifficulty(System::String^ difficulty);
+		void updateDifficulty(System::String ^difficulty);
 
 		void startFinding();
 		void stopFinding();
@@ -51,7 +60,10 @@ namespace CudaSolver
 		uint64_t getHashRateByDeviceID(int const deviceID);
 
 	private:
-		void OnMessage(int deviceID, System::String^ type, System::String^ message);
-		void OnSolution(System::String^ digest, System::String^ address, System::String^ challenge, System::String^ difficulty, System::String^ target, System::String^ solution, bool isCustomDifficulty);
+		void OnGetWorkPosition(unsigned __int64 %workPosition);
+		void OnResetWorkPosition(unsigned __int64 %lastPosition);
+		void OnIncrementWorkPosition(unsigned __int64 %lastPosition, unsigned __int64 increment);
+		void OnMessage(int deviceID, System::String ^type, System::String ^message);
+		void OnSolution(System::String ^digest, System::String ^address, System::String ^challenge, System::String ^difficulty, System::String ^target, System::String ^solution, bool isCustomDifficulty);
 	};
 }

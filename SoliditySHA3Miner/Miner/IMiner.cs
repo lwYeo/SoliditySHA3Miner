@@ -19,6 +19,35 @@ namespace SoliditySHA3Miner.Miner
         long GetDifficulty();
     }
 
+    public static class Work
+    {
+        private static ulong m_Position = 0;
+        private static readonly object m_positionLock = new object();
+
+        public static void GetPosition(ref ulong workPosition)
+        {
+            lock (m_positionLock) { workPosition = m_Position; }
+        }
+
+        public static void ResetPosition(ref ulong lastPosition)
+        {
+            lock (m_positionLock)
+            {
+                lastPosition = m_Position;
+                m_Position = 0u;
+            }
+        }
+
+        public static void IncrementPosition(ref ulong lastPosition, ulong increment)
+        {
+            lock (m_positionLock)
+            {
+                lastPosition = m_Position;
+                m_Position += increment;
+            }
+        }
+    }
+
     public struct Device
     {
         public string Type;

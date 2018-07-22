@@ -617,17 +617,17 @@ namespace SoliditySHA3Miner
                 m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, solutionTemplate, kingAddress,
                                              tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
-                if (m_cudaMiner.HasAssignedDevices) m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                                                            hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
-
                 m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), solutionTemplate, kingAddress,
                                                  tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
-                if (m_openCLMiner.HasAssignedDevices) m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                                                                hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
-                
                 m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, solutionTemplate, kingAddress,
                                            tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
+
+                if (m_cudaMiner.HasAssignedDevices) m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
+                                                                            hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+
+                if (m_openCLMiner.HasAssignedDevices) m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
+                                                                                hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
 
                 if (m_cpuMiner.HasAssignedDevices) m_cpuMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
                                                                           hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);

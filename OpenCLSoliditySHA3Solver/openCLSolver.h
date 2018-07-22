@@ -47,6 +47,9 @@
 class openCLSolver
 {
 public:
+	typedef void(*GetWorkPositionCallback)(uint64_t &);
+	typedef void(*ResetWorkPositionCallback)(uint64_t &);
+	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
 	typedef void(*MessageCallback)(const char*, int, const char*, const char*);
 	typedef void(*SolutionCallback)(const char*, const char*, const char*, const char*, const char*, const char*, bool);
 	typedef struct { cl_platform_id id; std::string name; } Platform;
@@ -67,7 +70,9 @@ public:
 private:
 	static std::vector<Platform> platforms;
 
-private:
+	GetWorkPositionCallback m_getWorkPositionCallback;
+	ResetWorkPositionCallback m_resetWorkPositionCallback;
+	IncrementWorkPositionCallback m_incrementWorkPositionCallback;
 	MessageCallback m_messageCallback;
 	SolutionCallback m_solutionCallback;
 	std::vector<std::unique_ptr<Device>> m_devices;
@@ -93,7 +98,6 @@ private:
 	arith_uint256 m_maxDifficulty;
 	arith_uint256 m_customDifficulty;
 
-	std::atomic<uint64_t> m_solutionHashCount;
 	std::atomic<std::chrono::steady_clock::time_point> m_solutionHashStartTime;
 
 	std::mutex m_checkInputsMutex;
@@ -105,6 +109,9 @@ public:
 	openCLSolver(std::string const maxDifficulty, std::string solutionTemplate, std::string kingAddress) noexcept;
 	~openCLSolver() noexcept;
 
+	void setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback);
+	void setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback);
+	void setIncrementWorkPositionCallback(IncrementWorkPositionCallback incrementWorkPositionCallback);
 	void setMessageCallback(MessageCallback messageCallback);
 	void setSolutionCallback(SolutionCallback solutionCallback);
 
@@ -127,10 +134,13 @@ public:
 	void pauseFinding(bool pauseFinding);
 
 private:
+	void getWorkPosition(uint64_t &workPosition);
+	void resetWorkPosition(uint64_t &lastPosition);
+	void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);
 	void onMessage(std::string platformName, int deviceEnum, std::string type, std::string message);
+	void onSolution(byte32_t const solution, std::string challenge);
 
 	const std::string keccak256(std::string const message); // for CPU verification
-	void onSolution(byte32_t const solution, std::string challenge);
 
 	void findSolution(std::string platformName, int const deviceEnum);
 	void checkInputs(std::unique_ptr<Device> &device, char *currentChallenge);
@@ -138,6 +148,6 @@ private:
 	void pushMessage();
 	void submitSolutions(std::set<uint64_t> solutions, std::string challenge);
 
-	uint64_t getNextSearchSpace(std::unique_ptr<Device>& device);
+	uint64_t getNextWorkPosition(std::unique_ptr<Device>& device);
 	const state_t getMidState(message_t &newMessage);
 };

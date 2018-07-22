@@ -64,7 +64,6 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemp
 	m_newMessage.store(false);
 	m_pause.store(false);
 
-	m_solutionHashCount.store(0);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
 	hexStringToBytes(solutionTemplate, m_solutionTemplate);
@@ -73,6 +72,21 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemp
 CUDASolver::~CUDASolver() noexcept
 {
 	stopFinding();
+}
+
+void CUDASolver::setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback)
+{
+	m_getWorkPositionCallback = workPositionCallback;
+}
+
+void CUDASolver::setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback)
+{
+	m_resetWorkPositionCallback = resetWorkPositionCallback;
+}
+
+void CUDASolver::setIncrementWorkPositionCallback(IncrementWorkPositionCallback incrementWorkPositionCallback)
+{
+	m_incrementWorkPositionCallback = incrementWorkPositionCallback;
 }
 
 void CUDASolver::setMessageCallback(MessageCallback messageCallback)
@@ -240,7 +254,8 @@ void CUDASolver::startFinding()
 {
 	using namespace std::chrono_literals;
 
-	m_solutionHashCount.store(0ull);
+	uint64_t lastPosition;
+	resetWorkPosition(lastPosition);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
 	while (!(m_newTarget.load() || m_newMessage.load())) { std::this_thread::sleep_for(100ms); }
@@ -290,6 +305,21 @@ uint64_t CUDASolver::getHashRateByDeviceID(int const deviceID)
 // --------------------------------------------------------------------
 // Private
 // --------------------------------------------------------------------
+
+void CUDASolver::getWorkPosition(uint64_t &workPosition)
+{
+	m_getWorkPositionCallback(workPosition);
+}
+
+void CUDASolver::resetWorkPosition(uint64_t &lastPosition)
+{
+	m_resetWorkPositionCallback(lastPosition);
+}
+
+void CUDASolver::incrementWorkPosition(uint64_t &lastPosition, uint64_t increment)
+{
+	m_incrementWorkPositionCallback(lastPosition, increment);
+}
 
 void CUDASolver::onMessage(int deviceID, const char* type, const char* message)
 {
@@ -376,12 +406,14 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string chall
 	}
 }
 
-uint64_t CUDASolver::getNextSearchSpace(std::unique_ptr<Device>& device)
+uint64_t CUDASolver::getNextWorkPosition(std::unique_ptr<Device>& device)
 {
 	std::lock_guard<std::mutex> lock(m_searchSpaceMutex);
 
 	device->hashCount += device->threads();
-	return m_solutionHashCount.fetch_add(device->threads());
+	uint64_t lastPosition;
+	incrementWorkPosition(lastPosition, device->threads());
+	return lastPosition;
 }
 
 const state_t CUDASolver::getMidState(message_t &newMessage)

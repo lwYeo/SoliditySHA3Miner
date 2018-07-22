@@ -59,13 +59,13 @@ namespace SoliditySHA3Miner.Miner
 
         public Device[] Devices { get; }
 
-        public bool HasAssignedDevices => (bool)Solver?.isAssigned();
+        public bool HasAssignedDevices => Solver == null ? false : Solver.isAssigned();
 
-        public bool IsAnyInitialised => (bool)Solver?.isAnyInitialised();
+        public bool IsAnyInitialised => Solver == null ? false : Solver.isAnyInitialised();
 
-        public bool IsMining => (bool)Solver?.isMining();
+        public bool IsMining => Solver == null ? false : Solver.isMining();
 
-        public bool IsPaused => (bool)Solver?.isPaused();
+        public bool IsPaused => Solver == null ? false : Solver.isPaused();
 
         public void StartMining(int networkUpdateInterval, int hashratePrintInterval)
         {
@@ -147,6 +147,9 @@ namespace SoliditySHA3Miner.Miner
 
                 Solver = new Solver(maxDifficulty.HexValue, solutionTemplate, kingAddress)
                 {
+                    OnGetWorkPositionHandler = Work.GetPosition,
+                    OnResetWorkPositionHandler = Work.ResetPosition,
+                    OnIncrementWorkPositionHandler = Work.IncrementPosition,
                     OnMessageHandler = m_cudaSolver_OnMessage,
                     OnSolutionHandler = m_cudaSolver_OnSolution
                 };

@@ -4,24 +4,33 @@
 
 namespace OpenCLSolver
 {
-	public delegate void OnMessageDelegate(System::String ^, int, System::String ^, System::String ^);
-	public delegate void OnSolutionDelegate(System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, bool);
-
 	public ref class Solver : public ManagedObject<openCLSolver>
 	{
 	public:
-		OnMessageDelegate ^ OnMessageHandler;
-		OnSolutionDelegate ^ OnSolutionHandler;
+		delegate void OnGetWorkPositionDelegate(unsigned __int64 %);
+		delegate void OnResetWorkPositionDelegate(unsigned __int64 %);
+		delegate void OnIncrementWorkPositionDelegate(unsigned __int64 %, unsigned __int64);
+		delegate void OnMessageDelegate(System::String ^, int, System::String ^, System::String ^);
+		delegate void OnSolutionDelegate(System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, bool);
+
+		OnGetWorkPositionDelegate ^OnGetWorkPositionHandler;
+		OnResetWorkPositionDelegate ^OnResetWorkPositionHandler;
+		OnIncrementWorkPositionDelegate ^OnIncrementWorkPositionHandler;
+		OnMessageDelegate ^OnMessageHandler;
+		OnSolutionDelegate ^OnSolutionHandler;
 
 	private:
-		OnMessageDelegate ^ m_managedOnMessage;
-		OnSolutionDelegate ^ m_managedOnSolution;
+		OnGetWorkPositionDelegate ^m_managedOnGetWorkPosition;
+		OnResetWorkPositionDelegate ^m_managedOnResetWorkPosition;
+		OnIncrementWorkPositionDelegate ^m_managedOnIncrementWorkPosition;
+		OnMessageDelegate ^m_managedOnMessage;
+		OnSolutionDelegate ^m_managedOnSolution;
 
 	public:
 		static void preInitialize(bool allowIntel, System::String ^%errorMessage);
-		static System::String ^ getPlatformNames();
+		static System::String ^getPlatformNames();
 		static int getDeviceCount(System::String ^platformName, System::String ^%errorMessage);
-		static System::String ^ getDeviceName(System::String ^platformName, int deviceEnum, System::String ^%errorMessage);
+		static System::String ^getDeviceName(System::String ^platformName, int deviceEnum, System::String ^%errorMessage);
 
 	public:
 		// require web3 contract getMethod -> _MAXIMUM_TARGET
@@ -53,7 +62,10 @@ namespace OpenCLSolver
 		uint64_t getHashRateByDevice(System::String ^platformName, int const deviceEnum);
 
 	private:
-		void OnMessage(System::String ^ platformName, int deviceID, System::String ^type, System::String ^message);
+		void OnGetWorkPosition(unsigned __int64 %workPosition);
+		void OnResetWorkPosition(unsigned __int64 %lastPosition);
+		void OnIncrementWorkPosition(unsigned __int64 %lastPosition, unsigned __int64 increment);
+		void OnMessage(System::String ^platformName, int deviceID, System::String ^type, System::String ^message);
 		void OnSolution(System::String ^digest, System::String ^address, System::String ^challenge, System::String ^difficulty, System::String ^target, System::String ^solution, bool isCustomDifficulty);
 	};
 }

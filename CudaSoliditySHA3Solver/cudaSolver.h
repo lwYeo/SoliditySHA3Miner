@@ -32,12 +32,18 @@
 class CUDASolver
 {
 public:
+	typedef void(*GetWorkPositionCallback)(uint64_t &);
+	typedef void(*ResetWorkPositionCallback)(uint64_t &);
+	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
 	typedef void(*MessageCallback)(int, const char*, const char*);
 	typedef void(*SolutionCallback)(const char*, const char*, const char*, const char*, const char*, const char*, bool);
 
 	bool isSubmitStale;
 
 private:
+	GetWorkPositionCallback m_getWorkPositionCallback;
+	ResetWorkPositionCallback m_resetWorkPositionCallback;
+	IncrementWorkPositionCallback m_incrementWorkPositionCallback;
 	MessageCallback m_messageCallback;
 	SolutionCallback m_solutionCallback;
 	std::vector<std::unique_ptr<Device>> m_devices;
@@ -63,7 +69,6 @@ private:
 	arith_uint256 m_maxDifficulty;
 	arith_uint256 m_customDifficulty;
 
-	std::atomic<uint64_t> m_solutionHashCount;
 	std::atomic<std::chrono::steady_clock::time_point> m_solutionHashStartTime;
 
 	std::mutex m_checkInputsMutex;
@@ -79,6 +84,9 @@ public:
 	CUDASolver(std::string const maxDifficulty, std::string solutionTemplate, std::string kingAddress) noexcept;
 	~CUDASolver() noexcept;
 
+	void setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback);
+	void setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback);
+	void setIncrementWorkPositionCallback(IncrementWorkPositionCallback incrementWorkPositionCallback);
 	void setMessageCallback(MessageCallback messageCallback);
 	void setSolutionCallback(SolutionCallback solutionCallback);
 
@@ -101,6 +109,9 @@ public:
 	uint64_t getHashRateByDeviceID(int const deviceID);
 
 private:
+	void getWorkPosition(uint64_t &workPosition);
+	void resetWorkPosition(uint64_t &lastPosition);
+	void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);
 	void onMessage(int deviceID, const char* type, const char* message);
 	void onMessage(int deviceID, std::string type, std::string message);
 
@@ -113,6 +124,6 @@ private:
 	void pushMessage();
 	void submitSolutions(std::set<uint64_t> solutions, std::string challenge);
 
-	uint64_t getNextSearchSpace(std::unique_ptr<Device>& device);
+	uint64_t getNextWorkPosition(std::unique_ptr<Device>& device);
 	const state_t getMidState(message_t &newMessage);
 };
