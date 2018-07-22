@@ -46,7 +46,7 @@ std::string CUDASolver::getDeviceName(int deviceID, std::string &errorMessage)
 // Public
 // --------------------------------------------------------------------
 
-CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemplate) noexcept :
+CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemplate, std::string kingAddress) noexcept :
 	s_address{ "" },
 	s_challenge{ "" },
 	s_target{ "" },
@@ -57,7 +57,8 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemp
 	m_miningMessage{ 0 },
 	m_target{ 0 },
 	m_difficulty{ 0 },
-	m_maxDifficulty{ maxDifficulty }
+	m_maxDifficulty{ maxDifficulty },
+	s_kingAddress{ kingAddress }
 {
 	m_newTarget.store(false);
 	m_newMessage.store(false);
@@ -66,19 +67,7 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemp
 	m_solutionHashCount.store(0);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
-	//hexStringToBytes(solutionTemplate, m_solutionTemplate);
-	{
-		std::random_device rand;
-		std::mt19937_64 rGen{ rand() };
-		std::uniform_int_distribution<uint64_t> uInt_d{ 0, UINT64_MAX };
-
-		reinterpret_cast<uint64_t&>(m_solutionTemplate[0]) = 06055134500533075101ull;
-
-		for (uint_fast8_t i{ UINT64_LENGTH }; i < UINT256_LENGTH; i += UINT64_LENGTH)
-			reinterpret_cast<uint64_t&>(m_solutionTemplate[i]) = uInt_d(rGen);
-
-		std::memset(&m_solutionTemplate[12], 0, UINT64_LENGTH); // keep first and last 12 bytes, leave middle 8 bytes for mid state
-	}
+	hexStringToBytes(solutionTemplate, m_solutionTemplate);
 }
 
 CUDASolver::~CUDASolver() noexcept
@@ -378,8 +367,10 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string chall
 	for (uint64_t midStateSolution : solutions)
 	{
 		byte32_t solution{ m_solutionTemplate };
-		//std::memcpy(&solution[ADDRESS_LENGTH], &midStateSolution, UINT64_LENGTH); // For KingMaking
-		std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH);
+		if (s_kingAddress.empty())
+			std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
+		else
+			std::memcpy(&solution[ADDRESS_LENGTH], &midStateSolution, UINT64_LENGTH); // Shifted for King address
 
 		onSolution(solution, challenge);
 	}

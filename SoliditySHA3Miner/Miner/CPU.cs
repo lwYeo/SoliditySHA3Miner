@@ -116,7 +116,7 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        public CPU(NetworkInterface.INetworkInterface networkInterface, Device[] devices, string solutionTemplate, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
+        public CPU(NetworkInterface.INetworkInterface networkInterface, Device[] devices, string solutionTemplate, string kingAddress, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {
@@ -134,7 +134,7 @@ namespace SoliditySHA3Miner.Miner
                     devicesStr += device.DeviceID.ToString("X64");
                 }
 
-                Solver = new Solver(maxDifficulty.HexValue, devicesStr, solutionTemplate)
+                Solver = new Solver(maxDifficulty.HexValue, devicesStr, solutionTemplate, kingAddress)
                 {
                     OnMessageHandler = m_cpuSolver_OnMessage,
                     OnSolutionHandler = m_cpuSolver_OnSolution

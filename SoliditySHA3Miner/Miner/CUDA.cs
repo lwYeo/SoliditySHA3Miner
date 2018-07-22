@@ -136,7 +136,7 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        public CUDA(NetworkInterface.INetworkInterface networkInterface, Device[] cudaDevices, string solutionTemplate, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
+        public CUDA(NetworkInterface.INetworkInterface networkInterface, Device[] cudaDevices, string solutionTemplate, string kingAddress, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {
@@ -145,7 +145,7 @@ namespace SoliditySHA3Miner.Miner
                 m_pauseOnFailedScan = pauseOnFailedScans;
                 m_failedScanCount = 0;
 
-                Solver = new Solver(maxDifficulty.HexValue, solutionTemplate)
+                Solver = new Solver(maxDifficulty.HexValue, solutionTemplate, kingAddress)
                 {
                     OnMessageHandler = m_cudaSolver_OnMessage,
                     OnSolutionHandler = m_cudaSolver_OnSolution

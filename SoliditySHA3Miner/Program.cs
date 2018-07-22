@@ -145,7 +145,7 @@ namespace SoliditySHA3Miner
                 "  contract                Token contract address (default: 0xbtc contract address)\n" +
                 "  hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: " + Defaults.HashrateUpdateInterval + ")\n" +
                 "  networkUpdateInterval   Interval (miliseconds) to scan for new work (default: " + Defaults.NetworkUpdateInterval + ")\n" +
-                "  kingAddress             Add MiningKing address to nounce (default: none)\n" +
+                "  kingAddress             Add MiningKing address to nounce, only CPU mining supported (default: none)\n" +
                 "  address                 (Pool only) Miner's ethereum address (default: developer's address)\n" +
                 "  privateKey              (Solo only) Miner's private key\n" +
                 "  gasToMine               (Solo only) Gas price to mine in GWei\n" +
@@ -614,19 +614,19 @@ namespace SoliditySHA3Miner
                 }
                 else tempMaxDifficulity = web3Interface.GetMaxDifficulity();
 
-                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, solutionTemplate,
+                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, solutionTemplate, kingAddress,
                                              tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
                 if (m_cudaMiner.HasAssignedDevices) m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
                                                                             hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
 
-                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), solutionTemplate,
+                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), solutionTemplate, kingAddress,
                                                  tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
                 if (m_openCLMiner.HasAssignedDevices) m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
                                                                                 hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
                 
-                m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, solutionTemplate,
+                m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, solutionTemplate, kingAddress,
                                            tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
                 if (m_cpuMiner.HasAssignedDevices) m_cpuMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,

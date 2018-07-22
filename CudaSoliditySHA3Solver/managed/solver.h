@@ -23,7 +23,7 @@ namespace CudaSolver
 
 	public:
 		// require web3 contract getMethod -> _MAXIMUM_TARGET
-		Solver(System::String^ maxDifficulty, System::String ^solutionTemplate);
+		Solver(System::String^ maxDifficulty, System::String ^solutionTemplate, System::String ^kingAddress);
 		~Solver();
 
 		void setCustomDifficulty(uint32_t customDifficulty);

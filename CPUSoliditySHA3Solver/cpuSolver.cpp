@@ -23,7 +23,7 @@ namespace CPUSolver
 			reinterpret_cast<uint64_t&>(b_solutionTemp[i]) = uInt_d(rGen);
 
 		if (kingAddress.empty())
-			std::memset(&b_solutionTemp[ADDRESS_LENGTH], 0, UINT64_LENGTH); // mining hash
+			std::memset(&b_solutionTemp[12], 0, UINT64_LENGTH); // keep first and last 12 bytes, leave middle 8 bytes for mid state 
 		else
 		{
 			address_t king;
@@ -36,7 +36,7 @@ namespace CPUSolver
 		return "0x" + bytesToHexString(b_solutionTemp);
 	}
 
-	cpuSolver::cpuSolver(std::string const maxDifficulty, std::string const threads, std::string solutionTemplate) noexcept :
+	cpuSolver::cpuSolver(std::string const maxDifficulty, std::string const threads, std::string solutionTemplate, std::string kingAddress) noexcept :
 		m_miningThreadCount{ 0u },
 		m_hashStartTime{ std::chrono::steady_clock::now() },
 		s_address{ "" },
@@ -47,7 +47,8 @@ namespace CPUSolver
 		m_prefix{ 0 },
 		m_target{ 0 },
 		m_difficulty{ 0 },
-		m_maxDifficulty{ maxDifficulty }
+		m_maxDifficulty{ maxDifficulty },
+		s_kingAddress{ kingAddress }
 	{
 		b_target.store(byte32_t{ 0 });
 		m_pause.store(false);
@@ -295,7 +296,10 @@ namespace CPUSolver
 				memcpy(&currentSolution, &m_solutionTemplate, UINT256_LENGTH);
 
 				uint64_t hashID{ m_solutionHashCount.fetch_add(1u) };
-				memcpy(&currentSolution[ADDRESS_LENGTH], &hashID, UINT64_LENGTH); // Shifted for King address
+				if (s_kingAddress.empty())
+					memcpy(&currentSolution[12], &hashID, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
+				else
+					memcpy(&currentSolution[ADDRESS_LENGTH], &hashID, UINT64_LENGTH); // Shifted for King address
 				
 				message_t miningMessage; // challenge32 + address20 + solution32
 				memcpy(&miningMessage, &m_prefix, PREFIX_LENGTH); // challenge32 + address20

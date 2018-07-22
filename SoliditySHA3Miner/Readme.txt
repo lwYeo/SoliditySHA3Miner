@@ -49,7 +49,7 @@ Options:
   contract                Token contract address (default: 0xbtc contract address)
   hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: 30000)
   networkUpdateInterval   Interval (miliseconds) to scan for new work (default: 15000)
-  kingAddress             Add MiningKing address to nounce (default: none)
+  kingAddress             Add MiningKing address to nounce, only CPU mining supported (default: none)
   address                 (Pool only) Miner's ethereum address (default: developer's address)
   privateKey              (Solo only) Miner's private key
   gasToMine               (Solo only) Gas price to mine in GWei

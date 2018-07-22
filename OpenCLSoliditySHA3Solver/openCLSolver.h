@@ -76,6 +76,7 @@ private:
 	static std::atomic<bool> m_newMessage;
 	static std::atomic<bool> m_pause;
 
+	std::string s_kingAddress;
 	std::string s_address;
 	std::string s_challenge;
 	std::string s_target;
@@ -101,7 +102,7 @@ private:
 
 public:
 	// require web3 contract getMethod -> _MAXIMUM_TARGET
-	openCLSolver(std::string const maxDifficulty, std::string solutionTemplate) noexcept;
+	openCLSolver(std::string const maxDifficulty, std::string solutionTemplate, std::string kingAddress) noexcept;
 	~openCLSolver() noexcept;
 
 	void setMessageCallback(MessageCallback messageCallback);

@@ -2,8 +2,8 @@
 
 namespace CPUSolver
 {
-	Solver::Solver(System::String ^maxDifficulty, System::String ^threads, System::String ^solutionTemplate) :
-		ManagedObject(new cpuSolver(ToNativeString(maxDifficulty), ToNativeString(threads), ToNativeString(solutionTemplate)))
+	Solver::Solver(System::String ^maxDifficulty, System::String ^threads, System::String ^solutionTemplate, System::String ^kingAddress) :
+		ManagedObject(new cpuSolver(ToNativeString(maxDifficulty), ToNativeString(threads), ToNativeString(solutionTemplate), ToNativeString(kingAddress)))
 	{
 		m_managedOnMessage = gcnew OnMessageDelegate(this, &Solver::OnMessage);
 		System::IntPtr messageStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnMessage);

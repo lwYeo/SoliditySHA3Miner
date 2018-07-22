@@ -2,8 +2,8 @@
 
 namespace CudaSolver
 {
-	Solver::Solver(System::String^ maxDifficulty, System::String ^solutionTemplate) :
-		ManagedObject(new CUDASolver(ToNativeString(maxDifficulty), ToNativeString(solutionTemplate)))
+	Solver::Solver(System::String^ maxDifficulty, System::String ^solutionTemplate, System::String ^kingAddress) :
+		ManagedObject(new CUDASolver(ToNativeString(maxDifficulty), ToNativeString(solutionTemplate), ToNativeString(kingAddress)))
 	{
 		m_managedOnMessage = gcnew OnMessageDelegate(this, &Solver::OnMessage);
 		System::IntPtr messageStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnMessage);

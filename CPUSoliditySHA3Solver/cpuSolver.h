@@ -42,6 +42,7 @@ namespace CPUSolver
 		arith_uint256 m_maxDifficulty;
 		arith_uint256 m_customDifficulty;
 
+		std::string s_kingAddress;
 		std::string s_address;
 		std::string s_challenge;
 		std::string s_target;
@@ -65,7 +66,7 @@ namespace CPUSolver
 		static uint32_t getLogicalProcessorsCount();
 		static std::string getSolutionTemplate(std::string kingAddress = "");
 
-		cpuSolver(std::string const maxDifficulty, std::string const threads, std::string solutionTemplate) noexcept;
+		cpuSolver(std::string const maxDifficulty, std::string const threads, std::string solutionTemplate, std::string kingAddress) noexcept;
 		~cpuSolver() noexcept;
 
 		void setMessageCallback(MessageCallback messageCallback);
