@@ -53,7 +53,7 @@ private:
 	std::string s_customDifficulty;
 	
 	address_t m_address;
-	byte32_t m_solution;
+	byte32_t m_solutionTemplate;
 	prefix_t m_prefix; // challenge32 + address20
 	message_t m_miningMessage; // challenge32 + address20 + solution32
 
@@ -75,7 +75,7 @@ public:
 	static std::string getDeviceName(int deviceID, std::string &errorMessage);
 	
 	// require web3 contract getMethod -> _MAXIMUM_TARGET
-	CUDASolver(std::string const maxDifficulty) noexcept;
+	CUDASolver(std::string const maxDifficulty, std::string solutionTemplate) noexcept;
 	~CUDASolver() noexcept;
 
 	void setMessageCallback(MessageCallback messageCallback);

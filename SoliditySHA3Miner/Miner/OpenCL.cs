@@ -147,7 +147,7 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device[] devices, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
+        public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device[] devices, string solutionTemplate, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {
@@ -156,7 +156,7 @@ namespace SoliditySHA3Miner.Miner
                 m_pauseOnFailedScan = pauseOnFailedScans;
                 m_failedScanCount = 0;
 
-                Solver = new Solver(maxDifficulty.HexValue)
+                Solver = new Solver(maxDifficulty.HexValue, solutionTemplate)
                 {
                     OnMessageHandler = m_openCLSolver_OnMessage,
                     OnSolutionHandler = m_openCLSolver_OnSolution

@@ -298,8 +298,8 @@ namespace CPUSolver
 				memcpy(&currentSolution[ADDRESS_LENGTH], &hashID, UINT64_LENGTH); // Shifted for King address
 				
 				message_t miningMessage; // challenge32 + address20 + solution32
-				memcpy(&miningMessage, &m_prefix, PREFIX_LENGTH);
-				memcpy(&miningMessage[PREFIX_LENGTH], &currentSolution, UINT256_LENGTH);
+				memcpy(&miningMessage, &m_prefix, PREFIX_LENGTH); // challenge32 + address20
+				memcpy(&miningMessage[PREFIX_LENGTH], &currentSolution, UINT256_LENGTH); // solution32
 
 				byte32_t digest;
 				keccak_256(&digest[0], UINT256_LENGTH, &miningMessage[0], MESSAGE_LENGTH);

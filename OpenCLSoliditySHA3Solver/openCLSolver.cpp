@@ -129,13 +129,13 @@ std::string openCLSolver::getDeviceName(std::string platformName, int deviceEnum
 // Public
 // --------------------------------------------------------------------
 
-openCLSolver::openCLSolver(std::string const maxDifficulty) noexcept :
+openCLSolver::openCLSolver(std::string const maxDifficulty, std::string solutionTemplate) noexcept :
 	s_address{ "" },
 	s_challenge{ "" },
 	s_target{ "" },
 	s_difficulty{ "" },
 	m_address{ 0 },
-	m_solution{ 0 },
+	m_solutionTemplate{ 0 },
 	m_prefix{ 0 },
 	m_miningMessage{ 0 },
 	m_target{ 0 },
@@ -149,17 +149,18 @@ openCLSolver::openCLSolver(std::string const maxDifficulty) noexcept :
 	m_solutionHashCount.store(0);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
+	//hexStringToBytes(solutionTemplate, m_solutionTemplate);
 	{
 		std::random_device rand;
 		std::mt19937_64 rGen{ rand() };
 		std::uniform_int_distribution<uint64_t> uInt_d{ 0, UINT64_MAX };
 
-		reinterpret_cast<uint64_t&>(m_solution[0]) = 06055134500533075101ull;
+		reinterpret_cast<uint64_t&>(m_solutionTemplate[0]) = 06055134500533075101ull;
 
 		for (uint_fast8_t i{ UINT64_LENGTH }; i < UINT256_LENGTH; i += UINT64_LENGTH)
-			reinterpret_cast<uint64_t&>(m_solution[i]) = uInt_d(rGen);
+			reinterpret_cast<uint64_t&>(m_solutionTemplate[i]) = uInt_d(rGen);
 
-		std::memset(&m_solution[12], 0, UINT64_LENGTH); // keep first and last 12 bytes, leave middle 8 bytes for mid state
+		std::memset(&m_solutionTemplate[12], 0, UINT64_LENGTH); // keep first and last 12 bytes, leave middle 8 bytes for mid state
 	}
 }
 
@@ -453,7 +454,8 @@ void openCLSolver::submitSolutions(std::set<uint64_t> solutions, std::string cha
 {
 	for (uint64_t midStateSolution : solutions)
 	{
-		byte32_t solution{ m_solution };
+		byte32_t solution{ m_solutionTemplate };
+		//std::memcpy(&solution[ADDRESS_LENGTH], &midStateSolution, UINT64_LENGTH); // For KingMaking
 		std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH);
 
 		onSolution(solution, challenge);
@@ -462,6 +464,8 @@ void openCLSolver::submitSolutions(std::set<uint64_t> solutions, std::string cha
 
 const state_t openCLSolver::getMidState(message_t &newMessage)
 {
+	auto test = bytesToHexString(newMessage);
+
 	uint64_t message[11]{ 0 };
 	std::memcpy(&message, &newMessage, MESSAGE_LENGTH);
 
@@ -569,7 +573,7 @@ void openCLSolver::checkInputs(std::unique_ptr<Device>& device, char *currentCha
 			strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
 
 			std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
-			std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solution, UINT256_LENGTH);
+			std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH);
 			pushMessage();
 		}
 	}

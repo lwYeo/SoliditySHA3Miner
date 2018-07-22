@@ -147,7 +147,7 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 	uint64_t const nounce{ threads + (blockDim.x * blockIdx.x + threadIdx.x) };
 
 	uint64_t state[25], C[5], D[5];
-	uint64_t n[11]{ ROTL64(nounce,  7) };
+	uint64_t n[11]{ ROTL64(nounce, 7) };
 	n[1] = ROTL64(n[0], 1);
 	n[2] = ROTL64(n[1], 6);
 	n[3] = ROTL64(n[2], 2);
@@ -379,7 +379,7 @@ void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChall
 			strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
 
 			std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
-			std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solution, UINT256_LENGTH);
+			std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH);
 			pushMessage();
 		}
 

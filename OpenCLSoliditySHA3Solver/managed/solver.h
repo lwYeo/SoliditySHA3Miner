@@ -25,7 +25,7 @@ namespace OpenCLSolver
 
 	public:
 		// require web3 contract getMethod -> _MAXIMUM_TARGET
-		Solver(System::String ^maxDifficulty);
+		Solver(System::String ^maxDifficulty, System::String ^solutionTemplate);
 		~Solver();
 
 		void setCustomDifficulty(uint32_t customDifficulty);

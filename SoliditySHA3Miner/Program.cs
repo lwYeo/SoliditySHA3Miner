@@ -328,8 +328,8 @@ namespace SoliditySHA3Miner
             var pauseOnFailedScans = Defaults.PauseOnFailedScan;
             var submitStale = Defaults.SubmitStale;
             var abiFile = Defaults.AbiFile0xBTC;
-            var web3api = Defaults.InfuraAPI_ropsten;
-            var contractAddress = Defaults.Contract0xBTC_ropsten;
+            var web3api = Defaults.InfuraAPI_mainnet;
+            var contractAddress = Defaults.Contract0xBTC_mainnet;
             var networkUpdateInterval = Defaults.NetworkUpdateInterval;
             var hashrateUpdateInterval = Defaults.HashrateUpdateInterval;
             var kingAddress = string.Empty;
@@ -614,13 +614,13 @@ namespace SoliditySHA3Miner
                 }
                 else tempMaxDifficulity = web3Interface.GetMaxDifficulity();
 
-                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices,
+                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, solutionTemplate,
                                              tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
                 if (m_cudaMiner.HasAssignedDevices) m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
                                                                             hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
 
-                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(),
+                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), solutionTemplate,
                                                  tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
                 if (m_openCLMiner.HasAssignedDevices) m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,

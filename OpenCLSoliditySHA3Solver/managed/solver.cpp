@@ -2,7 +2,8 @@
 
 namespace OpenCLSolver
 {
-	Solver::Solver(System::String ^maxDifficulty) : ManagedObject(new openCLSolver(ToNativeString(maxDifficulty)))
+	Solver::Solver(System::String ^maxDifficulty, System::String ^solutionTemplate) :
+		ManagedObject(new openCLSolver(ToNativeString(maxDifficulty), ToNativeString(solutionTemplate)))
 	{
 		m_managedOnMessage = gcnew OnMessageDelegate(this, &Solver::OnMessage);
 		System::IntPtr messageStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnMessage);
