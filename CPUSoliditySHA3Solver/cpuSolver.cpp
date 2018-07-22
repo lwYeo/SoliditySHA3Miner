@@ -277,7 +277,8 @@ namespace CPUSolver
 			m_threadHashes[threadID] = 0ull;
 			m_isThreadMining[threadID] = setCurrentThreadAffinity(affinityMask);
 
-			if (!m_isThreadMining[threadID]) onMessage(threadID, "Error", "Failed to set affinity mask to CPU " + std::to_string(affinityMask));
+			if (m_isThreadMining[threadID]) onMessage(threadID, "Info", "Affinity mask to CPU " + std::to_string(affinityMask));
+			else onMessage(threadID, "Error", "Failed to set affinity mask to CPU " + std::to_string(affinityMask));
 
 			while (m_isThreadMining[threadID])
 			{

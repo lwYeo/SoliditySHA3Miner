@@ -355,7 +355,7 @@ void CUDASolver::pushMessage()
 	m_newMessage.store(false);
 }
 
-void CUDASolver::checkInputs(std::unique_ptr<Device>& device)
+void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChallenge)
 {
 	std::lock_guard<std::mutex> lock(m_checkInputsMutex);
 
@@ -376,6 +376,8 @@ void CUDASolver::checkInputs(std::unique_ptr<Device>& device)
 
 		if (m_newMessage.load())
 		{
+			strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+
 			std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
 			std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solution, UINT256_LENGTH);
 			pushMessage();
@@ -412,10 +414,12 @@ void CUDASolver::findSolution(int const deviceID)
 		device->initialized = true;
 	}
 
+	uint64_t currentSearchSpace = UINT64_MAX;
+	char *c_currentChallenge = (char *)malloc(s_challenge.size());
+	strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+
 	onMessage(device->deviceID, "Info", "Start mining...");
 	onMessage(device->deviceID, "Debug", "Threads: " + std::to_string(device->threads()) + " Grid size: " + std::to_string(device->grid().x) + " Block size:" + std::to_string(device->block().x));
-
-	uint64_t currentSearchSpace = UINT64_MAX;
 
 	device->mining = true;
 	device->hashCount.store(0ull);
@@ -424,7 +428,7 @@ void CUDASolver::findSolution(int const deviceID)
 	{
 		while (m_pause.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(500)); }
 
-		checkInputs(device);
+		checkInputs(device, c_currentChallenge);
 
 		if (currentSearchSpace == UINT64_MAX) currentSearchSpace = getNextSearchSpace(device);
 
@@ -462,7 +466,7 @@ void CUDASolver::findSolution(int const deviceID)
 					uniqueSolutions.emplace(tempSolution);
 			}
 
-			std::thread t{ &CUDASolver::submitSolutions, this, uniqueSolutions };
+			std::thread t{ &CUDASolver::submitSolutions, this, uniqueSolutions, std::string{ c_currentChallenge } };
 			t.detach();
 
 			std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);

@@ -132,10 +132,10 @@ private:
 	void onSolution(byte32_t const solution, std::string challenge);
 
 	void findSolution(std::string platformName, int const deviceEnum);
-	void checkInputs(std::unique_ptr<Device> &device);
+	void checkInputs(std::unique_ptr<Device> &device, char *currentChallenge);
 	void pushTarget();
 	void pushMessage();
-	void submitSolutions(std::set<uint64_t> solutions);
+	void submitSolutions(std::set<uint64_t> solutions, std::string challenge);
 
 	uint64_t getNextSearchSpace(std::unique_ptr<Device>& device);
 	const state_t getMidState(message_t &newMessage);

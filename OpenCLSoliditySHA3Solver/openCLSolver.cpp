@@ -449,17 +449,14 @@ void openCLSolver::onSolution(byte32_t const solution, std::string challenge)
 	}
 }
 
-void openCLSolver::submitSolutions(std::set<uint64_t> solutions)
+void openCLSolver::submitSolutions(std::set<uint64_t> solutions, std::string challenge)
 {
-	char *c_currentChallenge = (char *)malloc(s_challenge.size());
-	strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
-
 	for (uint64_t midStateSolution : solutions)
 	{
 		byte32_t solution{ m_solution };
 		std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH);
 
-		onSolution(solution, std::string(c_currentChallenge));
+		onSolution(solution, challenge);
 	}
 }
 
@@ -548,7 +545,7 @@ void openCLSolver::pushMessage()
 	m_newMessage.store(false);
 }
 
-void openCLSolver::checkInputs(std::unique_ptr<Device>& device)
+void openCLSolver::checkInputs(std::unique_ptr<Device>& device, char *currentChallenge)
 {
 	std::lock_guard<std::mutex> lock(m_checkInputsMutex);
 
@@ -569,6 +566,8 @@ void openCLSolver::checkInputs(std::unique_ptr<Device>& device)
 
 		if (m_newMessage.load())
 		{
+			strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+
 			std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
 			std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solution, UINT256_LENGTH);
 			pushMessage();
@@ -588,10 +587,12 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 	device->h_Solutions = reinterpret_cast<uint64_t *>(malloc((MAX_SOLUTION_COUNT_DEVICE + 1) * UINT64_LENGTH));
 	std::memset(device->h_Solutions, 0u, (MAX_SOLUTION_COUNT_DEVICE + 1) * UINT64_LENGTH);
 
+	uint64_t currentWorkPosition = UINT64_MAX;
+	char *c_currentChallenge = (char *)malloc(s_challenge.size());
+	strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+
 	onMessage(device->platformName, device->deviceEnum, "Info", "Start mining...");
 	onMessage(device->platformName, device->deviceEnum, "Debug", "Threads: " + std::to_string(device->globalWorkSize) + " Local work size: " + std::to_string(device->localWorkSize) + " Block size:" + std::to_string(device->globalWorkSize / device->localWorkSize));
-
-	uint64_t currentWorkPosition = UINT64_MAX;
 
 	device->status = clSetKernelArg(device->kernel, 1u, sizeof(cl_mem), &device->solutionsBuffer);
 	if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error setting solutions buffer to kernel (" } + Device::getOpenCLErrorCodeStr(device->status) + ")...");
@@ -606,7 +607,7 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 	{
 		while (m_pause.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(500)); }
 
-		checkInputs(device);
+		checkInputs(device, c_currentChallenge);
 
 		if (currentWorkPosition == UINT64_MAX) currentWorkPosition = getNextSearchSpace(device);
 		
@@ -680,7 +681,7 @@ void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
 					uniqueSolutions.emplace(tempSolution);
 			}
 
-			std::thread t{ &openCLSolver::submitSolutions, this, uniqueSolutions };
+			std::thread t{ &openCLSolver::submitSolutions, this, uniqueSolutions, std::string{ c_currentChallenge } };
 			t.detach();
 
 			std::memset(device->h_Solutions, 0u, UINT64_LENGTH * (MAX_SOLUTION_COUNT_DEVICE + 1));

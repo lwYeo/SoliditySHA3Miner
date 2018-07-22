@@ -372,17 +372,14 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 	}
 }
 
-void CUDASolver::submitSolutions(std::set<uint64_t> solutions)
+void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string challenge)
 {
-	char *c_currentChallenge = (char *)malloc(s_challenge.size());
-	strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
-
 	for (uint64_t midStateSolution : solutions)
 	{
 		byte32_t solution{ m_solution };
 		std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH);
 
-		onSolution(solution, c_currentChallenge);
+		onSolution(solution, challenge);
 	}
 }
 
