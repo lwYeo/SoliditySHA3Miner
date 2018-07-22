@@ -464,8 +464,6 @@ void openCLSolver::submitSolutions(std::set<uint64_t> solutions, std::string cha
 
 const state_t openCLSolver::getMidState(message_t &newMessage)
 {
-	auto test = bytesToHexString(newMessage);
-
 	uint64_t message[11]{ 0 };
 	std::memcpy(&message, &newMessage, MESSAGE_LENGTH);
 
