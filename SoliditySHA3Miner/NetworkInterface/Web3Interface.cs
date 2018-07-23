@@ -24,7 +24,6 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly Account m_account;
         private readonly float m_gasToMine;
         private readonly string m_minerAddress;
-        private readonly BigInteger m_miningReward;
         private readonly Function m_mintMethod;
         private readonly Function m_transferMethod;
         private readonly List<string> m_submittedChallengeList;
@@ -76,8 +75,6 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_mintMethod = m_contract.GetFunction("mint");
 
                 m_transferMethod = m_contract.GetFunction("transfer");
-
-                m_miningReward = GetMiningReward();
 
                 m_gasToMine = gasToMine;
             }
@@ -295,9 +292,11 @@ namespace SoliditySHA3Miner.NetworkInterface
             TransactionReceipt devReciept = null;
             try
             {
+                var miningReward = GetMiningReward();
+
                 Program.Print(string.Format("[INFO] Transferring dev fee for share [{0}]...", shareNo));
 
-                var txInput = new object[] { DevFee.Address, m_miningReward };
+                var txInput = new object[] { DevFee.Address, miningReward };
 
                 var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
 

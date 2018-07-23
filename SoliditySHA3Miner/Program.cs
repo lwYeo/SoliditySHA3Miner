@@ -38,6 +38,7 @@ namespace SoliditySHA3Miner
         public const string CcminerAPIPath = "127.0.0.1:4068";
 
         public const bool SubmitStale = false;
+        public const float GasToMine = 5.0f;
         public const int MaxScanRetry = 5;
         public const int PauseOnFailedScan = 3;
         public const int NetworkUpdateInterval = 15000;
@@ -148,7 +149,7 @@ namespace SoliditySHA3Miner
                 "  kingAddress             Add MiningKing address to nounce, only CPU mining supported (default: none)\n" +
                 "  address                 (Pool only) Miner's ethereum address (default: developer's address)\n" +
                 "  privateKey              (Solo only) Miner's private key\n" +
-                "  gasToMine               (Solo only) Gas price to mine in GWei\n" +
+                "  gasToMine               (Solo only) Gas price to mine in GWei (default: " + Defaults.GasToMine + ")\n" +
                 "  pool                    (Pool only) URL of pool mining server (default: " + Defaults.PoolPrimary + ")\n" +
                 "  secondaryPool           (Optional) URL of failover pool mining server\n" +
                 "  devFee                  Set dev fee in percentage (default: " + DevFee.Percent + "%, minimum: " + DevFee.MinimumPercent + "%)\n";
@@ -337,7 +338,7 @@ namespace SoliditySHA3Miner
             var primaryPool = string.Empty;
             var secondaryPool = string.Empty;
             var privateKey = string.Empty;
-            var gasToMine = 0.0f;
+            var gasToMine = Defaults.GasToMine;
             var allowIntel = true;
             var allowAMD = true;
             var allowCUDA = true;
@@ -486,6 +487,13 @@ namespace SoliditySHA3Miner
             }
             else
             {
+                if (!string.IsNullOrEmpty(kingAddress))
+                {
+                    Print("[Error] King mining is only supported for CPU mining in this release. Exiting application...");
+                    m_manualResetEvent.Set();
+                    Environment.Exit(1);
+                }
+
                 if (allowCUDA && (cudaDevices == null || !cudaDevices.Any()) && args.All(a => !a.StartsWith("cudaDevice")))
                 {
                     Print("[INFO] CUDA device not specified, default assign all CUDA devices.");
