@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <fstream>
 #include <string.h>
 #include "../types.h"
@@ -18,7 +19,7 @@
 
 #ifdef _M_CEE 
 #	undef _M_CEE 
-#	include <mutex>
+#	include <thread>
 
 #if defined(__APPLE__) || defined(__MACOSX)
 #	include <OpenCL/cl.hpp>
@@ -30,7 +31,7 @@
 
 #	define _M_CEE 001 
 #else 
-#	include <mutex>
+#	include <thread>
 
 #if defined(__APPLE__) || defined(__MACOSX)
 #	include <OpenCL/cl.hpp>
@@ -101,7 +102,6 @@ public:
 
 private:
 	uint32_t computeCapability;
-	std::mutex hashRateMutex;
 
 public:
 	Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platform_id devPlatformID, float const userDefIntensity = 0, uint32_t userLocalWorkSize = 0);

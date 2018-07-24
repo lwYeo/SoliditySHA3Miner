@@ -68,15 +68,43 @@ namespace SoliditySHA3Miner.Miner
 
         public NetworkInterface.INetworkInterface NetworkInterface { get; }
 
-        public bool HasAssignedDevices => Solver == null ? false : Solver.isAssigned();
-
         public Device[] Devices { get; }
 
-        public bool IsAnyInitialised => Solver == null ? false : Solver.isAnyInitialised();
+        public bool HasAssignedDevices
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isAssigned(); }
+                catch (Exception) { return false; }
+            }
+        }
 
-        public bool IsMining => Solver == null ? false : Solver.isMining();
+        public bool IsAnyInitialised
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isAnyInitialised(); }
+                catch (Exception) { return false; }
+            }
+        }
 
-        public bool IsPaused => Solver == null ? false : Solver.isPaused();
+        public bool IsMining
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isMining(); }
+                catch (Exception) { return false; }
+            }
+        }
+
+        public bool IsPaused
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isPaused(); }
+                catch (Exception) { return false; }
+            }
+        }
 
         public void Dispose()
         {
@@ -95,16 +123,19 @@ namespace SoliditySHA3Miner.Miner
         {
             try { return (long)lastMiningParameters.MiningDifficulty.Value; }
             catch (OverflowException) { return long.MaxValue; }
+            catch (Exception) { return 0; }
         }
 
         public ulong GetHashrateByDevice(string platformName, int deviceID)
         {
-            return Solver.getHashRateByDevice(platformName, deviceID);
+            try { return Solver.getHashRateByDevice(platformName, deviceID); }
+            catch (Exception) { return 0u; }
         }
 
         public ulong GetTotalHashrate()
         {
-            return Solver.getTotalHashRate();
+            try { return Solver.getTotalHashRate(); }
+            catch (Exception) { return 0u; }
         }
 
         public void StartMining(int networkUpdateInterval, int hashratePrintInterval)

@@ -142,3 +142,7 @@ x64/Debug/0xbtcSolo.bat
 x64/Release/0xbtcSolo.bat
 x64/Debug/CPUSoliditySHA3Solver.dll
 x64/Release/CPUSoliditySHA3Solver.dll
+OpenCLSoliditySHA3Solver/x64/Debug/Resource.res
+CPUSoliditySHA3Solver/x64/Debug/Resource.res
+CPUSoliditySHA3Solver/x64/Debug/Resource.res
+CPUSoliditySHA3Solver/x64/Debug/Resource.res

@@ -43,9 +43,23 @@ namespace SoliditySHA3Miner.Miner
 
         public bool IsAnyInitialised => true; // CPU is always initialised
 
-        public bool IsMining => (bool)Solver?.isMining();
+        public bool IsMining
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isMining(); }
+                catch (Exception) { return false; }
+            }
+        }
 
-        public bool IsPaused => (bool)Solver?.isPaused();
+        public bool IsPaused
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isPaused(); }
+                catch (Exception) { return false; }
+            }
+        }
 
         public void Dispose()
         {
@@ -64,16 +78,19 @@ namespace SoliditySHA3Miner.Miner
         {
             try { return (long)lastMiningParameters.MiningDifficulty.Value; }
             catch (OverflowException) { return long.MaxValue; }
+            catch (Exception) { return 0; }
         }
 
         public ulong GetHashrateByDevice(string platformName, int deviceID)
         {
-            return (ulong)Solver?.getHashRateByThreadID((uint)deviceID);
+            try { return (ulong)Solver?.getHashRateByThreadID((uint)deviceID); }
+            catch (Exception) { return 0u; }
         }
 
         public ulong GetTotalHashrate()
         {
-            return (ulong)Solver?.getTotalHashRate();
+            try { return Solver.getTotalHashRate(); }
+            catch (Exception) { return 0u; }
         }
 
         public void StartMining(int networkUpdateInterval, int hashratePrintInterval)
@@ -145,7 +162,7 @@ namespace SoliditySHA3Miner.Miner
 
                 if (string.IsNullOrWhiteSpace(devicesStr))
                 {
-                    Program.Print("[WARN] No CPU specified.");
+                    Program.Print("[WARN] No CPU assigned.");
                     return;
                 }
             }

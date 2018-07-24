@@ -1,5 +1,6 @@
 #include <cassert>
 #include <atomic>
+#include <chrono>
 #include <string>
 #include <random>
 #include <vector>
@@ -10,11 +11,9 @@
 
 #ifdef _M_CEE
 #	undef _M_CEE
-#	include <mutex>
 #	include <thread>
 #	define _M_CEE 001
 #else
-#	include <mutex>
 #	include <thread>
 #endif
 
@@ -78,7 +77,7 @@ namespace CPUSolver
 		void updatePrefix(std::string const prefix);
 		void updateTarget(std::string const target);
 		void updateDifficulty(std::string const difficulty);
-		void setCustomDifficulty(uint32_t customDifficulty);
+		void setCustomDifficulty(uint32_t const customDifficulty);
 
 		uint64_t getTotalHashRate();
 		uint64_t getHashRateByThreadID(uint32_t const threadID);

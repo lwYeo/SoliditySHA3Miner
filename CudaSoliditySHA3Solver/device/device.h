@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <cuda_runtime.h>
 #include "..\types.h"
 
@@ -8,38 +9,53 @@
 
 #ifdef _M_CEE 
 #	undef _M_CEE 
-#	include <mutex>
+#	include <thread>
 #	define _M_CEE 001 
 #else 
-#	include <mutex>
+#	include <thread>
 #endif 
 
 #pragma managed(pop)
 
 #define DEFALUT_INTENSITY 25.0F
 
-struct Device
+class Device
 {
+private:
 	static uint32_t constexpr MAX_TPB_500{ 1024u };
 	static uint32_t constexpr MAX_TPB_350{ 384u };
 
 public:
-	int deviceID{ -1 };
-	std::string name{ "" };
-	uint32_t computeVersion{ 0u };
-	float intensity{ DEFALUT_INTENSITY };
+	int deviceID;
+	std::string name;
+	uint32_t computeVersion;
+	float intensity;
 
-	bool initialized{ false };
-	bool mining{ false };
+	bool initialized;
+	bool mining;
 
 	std::thread miningThread;
-	std::atomic<uint64_t> hashCount{ 0ull };
-	std::atomic<std::chrono::steady_clock::time_point> hashStartTime{ std::chrono::steady_clock::now() };
+	std::atomic<uint64_t> hashCount;
+	std::atomic<std::chrono::steady_clock::time_point> hashStartTime;
 
 	uint64_t* d_Solutions;
-	uint32_t* d_SolutionCount;
 	uint64_t* h_Solutions;
+	uint32_t* d_SolutionCount;
 	uint32_t* h_SolutionCount;
+
+private:
+	dim3 m_block;
+	dim3 m_grid;
+
+	uint32_t m_lastCompute;
+	uint32_t m_lastBlockX;
+	uint32_t m_lastThreads;
+	float m_lastIntensity;
+
+public:
+	static bool foundNvAPI64();
+
+	Device();
 
 	int CoreOC();
 	int MemoryOC();
@@ -49,18 +65,4 @@ public:
 	dim3 grid();
 
 	uint64_t hashRate();
-
-	static bool foundNvAPI64();
-
-private:
-	std::mutex blockMutex;
-	dim3 m_block{ 1 };
-	uint32_t lastCompute{ 0u };
-	std::mutex gridMutex;
-	dim3 m_grid{ 1 };
-	uint32_t lastBlockX{ 0u };
-	std::mutex hashRateMutex;
-	std::mutex threadsMutex;
-	uint32_t lastThreads{ 1u };
-	float lastIntensity{ 0.0F };
 };

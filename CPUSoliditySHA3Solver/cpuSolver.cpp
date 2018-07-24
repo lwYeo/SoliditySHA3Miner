@@ -221,7 +221,7 @@ namespace CPUSolver
 		}
 	}
 
-	void cpuSolver::setCustomDifficulty(uint32_t customDifficulty)
+	void cpuSolver::setCustomDifficulty(uint32_t const customDifficulty)
 	{
 		if (customDifficulty == 0u) return;
 
@@ -239,18 +239,15 @@ namespace CPUSolver
 			totalHashes += m_threadHashes[id];
 
 		using namespace std::chrono;
-		long double dHashRate{ (long double)totalHashes / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime).count()) };
-		return (uint64_t)dHashRate;
+		return (uint64_t)((long double)totalHashes / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime).count()));
 	}
 
 	uint64_t cpuSolver::getHashRateByThreadID(uint32_t const threadID)
 	{
 		using namespace std::chrono;
 		if (threadID < m_miningThreadCount)
-		{
-			long double dHashRate{ (long double)m_threadHashes[threadID] / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime).count()) };
-			return (uint64_t)dHashRate;
-		}
+			return (uint64_t)((long double)m_threadHashes[threadID] / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime).count()));
+
 		else return 0ull;
 	}
 

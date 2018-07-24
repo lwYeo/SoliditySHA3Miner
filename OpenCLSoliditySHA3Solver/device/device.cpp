@@ -269,11 +269,8 @@ bool Device::isINTEL()
 
 uint64_t Device::hashRate()
 {
-	std::lock_guard<std::mutex> lock(hashRateMutex);
 	using namespace std::chrono;
-
-	long double dHashRate{ (long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime.load()).count()) };
-	return (uint64_t)dHashRate;
+	return (uint64_t)((long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime.load()).count()));
 }
 
 void Device::initialize(std::string& errorMessage)

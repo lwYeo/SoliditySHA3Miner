@@ -1,7 +1,7 @@
 ﻿SoliditySHA3Miner
 Solves proof of work to mine supported ERC20/918 tokens.
 
-Built with C#.NET 4.7.1, VC++ 2017 and nVidia CUDA SDK 9.2 64-bits (Windows 10 64-bit)
+Built with C#.NET 4.7.1, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL) (Windows 10 64-bits)
 .NET 4.7.1 can be downloaded from https://microsoft.com/en-us/download/details.aspx?id=56116
 VC++ 2017 can be downloaded from https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads
 CUDA 9.2 requires a minimum nVidia driver version of 396.xx [https://nvidia.com/drivers/results/134068]

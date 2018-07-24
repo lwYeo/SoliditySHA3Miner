@@ -46,11 +46,13 @@ namespace CPUSolver
 
 	bool Solver::isMining()
 	{
+		if (m_Instance == nullptr) return false;
 		return m_Instance->isMining();
 	}
 
 	bool Solver::isPaused()
 	{
+		if (m_Instance == nullptr) return false;
 		return m_Instance->isPaused();
 	}
 
@@ -86,11 +88,13 @@ namespace CPUSolver
 
 	uint64_t Solver::getTotalHashRate()
 	{
+		if (m_Instance == nullptr) return 0ull;
 		return m_Instance->getTotalHashRate();
 	}
 
 	uint64_t Solver::getHashRateByThreadID(unsigned int const threadID)
 	{
+		if (m_Instance == nullptr) return 0ull;
 		return m_Instance->getHashRateByThreadID(threadID);
 	}
 

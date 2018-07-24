@@ -1,7 +1,7 @@
 #pragma unmanaged
 
 /*
-Author: Mikers, Azlehria, lwYeo
+Author: Mikers, Azlehria, optimized by lwYeo
 Date: March 4 - July, 2018 for 0xbitcoin dev
 
 Hashburner Enhancements for COSMiC: LtTofu (Mag517)
@@ -18,13 +18,19 @@ based off of https://github.com/Dunhili/SHA3-gpu-brute-force-cracker/blob/master
 #include "cudaErrorCheck.cu"
 #include "cudasolver.h"
 
+typedef union
+{
+	uint2		uint2;
+	uint64_t	uint64;
+} nonce_t;
+
 #define MAX_SOLUTION_COUNT_DEVICE 32
-__constant__ uint32_t maxSolutionCount = MAX_SOLUTION_COUNT_DEVICE;
 
 __constant__ uint64_t d_midState[MIDSTATE_LENGTH];
-__constant__ uint64_t d_target;
 
-__device__ __constant__ uint64_t const RC[24] = {
+__constant__ uint64_t d_target[1];
+
+__device__ __constant__ uint64_t const Keccak_f1600_RC[24] = {
 	0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
 	0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
 	0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
@@ -35,119 +41,115 @@ __device__ __constant__ uint64_t const RC[24] = {
 	0x8000000000008080, 0x0000000080000001, 0x8000000080008008
 };
 
-__device__ __forceinline__ uint64_t ROTL64(uint64_t x, uint32_t y)
+__device__ __constant__ uint_fast8_t const MOD5[16] = { 
+	0u, 1u, 2u, 3u, 4u,
+	0u, 1u, 2u, 3u, 4u,
+	0u, 1u, 2u, 3u, 4u,
+	0u };
+
+__device__ __forceinline__ nonce_t ROTL64(nonce_t const input, uint32_t const offset)
 {
-	return (x << y) ^ (x >> (64 - y));
+	nonce_t output;
+	output.uint64 = (input.uint64 << offset) ^ (input.uint64 >> (64u - offset));
+	return output;
 }
 
-__device__ __forceinline__ uint64_t ROTR64(uint64_t x, uint32_t y)
+__device__ __forceinline__ nonce_t ROTR64(nonce_t const input, uint32_t const offset)
 {
-	return (x >> y) ^ (x << (64 - y));
+	nonce_t output;
+	output.uint64 = (input.uint64 >> offset) ^ (input.uint64 << (64u - offset));
+	return output;
 }
 
-__device__ __forceinline__ uint64_t bswap_64(uint64_t const input)
+__device__ __forceinline__ nonce_t bswap_64(nonce_t const input)
 {
-	uint64_t output;
+	nonce_t output;
 	asm("{"
 		"  prmt.b32 %0, %3, 0, 0x0123;"
 		"  prmt.b32 %1, %2, 0, 0x0123;"
-		"}" : "=r"(reinterpret_cast<uint2&>(output).x), "=r"(reinterpret_cast<uint2&>(output).y)
-		: "r"(reinterpret_cast<uint2 const&>(input).x), "r"(reinterpret_cast<uint2 const&>(input).y));
+		"}" : "=r"(output.uint2.x), "=r"(output.uint2.y) : "r"(input.uint2.x), "r"(input.uint2.y));
 	return output;
 }
 
-__device__ __forceinline__ uint32_t bswap_32(uint32_t const input)
+__device__ __forceinline__ nonce_t xor5(nonce_t const a, nonce_t const b, nonce_t const c, nonce_t const d, nonce_t const e)
 {
-	uint32_t output;
-	asm("prmt.b32 %0, %1, 0, 0x0123;" : "=r"(output) : "r"(input));
-	return output;
-}
-
-__device__ __forceinline__ uint64_t xor5(uint64_t const a, uint64_t const b, uint64_t const c, uint64_t const d, uint64_t const e)
-{
-	uint64_t output;
+	nonce_t output;
 	asm("{"
 		"  xor.b64 %0, %1, %2;"
 		"  xor.b64 %0, %0, %3;"
 		"  xor.b64 %0, %0, %4;"
 		"  xor.b64 %0, %0, %5;"
-		"}" : "=l"(output) : "l"(a), "l"(b), "l"(c), "l"(d), "l"(e));
+		"}" : "=l"(output.uint64) : "l"(a.uint64), "l"(b.uint64), "l"(c.uint64), "l"(d.uint64), "l"(e.uint64));
 	return output;
 }
 
-__device__ __forceinline__ uint64_t xor3(uint64_t const a, uint64_t const b, uint64_t const c)
+__device__ __forceinline__ nonce_t xor3(nonce_t const a, nonce_t const b, nonce_t const c)
 {
-	uint64_t output;
+	nonce_t output;
 #if __CUDA_ARCH__ >= 500
 	asm("{"
 		"  lop3.b32 %0, %2, %4, %6, 0x96;"
 		"  lop3.b32 %1, %3, %5, %7, 0x96;"
-		"}" : "=r"(reinterpret_cast<uint2&>(output).x), "=r"(reinterpret_cast<uint2&>(output).y)
-		: "r"(reinterpret_cast<uint2 const&>(a).x), "r"(reinterpret_cast<uint2 const&>(a).y),
-		"r"(reinterpret_cast<uint2 const&>(b).x), "r"(reinterpret_cast<uint2 const&>(b).y),
-		"r"(reinterpret_cast<uint2 const&>(c).x), "r"(reinterpret_cast<uint2 const&>(c).y));
+		"}" : "=r"(output.uint2.x), "=r"(output.uint2.y)
+		: "r"(a.uint2.x), "r"(a.uint2.y), "r"(b.uint2.x), "r"(b.uint2.y), "r"(c.uint2.x), "r"(c.uint2.y));
 #else
 	asm("{"
 		"  xor.b64 %0, %1, %2;"
 		"  xor.b64 %0, %0, %3;"
-		"}" : "=l"(output) : "l"(a), "l"(b), "l"(c));
+		"}" : "=l"(output.uint64) : "l"(a.uint64), "l"(b.uint64), "l"(c.uint64));
 #endif
 	return output;
 }
 
-__device__ __forceinline__ uint64_t chi(uint64_t const a, uint64_t const b, uint64_t const c)
+__device__ __forceinline__ nonce_t chi(nonce_t const a, nonce_t const b, nonce_t const c)
 {
+	nonce_t output;
 #if __CUDA_ARCH__ >= 500
-	uint64_t output;
 	asm("{"
 		"  lop3.b32 %0, %2, %4, %6, 0xD2;"
 		"  lop3.b32 %1, %3, %5, %7, 0xD2;"
-		"}" : "=r"(reinterpret_cast<uint2&>(output).x), "=r"(reinterpret_cast<uint2&>(output).y)
-		: "r"(reinterpret_cast<uint2 const&>(a).x), "r"(reinterpret_cast<uint2 const&>(a).y),
-		"r"(reinterpret_cast<uint2 const&>(b).x), "r"(reinterpret_cast<uint2 const&>(b).y),
-		"r"(reinterpret_cast<uint2 const&>(c).x), "r"(reinterpret_cast<uint2 const&>(c).y));
-	return output;
+		"}" : "=r"(output.uint2.x), "=r"(output.uint2.y)
+		: "r"(a.uint2.x), "r"(a.uint2.y), "r"(b.uint2.x), "r"(b.uint2.y), "r"(c.uint2.x), "r"(c.uint2.y));
 #else
-	return a ^ ((~b) & c);
+	output.uint64 = a.uint64 ^ ((~b.uint64) & c.uint64);
 #endif
+	return output;
 }
 
 // shortcut to rotation by 32 (flip halves), then rotate left by `mag`
-__device__ __forceinline__ uint64_t ROTLfrom32(uint64_t rtdby32, uint32_t magnitude)
+__device__ __forceinline__ nonce_t ROTLfrom32(nonce_t rtdby32, uint32_t const magnitude)
 {
 	asm("{"
-		"    .reg .b32 hi, lo, scr, mag;       "
-		"    mov.b64 {lo,hi}, %0;              "      // halves reversed since rotl'd by 32
-		"    mov.b32 mag, %1;                  "
-		"    shf.l.wrap.b32 scr, lo, hi, mag;  "
-		"    shf.l.wrap.b32 lo, hi, lo, mag;   "
-		"    mov.b64 %0, {scr,lo};             "
-		"}" : "+l"(rtdby32) : "r"(magnitude));    // see if this is faster w/ uint2 .x and .y
-												  // for saving shf results out
-	return rtdby32;   // return rotation from the rotation by 32
+		"    .reg .b32 hi, lo, scr, mag;"
+		"    mov.b64 {lo,hi}, %0;"						// halves reversed since rotl'd by 32
+		"    mov.b32 mag, %1;"
+		"    shf.l.wrap.b32 scr, lo, hi, mag;"
+		"    shf.l.wrap.b32 lo, hi, lo, mag;"
+		"    mov.b64 %0, {scr,lo};"
+		"}" : "+l"(rtdby32.uint64) : "r"(magnitude));	// see if this is faster w/ uint2 .x and .y for saving shf results out
+	return rtdby32;										// return rotation from the rotation by 32
 }
 
 // shortcut to rotation by 32 (flip halves), then rotate right by `mag`
-__device__ __forceinline__ uint64_t ROTRfrom32(uint64_t rtdby32, uint32_t magnitude)
+__device__ __forceinline__ nonce_t ROTRfrom32(nonce_t rtdby32, uint32_t const magnitude)
 {
 	asm("{"
-		"    .reg .b32 hi, lo, scr, mag;       "
-		"    mov.b64 {lo,hi}, %0;              "      // halves reversed since rotl'd by 32
-		"    mov.b32 mag, %1;                  "
-		"    shf.r.wrap.b32 scr, hi, lo, mag;  "
-		"    shf.r.wrap.b32 lo, lo, hi, mag;   "
-		"    mov.b64 %0, {scr,lo};             "
-		"}" : "+l"(rtdby32) : "r"(magnitude));    // see if this is faster w/ uint2 .x and .y
-												  // for saving shf results out
-	return rtdby32;   // return rotation from the rotation by 32
+		"    .reg .b32 hi, lo, scr, mag;"
+		"    mov.b64 {lo,hi}, %0;"						// halves reversed since rotl'd by 32
+		"    mov.b32 mag, %1;"
+		"    shf.r.wrap.b32 scr, hi, lo, mag;"
+		"    shf.r.wrap.b32 lo, lo, hi, mag;"
+		"    mov.b64 %0, {scr,lo};"
+		"}" : "+l"(rtdby32.uint64) : "r"(magnitude));	// see if this is faster w/ uint2 .x and .y for saving shf results out
+	return rtdby32;										// return rotation from the rotation by 32
 }
 
-__global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict__ solution_count, uint64_t const threads)
+__global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict__ solutionCount, uint64_t const startPosition)
 {
-	uint64_t const nounce{ threads + (blockDim.x * blockIdx.x + threadIdx.x) };
+	nonce_t nonce, state[25], C[5], D[5], n[11];
+	nonce.uint64 = startPosition + (blockDim.x * blockIdx.x + threadIdx.x);
 
-	uint64_t state[25], C[5], D[5];
-	uint64_t n[11]{ ROTL64(nounce, 7) };
+	n[0] = ROTL64(nonce, 7);
 	n[1] = ROTL64(n[0], 1);
 	n[2] = ROTL64(n[1], 6);
 	n[3] = ROTL64(n[2], 2);
@@ -159,55 +161,55 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 	n[9] = ROTL64(n[8], 7);
 	n[10] = ROTL64(n[9], 1);
 
-	C[0] = d_midState[0];
-	C[1] = d_midState[1];
-	C[2] = d_midState[2] ^ n[7];
-	C[3] = d_midState[3];
-	C[4] = d_midState[4] ^ n[2];
-	state[0] = chi(C[0], C[1], C[2]) ^ RC[0];
+	C[0].uint64 = d_midState[0];
+	C[1].uint64 = d_midState[1];
+	C[2].uint64 = d_midState[2] ^ n[7].uint64;
+	C[3].uint64 = d_midState[3];
+	C[4].uint64 = d_midState[4] ^ n[2].uint64;
+	state[0].uint64 = chi(C[0], C[1], C[2]).uint64 ^ Keccak_f1600_RC[0];
 	state[1] = chi(C[1], C[2], C[3]);
 	state[2] = chi(C[2], C[3], C[4]);
 	state[3] = chi(C[3], C[4], C[0]);
 	state[4] = chi(C[4], C[0], C[1]);
 
-	C[0] = d_midState[5];
-	C[1] = d_midState[6] ^ n[4];
-	C[2] = d_midState[7];
-	C[3] = d_midState[8];
-	C[4] = d_midState[9] ^ n[9];
+	C[0].uint64 = d_midState[5];
+	C[1].uint64 = d_midState[6] ^ n[4].uint64;
+	C[2].uint64 = d_midState[7];
+	C[3].uint64 = d_midState[8];
+	C[4].uint64 = d_midState[9] ^ n[9].uint64;
 	state[5] = chi(C[0], C[1], C[2]);
 	state[6] = chi(C[1], C[2], C[3]);
 	state[7] = chi(C[2], C[3], C[4]);
 	state[8] = chi(C[3], C[4], C[0]);
 	state[9] = chi(C[4], C[0], C[1]);
 
-	C[0] = d_midState[10];
-	C[1] = d_midState[11] ^ n[0];
-	C[2] = d_midState[12];
-	C[3] = d_midState[13] ^ n[1];
-	C[4] = d_midState[14];
+	C[0].uint64 = d_midState[10];
+	C[1].uint64 = d_midState[11] ^ n[0].uint64;
+	C[2].uint64 = d_midState[12];
+	C[3].uint64 = d_midState[13] ^ n[1].uint64;
+	C[4].uint64 = d_midState[14];
 	state[10] = chi(C[0], C[1], C[2]);
 	state[11] = chi(C[1], C[2], C[3]);
 	state[12] = chi(C[2], C[3], C[4]);
 	state[13] = chi(C[3], C[4], C[0]);
 	state[14] = chi(C[4], C[0], C[1]);
 
-	C[0] = d_midState[15] ^ n[5];
-	C[1] = d_midState[16];
-	C[2] = d_midState[17];
-	C[3] = d_midState[18] ^ n[3];
-	C[4] = d_midState[19];
+	C[0].uint64 = d_midState[15] ^ n[5].uint64;
+	C[1].uint64 = d_midState[16];
+	C[2].uint64 = d_midState[17];
+	C[3].uint64 = d_midState[18] ^ n[3].uint64;
+	C[4].uint64 = d_midState[19];
 	state[15] = chi(C[0], C[1], C[2]);
 	state[16] = chi(C[1], C[2], C[3]);
 	state[17] = chi(C[2], C[3], C[4]);
 	state[18] = chi(C[3], C[4], C[0]);
 	state[19] = chi(C[4], C[0], C[1]);
 
-	C[0] = d_midState[20] ^ n[10];
-	C[1] = d_midState[21] ^ n[8];
-	C[2] = d_midState[22] ^ n[6];
-	C[3] = d_midState[23];
-	C[4] = d_midState[24];
+	C[0].uint64 = d_midState[20] ^ n[10].uint64;
+	C[1].uint64 = d_midState[21] ^ n[8].uint64;
+	C[2].uint64 = d_midState[22] ^ n[6].uint64;
+	C[3].uint64 = d_midState[23];
+	C[4].uint64 = d_midState[24];
 	state[20] = chi(C[0], C[1], C[2]);
 	state[21] = chi(C[1], C[2], C[3]);
 	state[22] = chi(C[2], C[3], C[4]);
@@ -217,30 +219,33 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 #if __CUDA_ARCH__ >= 350
 #  pragma unroll
 #endif
-	for (uint_fast8_t i{ 1 }; i < 23; ++i)
+	for (uint_fast8_t i{ 1u }; i < 23u; ++i)
 	{
-		for (uint_fast8_t x{ 0 }; x < 5; ++x)
-			C[(x + 6) % 5] = xor5(state[x], state[x + 5], state[x + 10], state[x + 15], state[x + 20]);
+		C[1] = xor5(state[0], state[5], state[10], state[15], state[20]);
+		C[2] = xor5(state[1], state[6], state[11], state[16], state[21]);
+		C[3] = xor5(state[2], state[7], state[12], state[17], state[22]);
+		C[4] = xor5(state[3], state[8], state[13], state[18], state[23]);
+		C[0] = xor5(state[4], state[9], state[14], state[19], state[24]);
 
 #if __CUDA_ARCH__ >= 350
-		for (uint_fast8_t x{ 0 }; x < 5; ++x)
+		for (uint_fast8_t x{ 0 }; x < 5u; ++x)
 		{
-			D[x] = ROTL64(C[(x + 2) % 5], 1);
+			D[x] = ROTL64(C[MOD5[x + 2]], 1);
 			state[x] = xor3(state[x], D[x], C[x]);
 			state[x + 5] = xor3(state[x + 5], D[x], C[x]);
 			state[x + 10] = xor3(state[x + 10], D[x], C[x]);
 			state[x + 15] = xor3(state[x + 15], D[x], C[x]);
 			state[x + 20] = xor3(state[x + 20], D[x], C[x]);
-		}
+	}
 #else
-		for (uint_fast8_t x{ 0 }; x < 5; ++x)
+		for (uint_fast8_t x{ 0u }; x < 5u; ++x)
 		{
-			D[x] = ROTL64(C[(x + 2) % 5], 1) ^ C[x];
-			state[x] = state[x] ^ D[x];
-			state[x + 5] = state[x + 5] ^ D[x];
-			state[x + 10] = state[x + 10] ^ D[x];
-			state[x + 15] = state[x + 15] ^ D[x];
-			state[x + 20] = state[x + 20] ^ D[x];
+			D[x].uint64 = ROTL64(C[MOD5[x + 2]], 1).uint64 ^ C[x].uint64;
+			state[x].uint64 = state[x].uint64 ^ D[x].uint64;
+			state[x + 5].uint64 = state[x + 5].uint64 ^ D[x].uint64;
+			state[x + 10].uint64 = state[x + 10].uint64 ^ D[x].uint64;
+			state[x + 15].uint64 = state[x + 15].uint64 ^ D[x].uint64;
+			state[x + 20].uint64 = state[x + 20].uint64 ^ D[x].uint64;
 		}
 #endif
 
@@ -283,7 +288,7 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 		state[7] = ROTL64(state[10], 3);
 		state[10] = ROTL64(C[0], 1);
 
-		for (uint_fast8_t x{ 0 }; x < 25; x += 5)
+		for (uint_fast8_t x{ 0u }; x < 25u; x += 5u)
 		{
 			C[0] = state[x];
 			C[1] = state[x + 1];
@@ -297,14 +302,14 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 			state[x + 4] = chi(C[4], C[0], C[1]);
 		}
 
-		state[0] = state[0] ^ RC[i];
+		state[0].uint64 = state[0].uint64 ^ Keccak_f1600_RC[i];
 	}
 
-#if __CUDA_ARCH__ >= 350
-#  pragma unroll
-#endif
-	for (uint_fast8_t x{ 0 }; x < 5; ++x)
-		C[(x + 6) % 5] = xor5(state[x], state[x + 5], state[x + 10], state[x + 15], state[x + 20]);
+	C[1] = xor5(state[0], state[5], state[10], state[15], state[20]);
+	C[2] = xor5(state[1], state[6], state[11], state[16], state[21]);
+	C[3] = xor5(state[2], state[7], state[12], state[17], state[22]);
+	C[4] = xor5(state[3], state[8], state[13], state[18], state[23]);
+	C[0] = xor5(state[4], state[9], state[14], state[19], state[24]);
 
 	D[0] = ROTL64(C[2], 1);
 	D[1] = ROTL64(C[3], 1);
@@ -316,12 +321,12 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 	state[6] = ROTR64(state[6], 20);
 	state[12] = ROTR64(state[12], 21);
 
-	state[0] = chi(state[0], state[6], state[12]) ^ RC[23];
+	state[0].uint64 = chi(state[0], state[6], state[12]).uint64 ^ Keccak_f1600_RC[23];
 
-	if (bswap_64(state[0]) < d_target)
+	if (bswap_64(state[0]).uint64 < d_target[0])
 	{
-		(*solution_count)++;
-		if ((*solution_count) < maxSolutionCount) solutions[(*solution_count) - 1] = nounce;
+		(*solutionCount)++;
+		if ((*solutionCount) < MAX_SOLUTION_COUNT_DEVICE) solutions[(*solutionCount) - 1] = nonce.uint64;
 	}
 }
 
@@ -357,8 +362,6 @@ void CUDASolver::pushMessage()
 
 void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChallenge)
 {
-	std::lock_guard<std::mutex> lock(m_checkInputsMutex);
-
 	if (m_newTarget.load() || m_newMessage.load())
 	{
 		for (auto& device : m_devices)

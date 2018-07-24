@@ -483,7 +483,7 @@ void openCLSolver::submitSolutions(std::set<uint64_t> solutions, std::string cha
 	}
 }
 
-const state_t openCLSolver::getMidState(message_t &newMessage)
+state_t const openCLSolver::getMidState(message_t &newMessage)
 {
 	uint64_t message[11]{ 0 };
 	std::memcpy(&message, &newMessage, MESSAGE_LENGTH);
@@ -534,11 +534,10 @@ const state_t openCLSolver::getMidState(message_t &newMessage)
 
 uint64_t openCLSolver::getNextWorkPosition(std::unique_ptr<Device>& device)
 {
-	std::lock_guard<std::mutex> lock(m_searchSpaceMutex);
-
-	device->hashCount += device->globalWorkSize;
 	uint64_t lastPosition;
 	incrementWorkPosition(lastPosition, device->globalWorkSize);
+	device->hashCount += device->globalWorkSize;
+
 	return lastPosition;
 }
 
@@ -572,8 +571,6 @@ void openCLSolver::pushMessage()
 
 void openCLSolver::checkInputs(std::unique_ptr<Device>& device, char *currentChallenge)
 {
-	std::lock_guard<std::mutex> lock(m_checkInputsMutex);
-
 	if (m_newTarget.load() || m_newMessage.load())
 	{
 		for (auto& device : m_devices)

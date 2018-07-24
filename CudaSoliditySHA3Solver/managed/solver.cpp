@@ -77,21 +77,25 @@ namespace CudaSolver
 
 	bool Solver::isAssigned()
 	{
+		if (m_Instance == nullptr) return false;
 		return m_Instance->isAssigned();
 	}
 
 	bool Solver::isAnyInitialised()
 	{
+		if (m_Instance == nullptr) return false;
 		return m_Instance->isAnyInitialised();
 	}
 
 	bool Solver::isMining()
 	{
+		if (m_Instance == nullptr) return false;
 		return m_Instance->isMining();
 	}
 
 	bool Solver::isPaused()
 	{
+		if (m_Instance == nullptr) return false;
 		return m_Instance->isPaused();
 	}
 
@@ -127,11 +131,13 @@ namespace CudaSolver
 
 	uint64_t Solver::getTotalHashRate()
 	{
+		if (m_Instance == nullptr) return 0ull;
 		return m_Instance->getTotalHashRate();
 	}
 
 	uint64_t Solver::getHashRateByDeviceID(int const deviceID)
 	{
+		if (m_Instance == nullptr) return 0ull;
 		return m_Instance->getHashRateByDeviceID(deviceID);
 	}
 

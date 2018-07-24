@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
 
 namespace SoliditySHA3Miner
@@ -32,7 +33,7 @@ namespace SoliditySHA3Miner
         public const string Contract0xBTC_ropsten = "0x9D2Cc383E677292ed87f63586086CfF62a009010";
         public const string AbiFile0xBTC = "0xbtc.abi";
 
-        public const string PoolPrimary = "http://mike.rs:8080";//"http://0xbtc.wolfpool.io:8080";
+        public const string PoolPrimary = "http://mike.rs:8080";
         public const string PoolSecondary = "http://mike.rs:8080";
         public const string JsonAPIPath = "http://127.0.0.1:4078";
         public const string CcminerAPIPath = "127.0.0.1:4068";
@@ -43,7 +44,6 @@ namespace SoliditySHA3Miner
         public const int PauseOnFailedScan = 3;
         public const int NetworkUpdateInterval = 15000;
         public const int HashrateUpdateInterval = 30000;
-
     }
 
     class Program
@@ -93,7 +93,14 @@ namespace SoliditySHA3Miner
 
         public static string GetCurrentTimestamp() => string.Format("{0:s}", DateTime.Now);
 
-        public static void Print(string message) => Console.WriteLine(string.Format("[{0}] {1}", GetCurrentTimestamp(), message));
+        public static void Print(string message)
+        {
+            new TaskFactory().StartNew(() =>
+            {
+                Console.WriteLine(string.Format("[{0}] {1}", GetCurrentTimestamp(), message));
+                if (message.Contains("Mining stopped")) m_manualResetEvent.Set();
+            });
+        }
 
         private static System.Timers.Timer m_waitCheckTimer;
         private static ManualResetEvent m_manualResetEvent;
@@ -107,7 +114,7 @@ namespace SoliditySHA3Miner
         {
             return "\n" +
                 "*** " + GetApplicationName() + " " + GetApplicationVersion() + " by lwYeo@github (" + GetApplicationYear() + ") ***\n" +
-                "*** Built with C#.NET 4.7.1, VC++ 2017 and nVidia CUDA SDK 9.2 64-bits\n" +
+                "*** Built with C#.NET 4.7.1, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
                 "*** Include kernel from Mikers, Azlehria and LtTofu (Mag517)\n" +
                 "\n" +
                 "Donation addresses:\n" +
@@ -603,7 +610,7 @@ namespace SoliditySHA3Miner
                     }
                 }
             }
-
+            
             try
             {
                 var solutionTemplate = Miner.CPU.GetSolutionTemplate(kingAddress);
@@ -631,15 +638,6 @@ namespace SoliditySHA3Miner
                 m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, solutionTemplate, kingAddress,
                                            tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
-                if (m_cudaMiner.HasAssignedDevices) m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                                                            hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
-
-                if (m_openCLMiner.HasAssignedDevices) m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                                                                hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
-
-                if (m_cpuMiner.HasAssignedDevices) m_cpuMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                                                          hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
-
                 m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner };
 
                 if (m_allMiners.All(m => !m.HasAssignedDevices))
@@ -653,6 +651,18 @@ namespace SoliditySHA3Miner
                 if (m_apiJson.IsSupported) m_apiJson.Start(minerJsonAPI);
 
                 API.Ccminer.StartListening(minerCcminerAPI, m_allMiners);
+
+                if (m_cudaMiner.HasAssignedDevices)
+                    m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
+                                            hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+
+                if (m_openCLMiner.HasAssignedDevices)
+                    m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
+                                              hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+
+                if (m_cpuMiner.HasAssignedDevices)
+                    m_cpuMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
+                                           hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
 
                 m_waitCheckTimer = new System.Timers.Timer(1000);
                 m_waitCheckTimer.Elapsed += delegate { if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPaused))) WaitSeconds++; };

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <algorithm>
 #include <chrono>
@@ -70,9 +70,6 @@ private:
 	arith_uint256 m_customDifficulty;
 
 	std::atomic<std::chrono::steady_clock::time_point> m_solutionHashStartTime;
-
-	std::mutex m_checkInputsMutex;
-	std::mutex m_searchSpaceMutex;
 	std::thread m_runThread;
 
 public:
@@ -99,7 +96,7 @@ public:
 	void updatePrefix(std::string const prefix);
 	void updateTarget(std::string const target);
 	void updateDifficulty(std::string const difficulty);
-	void setCustomDifficulty(uint32_t customDifficulty);
+	void setCustomDifficulty(uint32_t const customDifficulty);
 
 	void startFinding();
 	void stopFinding();
@@ -114,8 +111,9 @@ private:
 	void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);
 	void onMessage(int deviceID, const char* type, const char* message);
 	void onMessage(int deviceID, std::string type, std::string message);
-
-	const std::string keccak256(std::string const message); // for CPU verification
+	
+	// for CPU verification
+	const std::string keccak256(std::string const message);
 	void onSolution(byte32_t const solution, std::string challenge);
 
 	void findSolution(int const deviceID);
@@ -125,5 +123,5 @@ private:
 	void submitSolutions(std::set<uint64_t> solutions, std::string challenge);
 
 	uint64_t getNextWorkPosition(std::unique_ptr<Device>& device);
-	const state_t getMidState(message_t &newMessage);
+	state_t const getMidState(message_t &newMessage);
 };

@@ -121,18 +121,24 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 	std::string deviceName{ assignDevice->name };
 	std::transform(deviceName.begin(), deviceName.end(), deviceName.begin(), ::toupper);
 
-	float defaultIntensity{ DEFALUT_INTENSITY };
+	if (assignDevice->computeVersion > 350)
+	{
+		float defaultIntensity{ DEFALUT_INTENSITY };
 
-	if (deviceName.find("1180") != std::string::npos || deviceName.find("1080") != std::string::npos
-		|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
-		defaultIntensity = 29.0F;
-	else if (deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
-		defaultIntensity = 28.0F;
-	else if (deviceName.find("1060") != std::string::npos || deviceName.find("1050") != std::string::npos
-		|| deviceName.find("970") != std::string::npos)
-		defaultIntensity = 27.0F;
+		if (deviceName.find("1180") != std::string::npos || deviceName.find("1080") != std::string::npos
+			|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
+			defaultIntensity = 29.0F;
 
-	assignDevice->intensity = (intensity < 1.000F) ? defaultIntensity : intensity;
+		else if (deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
+			defaultIntensity = 28.0F;
+
+		else if (deviceName.find("1060") != std::string::npos || deviceName.find("1050") != std::string::npos
+			|| deviceName.find("970") != std::string::npos)
+			defaultIntensity = 27.0F;
+
+		assignDevice->intensity = (intensity < 1.000F) ? defaultIntensity : intensity;
+	}
+	else assignDevice->intensity = (intensity < 1.000F) ? 24.0F : intensity; // For old GPUs
 
 	std::string message = "Assigned CUDA device (" + assignDevice->name + ")...";
 #ifndef NDEBUG
@@ -239,7 +245,7 @@ void CUDASolver::updateDifficulty(std::string const difficulty)
 	}
 }
 
-void CUDASolver::setCustomDifficulty(uint32_t customDifficulty)
+void CUDASolver::setCustomDifficulty(uint32_t const customDifficulty)
 {
 	if (customDifficulty == 0u) return;
 
@@ -408,15 +414,14 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string chall
 
 uint64_t CUDASolver::getNextWorkPosition(std::unique_ptr<Device>& device)
 {
-	std::lock_guard<std::mutex> lock(m_searchSpaceMutex);
-
-	device->hashCount += device->threads();
 	uint64_t lastPosition;
 	incrementWorkPosition(lastPosition, device->threads());
+	device->hashCount += device->threads();
+
 	return lastPosition;
 }
 
-const state_t CUDASolver::getMidState(message_t &newMessage)
+state_t const CUDASolver::getMidState(message_t &newMessage)
 {
 	uint64_t message[11]{ 0 };
 	std::memcpy(&message, &newMessage, MESSAGE_LENGTH);

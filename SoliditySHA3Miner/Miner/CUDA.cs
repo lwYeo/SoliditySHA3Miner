@@ -59,13 +59,41 @@ namespace SoliditySHA3Miner.Miner
 
         public Device[] Devices { get; }
 
-        public bool HasAssignedDevices => Solver == null ? false : Solver.isAssigned();
+        public bool HasAssignedDevices
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isAssigned(); }
+                catch (Exception) { return false; }
+            }
+        }
 
-        public bool IsAnyInitialised => Solver == null ? false : Solver.isAnyInitialised();
+        public bool IsAnyInitialised
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isAnyInitialised(); }
+                catch (Exception) { return false; }
+            }
+        }
 
-        public bool IsMining => Solver == null ? false : Solver.isMining();
+        public bool IsMining
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isMining(); }
+                catch (Exception) { return false; }
+            }
+        }
 
-        public bool IsPaused => Solver == null ? false : Solver.isPaused();
+        public bool IsPaused
+        {
+            get
+            {
+                try { return Solver == null ? false : Solver.isPaused(); }
+                catch (Exception) { return false; }
+            }
+        }
 
         public void StartMining(int networkUpdateInterval, int hashratePrintInterval)
         {
@@ -105,20 +133,23 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        public ulong GetTotalHashrate()
-        {
-            return (ulong)Solver?.getTotalHashRate();
-        }
-
-        public ulong GetHashrateByDevice(string platformName, int deviceID)
-        {
-            return (ulong)Solver?.getHashRateByDeviceID(deviceID);
-        }
-
         public long GetDifficulty()
         {
             try { return (long)lastMiningParameters.MiningDifficulty.Value; }
             catch (OverflowException) { return long.MaxValue; }
+            catch (Exception) { return 0; }
+        }
+
+        public ulong GetHashrateByDevice(string platformName, int deviceID)
+        {
+            try { return Solver.getHashRateByDeviceID(deviceID); }
+            catch (Exception) { return 0u; }
+        }
+
+        public ulong GetTotalHashrate()
+        {
+            try { return Solver.getTotalHashRate(); }
+            catch (Exception) { return 0u; }
         }
 
         public void Dispose()
@@ -136,7 +167,8 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        public CUDA(NetworkInterface.INetworkInterface networkInterface, Device[] cudaDevices, string solutionTemplate, string kingAddress, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
+        public CUDA(NetworkInterface.INetworkInterface networkInterface, Device[] cudaDevices, string solutionTemplate, string kingAddress, 
+                    HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {

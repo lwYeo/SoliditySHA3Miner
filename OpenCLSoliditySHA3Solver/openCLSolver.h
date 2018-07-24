@@ -99,9 +99,6 @@ private:
 	arith_uint256 m_customDifficulty;
 
 	std::atomic<std::chrono::steady_clock::time_point> m_solutionHashStartTime;
-
-	std::mutex m_checkInputsMutex;
-	std::mutex m_searchSpaceMutex;
 	std::thread m_runThread;
 
 public:
@@ -149,5 +146,5 @@ private:
 	void submitSolutions(std::set<uint64_t> solutions, std::string challenge);
 
 	uint64_t getNextWorkPosition(std::unique_ptr<Device>& device);
-	const state_t getMidState(message_t &newMessage);
+	state_t const getMidState(message_t &newMessage);
 };
