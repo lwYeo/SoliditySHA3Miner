@@ -294,7 +294,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 var miningReward = GetMiningReward();
 
-                Program.Print(string.Format("[INFO] Transferring dev fee for share [{0}]...", shareNo));
+                Program.Print(string.Format("[INFO] Transferring dev fee for successful mint share [{0}]...", shareNo));
 
                 var txInput = new object[] { DevFee.Address, miningReward };
 
@@ -358,7 +358,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 if (!success) throw new Exception("Failed to submit dev fee.");
                 else
                 {
-                    Program.Print(string.Format("[INFO] Transferred dev fee for share [{0}] : {1}, block: {2}," +
+                    Program.Print(string.Format("[INFO] Transferred dev fee for successful mint share [{0}] : {1}, block: {2}," +
                                                 "\n transaction ID: {3}",
                                                 shareNo,
                                                 success ? "success" : "failed",

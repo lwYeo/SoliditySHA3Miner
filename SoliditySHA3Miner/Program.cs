@@ -130,7 +130,7 @@ namespace SoliditySHA3Miner
                 "Options:\n" +
                 "  help                    Display this help text and exit\n" +
                 "  cpuMode                 Set this miner to run in CPU mode only, disables GPU (default: false)\n" +
-                "  cpuID                   Comma separated list of CPU thread ID to use (default: all logical CPUs)\n" +
+                "  cpuID                   Comma separated list of CPU thread ID to use (default: all logical CPUs except first)\n" +
                 "  allowIntel              Allow to use Intel GPU (OpenCL) (default: true)\n" +
                 "  allowAMD                Allow to use AMD GPU (OpenCL) (default: true)\n" +
                 "  allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)\n" +
@@ -480,7 +480,7 @@ namespace SoliditySHA3Miner
             {
                 if ((cpuDevices == null || !cpuDevices.Any()) && args.All(a => !a.StartsWith("cpuID")))
                 {
-                    Print("[INFO] CPU IDs not specified, default assign all logical CPUs.");
+                    Print("[INFO] CPU IDs not specified, default assign all logical CPUs except first.");
                     var cpuCount = Miner.CPU.GetLogicalProcessorCount();
                     if (cpuCount <= 0) cpuCount = 1;
                     cpuDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cpuCount);
@@ -488,7 +488,7 @@ namespace SoliditySHA3Miner
                     for (int i = 0; i < cpuCount; i++)
                     {
                         cpuDevices[i].Type = "CPU";
-                        cpuDevices[i].DeviceID = i;
+                        cpuDevices[i].DeviceID = (i < 1) ? -1 : i;
                     }
                 }
             }

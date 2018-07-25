@@ -246,7 +246,7 @@ namespace SoliditySHA3Miner.Miner
         {
 
             var sFormat = new StringBuilder();
-            if (threadID > -1) sFormat.Append("CUDA ID: {0} ");
+            if (threadID > -1) sFormat.Append("CPU Thread: {0} ");
 
             switch (type.ToUpperInvariant())
             {

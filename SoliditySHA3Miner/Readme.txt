@@ -26,7 +26,7 @@ Usage: SoliditySHA3Miner [OPTIONS]
 Options:
   help                    Display this help text and exit
   cpuMode                 Set this miner to run in CPU mode only, disables GPU (default: false)
-  cpuID                   Comma separated list of CPU thread ID to use (default: all logical CPUs)
+  cpuID                   Comma separated list of CPU thread ID to use (default: all logical CPUs except first)
   allowIntel              Allow to use Intel GPU (OpenCL) (default: true)
   allowAMD                Allow to use AMD GPU (OpenCL) (default: true)
   allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)
@@ -64,4 +64,4 @@ You will have to supply your own Ethereum address (or Private key if you solo mi
 It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
 There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st if Pool mine, or starting from 50th if Solo mine).
 You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nounce mod devFee) = 0").
-Dev fee in solo mining is by sending the last reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.
+Dev fee in solo mining is by sending the current reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.

@@ -234,12 +234,8 @@ namespace CPUSolver
 
 	uint64_t cpuSolver::getTotalHashRate()
 	{
-		uint64_t totalHashes{ 0ull };
-		for (uint32_t id{ 0 }; id < m_miningThreadCount; ++id)
-			totalHashes += m_threadHashes[id];
-
 		using namespace std::chrono;
-		return (uint64_t)((long double)totalHashes / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime).count()));
+		return (uint64_t)((long double)m_solutionHashCount.load() / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime).count()));
 	}
 
 	uint64_t cpuSolver::getHashRateByThreadID(uint32_t const threadID)
@@ -292,7 +288,9 @@ namespace CPUSolver
 				byte32_t currentSolution;
 				memcpy(&currentSolution, &m_solutionTemplate, UINT256_LENGTH);
 
+				m_threadHashes[threadID]++;
 				uint64_t hashID{ m_solutionHashCount.fetch_add(1u) };
+
 				if (s_kingAddress.empty())
 					memcpy(&currentSolution[12], &hashID, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
 				else
@@ -309,6 +307,7 @@ namespace CPUSolver
 
 				if (hashID > INT64_MAX)
 				{
+					m_threadHashes[threadID] = 0ull;
 					m_solutionHashCount.store(0ull);
 					m_hashStartTime = std::chrono::steady_clock::now();
 				}
