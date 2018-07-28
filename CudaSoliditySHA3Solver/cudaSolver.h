@@ -48,9 +48,7 @@ private:
 	SolutionCallback m_solutionCallback;
 	std::vector<std::unique_ptr<Device>> m_devices;
 
-	static std::atomic<bool> m_newTarget;
-	static std::atomic<bool> m_newMessage;
-	static std::atomic<bool> m_pause;
+	static bool m_pause;
 
 	std::string s_kingAddress;
 	std::string s_address;
@@ -118,8 +116,8 @@ private:
 
 	void findSolution(int const deviceID);
 	void checkInputs(std::unique_ptr<Device>& device, char *currentChallenge);
-	void pushTarget();
-	void pushMessage();
+	void pushTarget(std::unique_ptr<Device>& device);
+	void pushMessage(std::unique_ptr<Device>& device);
 	void submitSolutions(std::set<uint64_t> solutions, std::string challenge);
 
 	uint64_t getNextWorkPosition(std::unique_ptr<Device>& device);

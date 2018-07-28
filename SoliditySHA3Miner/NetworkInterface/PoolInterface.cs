@@ -44,25 +44,37 @@ namespace SoliditySHA3Miner.NetworkInterface
             var getPoolMinimumShareDifficulty = GetPoolParameter("getMinimumShareDifficulty", s_MinerAddress);
             var getPoolMinimumShareTarget = GetPoolParameter("getMinimumShareTarget", s_MinerAddress);
 
+            bool success = true;
             try
             {
                 return MiningParameters.GetPoolMiningParameters(s_PoolURL, getPoolEthAddress, getPoolChallengeNumber,
                                                                 getPoolMinimumShareDifficulty, getPoolMinimumShareTarget);
             }
+            catch (AggregateException ex)
+            {
+                success = false;
+                m_retryCount++;
+
+                string errorMsg = ex.Message;
+                foreach (var iEx in ex.InnerExceptions) errorMsg += ("\n " + iEx.Message);
+                
+                Program.Print("[ERROR] " + errorMsg);
+            }
             catch (Exception ex)
             {
+                success = false;
                 m_retryCount++;
-                if (m_retryCount < m_maxScanRetry) Program.Print("[ERROR] " + ex.Message);
-                else
-                {
-                    if (SecondaryPool == null) throw ex;
-                    else
-                    {
-                        Program.Print("[ERROR] Failed getting mining parameters from primary pool, getting from secondary pool...");
-                        m_runFailover = true;
-                        return SecondaryPool.GetMiningParameters();
-                    }
-                }
+
+                string errorMsg = ex.Message;
+                if (ex.InnerException != null) errorMsg += ("\n " + ex.InnerException.Message);
+                Program.Print("[ERROR] " + errorMsg );
+            }
+
+            if (!success && SecondaryPool != null && m_retryCount >= m_maxScanRetry)
+            {
+                m_runFailover = true;
+                Program.Print("[INFO] Getting mining parameters from secondary pool...");
+                return SecondaryPool.GetMiningParameters();
             }
 
             return null;

@@ -144,7 +144,7 @@ __device__ __forceinline__ nonce_t ROTRfrom32(nonce_t rtdby32, uint32_t const ma
 	return rtdby32;										// return rotation from the rotation by 32
 }
 
-__global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict__ solutionCount, uint64_t const startPosition)
+__global__ void hashMidState(uint64_t* __restrict__ solutions, uint32_t* __restrict__ solutionCount, uint64_t const startPosition)
 {
 	nonce_t nonce, state[25], C[5], D[5], n[11];
 	nonce.uint64 = startPosition + (blockDim.x * blockIdx.x + threadIdx.x);
@@ -228,7 +228,7 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 		C[0] = xor5(state[4], state[9], state[14], state[19], state[24]);
 
 #if __CUDA_ARCH__ >= 350
-		for (uint_fast8_t x{ 0 }; x < 5u; ++x)
+		for (uint_fast8_t x{ 0u }; x < 5u; ++x)
 		{
 			D[x] = ROTL64(C[MOD5[x + 2]], 1);
 			state[x] = xor3(state[x], D[x], C[x]);
@@ -323,7 +323,7 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 
 	state[0].uint64 = chi(state[0], state[6], state[12]).uint64 ^ Keccak_f1600_RC[23];
 
-	if (bswap_64(state[0]).uint64 < d_target[0])
+	if (bswap_64(state[0]).uint64 <= d_target[0]) // LTE is allowed because d_target is high 64 bits of uint256 (let CPU do the verification)
 	{
 		(*solutionCount)++;
 		if ((*solutionCount) < MAX_SOLUTION_COUNT_DEVICE) solutions[(*solutionCount) - 1] = nonce.uint64;
@@ -334,35 +334,23 @@ __global__ void cuda_mine(uint64_t* __restrict__ solutions, uint32_t* __restrict
 // CUDASolver
 // --------------------------------------------------------------------
 
-void CUDASolver::pushTarget()
+void CUDASolver::pushTarget(std::unique_ptr<Device>& device)
 {
-	std::string const tgtPrefix(static_cast<std::string::size_type>(UINT256_LENGTH * 2) - m_target.GetHex().length(), '0');
+	cudaMemcpyToSymbol(d_target, &device->currentHigh64Target, UINT64_LENGTH, 0, cudaMemcpyHostToDevice);
 
-	uint64_t truncTarget{ std::stoull((tgtPrefix + s_target.substr(2)).substr(0, 16), nullptr, 16) };
-
-	for (auto& device : m_devices)
-	{
-		cudaSetDevice(device->deviceID);
-
-		cudaMemcpyToSymbol(d_target, &truncTarget, UINT64_LENGTH, 0, cudaMemcpyHostToDevice);
-	}
-	m_newTarget.store(false);
+	device->isNewTarget = false;
 }
 
-void CUDASolver::pushMessage()
+void CUDASolver::pushMessage(std::unique_ptr<Device>& device)
 {
-	for (auto& device : m_devices)
-	{
-		cudaSetDevice(device->deviceID);
+	cudaMemcpyToSymbol(d_midState, device->currentMidState.data(), STATE_LENGTH, 0, cudaMemcpyHostToDevice);
 
-		cudaMemcpyToSymbol(d_midState, getMidState(m_miningMessage).data(), STATE_LENGTH, 0, cudaMemcpyHostToDevice);
-	}
-	m_newMessage.store(false);
+	device->isNewMessage = false;
 }
 
 void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChallenge)
 {
-	if (m_newTarget.load() || m_newMessage.load())
+	if (device->isNewMessage || device->isNewTarget)
 	{
 		for (auto& device : m_devices)
 		{
@@ -376,24 +364,21 @@ void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChall
 		resetWorkPosition(lastPosition);
 		m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
-		if (m_newTarget.load()) pushTarget();
+		if (device->isNewTarget) pushTarget(device);
 
-		if (m_newMessage.load())
+		if (device->isNewMessage)
 		{
+			pushMessage(device);
 			strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
-
-			std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
-			std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH);
-			pushMessage();
 		}
-
-		cudaSetDevice(device->deviceID); // required to set back after push target/messsage
 	}
 }
 
 void CUDASolver::findSolution(int const deviceID)
 {
 	auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
+
+	while (!(device->isNewTarget || device->isNewMessage)) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
 
 	CudaSafeCall(cudaSetDevice(device->deviceID));
 
@@ -418,7 +403,6 @@ void CUDASolver::findSolution(int const deviceID)
 		device->initialized = true;
 	}
 
-	uint64_t currentWorkPosition = UINT64_MAX;
 	char *c_currentChallenge = (char *)malloc(s_challenge.size());
 	strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
 
@@ -430,19 +414,16 @@ void CUDASolver::findSolution(int const deviceID)
 	device->hashStartTime.store(std::chrono::steady_clock::now());
 	do
 	{
-		while (m_pause.load()) { std::this_thread::sleep_for(std::chrono::milliseconds(500)); }
+		while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
 
 		checkInputs(device, c_currentChallenge);
 
-		if (currentWorkPosition == UINT64_MAX) currentWorkPosition = getNextWorkPosition(device);
-
-		cuda_mine<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, currentWorkPosition);
+		hashMidState<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
 
 		CudaCheckError();
 
 		cudaError_t response = cudaDeviceSynchronize();
-		if (response == cudaSuccess) currentWorkPosition = UINT64_MAX;
-		else
+		if (response != cudaSuccess)
 		{
 			std::string cudaErrors;
 			cudaError_t lastError = cudaGetLastError();
@@ -479,8 +460,6 @@ void CUDASolver::findSolution(int const deviceID)
 
 	onMessage(device->deviceID, "Info", "Stop mining...");
 	device->hashCount.store(0ull);
-
-	CudaSafeCall(cudaSetDevice(device->deviceID));
 
 	CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
 	CudaSafeCall(cudaFreeHost(device->h_Solutions));

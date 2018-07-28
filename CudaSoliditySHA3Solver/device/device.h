@@ -43,6 +43,13 @@ public:
 	uint32_t* d_SolutionCount;
 	uint32_t* h_SolutionCount;
 
+	bool checkChanges;
+	bool isNewTarget;
+	bool isNewMessage;
+
+	state_t currentMidState;
+	uint64_t currentHigh64Target;
+
 private:
 	dim3 m_block;
 	dim3 m_grid;

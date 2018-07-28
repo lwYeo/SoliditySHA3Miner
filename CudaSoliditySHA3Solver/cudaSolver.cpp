@@ -9,9 +9,7 @@
 // Static
 // --------------------------------------------------------------------
 
-std::atomic<bool> CUDASolver::m_newTarget;
-std::atomic<bool> CUDASolver::m_newMessage;
-std::atomic<bool> CUDASolver::m_pause;
+bool CUDASolver::m_pause{ false };
 
 std::string CUDASolver::getCudaErrorString(cudaError_t &error)
 {
@@ -60,10 +58,6 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemp
 	m_maxDifficulty{ maxDifficulty },
 	s_kingAddress{ kingAddress }
 {
-	m_newTarget.store(false);
-	m_newMessage.store(false);
-	m_pause.store(false);
-
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
 	hexStringToBytes(solutionTemplate, m_solutionTemplate);
@@ -192,7 +186,7 @@ bool CUDASolver::isMining()
 
 bool CUDASolver::isPaused()
 {
-	return CUDASolver::m_pause.load();
+	return m_pause;
 }
 
 void CUDASolver::updatePrefix(std::string const prefix)
@@ -211,8 +205,19 @@ void CUDASolver::updatePrefix(std::string const prefix)
 	std::memcpy(&oldChallenge, &m_prefix, UINT256_LENGTH);
 	
 	std::memcpy(&m_prefix, &tempPrefix, PREFIX_LENGTH);
+	std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
+	std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH);
 
-	m_newMessage.store(true);
+	state_t tempMidState{ getMidState(m_miningMessage) };
+
+	for (auto& device : m_devices)
+	{
+		if (device->deviceID < 0) continue;
+
+		device->currentMidState = tempMidState;
+		device->isNewMessage = true;
+	}
+
 	onMessage(-1, "Info", "New challenge detected " + s_challenge.substr(0, 18) + "...");
 }
 
@@ -226,7 +231,16 @@ void CUDASolver::updateTarget(std::string const target)
 	s_target = (target.substr(0, 2) == "0x") ? target : "0x" + target;
 	m_target = tempTarget;
 
-	m_newTarget.store(true);
+	uint64_t tempHigh64Target{ std::stoull(s_target.substr(2).substr(0, UINT64_LENGTH * 2), nullptr, 16) };
+
+	for (auto& device : m_devices)
+	{
+		if (device->deviceID < 0) continue;
+
+		device->currentHigh64Target = tempHigh64Target;
+		device->isNewTarget = true;
+	}
+
 	onMessage(-1, "Info", "New target detected " + s_target.substr(0, 18) + "...");
 }
 
@@ -258,36 +272,27 @@ void CUDASolver::setCustomDifficulty(uint32_t const customDifficulty)
 
 void CUDASolver::startFinding()
 {
-	using namespace std::chrono_literals;
-
 	uint64_t lastPosition;
 	resetWorkPosition(lastPosition);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
-
-	while (!(m_newTarget.load() || m_newMessage.load())) { std::this_thread::sleep_for(100ms); }
 
 	for (auto& device : m_devices)
 	{
 		device->miningThread = std::thread(&CUDASolver::findSolution, this, device->deviceID);
 		device->miningThread.detach();
-		std::this_thread::sleep_for(100ms);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 
 void CUDASolver::stopFinding()
 {
-	using namespace std::chrono_literals;
-
 	for (auto& device : m_devices) device->mining = false;
-	std::this_thread::sleep_for(1s);
-
-	m_newMessage.store(false);
-	m_newTarget.store(false);
+	std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
 void CUDASolver::pauseFinding(bool pauseFinding)
 {
-	m_pause.store(pauseFinding);
+	m_pause = pauseFinding;
 }
 
 uint64_t CUDASolver::getTotalHashRate()
@@ -357,9 +362,9 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 	if (!isSubmitStale && challenge != s_challenge)
 		return;
 	else if (isSubmitStale && challenge != s_challenge)
-		onMessage(-1, "Warn", "Found stale solution, verifying...");
+		onMessage(-1, "Warn", "GPU found stale solution, verifying...");
 	else
-		onMessage(-1, "Info", "Found solution, verifying...");
+		onMessage(-1, "Info", "GPU found solution, verifying...");
 
 	prefix_t prefix;
 	std::memcpy(&prefix, &m_miningMessage, PREFIX_LENGTH);
@@ -368,7 +373,7 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 	std::memset(&emptySolution, 0u, UINT256_LENGTH);
 	if (solution == emptySolution)
 	{
-		onMessage(-1, "Error", "Verification failed: empty solution"
+		onMessage(-1, "Error", "CPU verification failed: empty solution"
 			+ std::string("\nChallenge: ") + challenge
 			+ "\nAddress: " + s_address
 			+ "\nTarget: " + s_target);
@@ -384,16 +389,25 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 
 	if (digest >= m_target)
 	{
-		onMessage(-1, "Error", "Verification failed: invalid solution"
-			+ std::string("\nChallenge: ") + challenge
-			+ "\nAddress: " + s_address
-			+ "\nSolution: 0x" + solutionStr
-			+ "\nDigest: 0x" + digestStr
-			+ "\nTarget: " + s_target);
+		std::string s_hi64Target{ s_target.substr(2).substr(0, UINT64_LENGTH * 2) };
+		for (uint32_t i{ 0 }; i < (UINT256_LENGTH - UINT64_LENGTH); ++i) s_hi64Target += "00";
+		arith_uint256 high64Target{ s_hi64Target };
+		
+		if (digest <= high64Target) // on rare ocassion where it falls in between m_target and high64Target
+			onMessage(-1, "Warn", "CPU verification failed: invalid solution");
+		else
+		{
+			onMessage(-1, "Error", "CPU verification failed: invalid solution"
+				+ std::string("\nChallenge: ") + challenge
+				+ "\nAddress: " + s_address
+				+ "\nSolution: 0x" + solutionStr
+				+ "\nDigest: 0x" + digestStr
+				+ "\nTarget: " + s_target);
+		}
 	}
 	else
 	{
-		onMessage(-1, "Info", "Solution verified, submitting nonce 0x" + solutionStr + "...");
+		onMessage(-1, "Info", "Solution verified by CPU, submitting nonce 0x" + solutionStr + "...");
 		m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_difficulty.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str(), m_customDifficulty > 0u);
 	}
 }
