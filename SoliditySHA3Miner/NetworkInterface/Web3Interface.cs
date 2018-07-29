@@ -70,6 +70,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                 throw new Exception("Invalid miner address provided, ensure capitalization is correct.");
             }
 
+            Program.Print("[INFO] Miner's address : " + minerAddress);
+
             m_minerAddress = minerAddress;
 
             m_web3 = new Web3(string.IsNullOrWhiteSpace(web3ApiPath) ? DEFAULT_WEB3_API : web3ApiPath);

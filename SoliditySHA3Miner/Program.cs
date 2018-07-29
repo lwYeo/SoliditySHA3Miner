@@ -532,6 +532,12 @@ namespace SoliditySHA3Miner
                 Print("[INFO] Primary pool not specified, using " + Defaults.PoolPrimary);
                 primaryPool = Defaults.PoolPrimary;
             }
+            else
+            {
+                Print("[INFO] Primary pool specified, using " + primaryPool);
+                if (!string.IsNullOrWhiteSpace(secondaryPool))
+                    Print("[INFO] Secondary pool specified, using " + secondaryPool);
+            }
 
             if (cpuMode)
             {

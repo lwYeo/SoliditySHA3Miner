@@ -26,11 +26,6 @@ namespace SoliditySHA3Miner.NetworkInterface
             m_maxScanRetry = maxScanRetry;
             SecondaryPool = secondaryPool;
 
-            var addressUtil = new AddressUtil();
-            if (!addressUtil.IsValidAddressLength(minerAddress) || !addressUtil.IsChecksumAddress(minerAddress))
-            {
-                throw new Exception("Invalid miner address provided (case sensitive).");
-            }
             s_MinerAddress = minerAddress;
             s_PoolURL = poolURL;
             SubmittedShares = 0ul;
