@@ -279,6 +279,7 @@ namespace SoliditySHA3Miner.Miner
         {
             var sFormat = new StringBuilder();
             if (deviceID > -1) sFormat.Append("CUDA ID: {0} ");
+            else sFormat.Append("CUDA ");
             
             switch (type.ToUpperInvariant())
             {

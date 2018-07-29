@@ -17,7 +17,7 @@
 
 #pragma managed(pop)
 
-#define DEFALUT_INTENSITY 25.0F
+#define DEFALUT_INTENSITY 25.0f
 
 class Device
 {

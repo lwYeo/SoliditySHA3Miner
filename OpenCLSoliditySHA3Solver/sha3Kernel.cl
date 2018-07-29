@@ -22,20 +22,14 @@ typedef union
 {
 	uint2		uint2_s;
 	ulong		ulong_s;
-} nounce_t;
+} nonce_t;
 
 typedef union
 {
 	uint2		uint2_s[STATE_LENGTH / sizeof(uint2)];
 	ulong		ulong_s[STATE_LENGTH / sizeof(ulong)];
-	nounce_t	nounce_s[STATE_LENGTH / sizeof(nounce_t)];
+	nonce_t	nonce_s[STATE_LENGTH / sizeof(nonce_t)];
 } state_t;
-
-typedef union
-{
-	ulong		ulong_s;
-	int			int_s;
-} solution_t;
 
 __constant static uint2 const Keccak_f1600_RC[24] = {
 	(uint2)(0x00000001, 0x00000000),
@@ -64,9 +58,9 @@ __constant static uint2 const Keccak_f1600_RC[24] = {
 	(uint2)(0x80008008, 0x80000000),
 };
 
-static inline nounce_t bswap64(const nounce_t input)
+static inline nonce_t bswap64(const nonce_t input)
 {
-	nounce_t output;
+	nonce_t output;
 
 #if PLATFORM == OPENCL_PLATFORM_NVIDIA
 
@@ -317,25 +311,26 @@ static void keccak_skip_first_round(uint2* state)
 	}
 }
 
-__kernel void mineSolidity(__constant uint2 const* midstate, __global volatile solution_t* restrict solutions, ulong target, ulong startPosition)
+__kernel void hashMidstate(
+	__constant uint2 const *midstate, __constant ulong const *target, ulong const startPosition,
+	__global volatile ulong *restrict solutions, __global volatile uint *solutionCount)
 {
 	state_t state;
-	nounce_t nounce;
-	nounce.ulong_s = get_global_id(0) + startPosition;
+	nonce_t nonce;
+	nonce.ulong_s = get_global_id(0) + startPosition;
 
-	keccak_first_round(state.uint2_s, midstate, nounce.uint2_s);
+	keccak_first_round(state.uint2_s, midstate, nonce.uint2_s);
 
 	keccak_skip_first_round(state.uint2_s);
 
-	if (bswap64(state.nounce_s[0]).ulong_s < target)
+	if (bswap64(state.nonce_s[0]).ulong_s <= target[0]) // LTE is allowed because d_target is high 64 bits of uint256 (let CPU do the verification)
 	{
 #ifdef cl_khr_int64_base_atomics
-		uint position = atomic_inc(&solutions[0].int_s) + 1;
+		uint position = atomic_inc(&solutionCount[0]);
 #else
-		uint position = solutions[0].int_s;
-		solutions[0].int_s++;
-		position++;
+		uint position = solutionCount[0];
+		++solutionCount[0];
 #endif
-		if (position < (MAX_SOLUTION_COUNT + 1)) solutions[position].ulong_s = nounce.ulong_s;
+		if (position < (MAX_SOLUTION_COUNT)) solutions[position] = nonce.ulong_s;
 	}
 }

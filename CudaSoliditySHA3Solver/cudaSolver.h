@@ -107,18 +107,18 @@ private:
 	void getWorkPosition(uint64_t &workPosition);
 	void resetWorkPosition(uint64_t &lastPosition);
 	void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);
-	void onMessage(int deviceID, const char* type, const char* message);
+	void onMessage(int deviceID, const char *type, const char *message);
 	void onMessage(int deviceID, std::string type, std::string message);
 	
 	// for CPU verification
 	const std::string keccak256(std::string const message);
-	void onSolution(byte32_t const solution, std::string challenge);
+	void onSolution(byte32_t const solution, std::string challenge, std::unique_ptr<Device> &device);
 
 	void findSolution(int const deviceID);
-	void checkInputs(std::unique_ptr<Device>& device, char *currentChallenge);
-	void pushTarget(std::unique_ptr<Device>& device);
-	void pushMessage(std::unique_ptr<Device>& device);
-	void submitSolutions(std::set<uint64_t> solutions, std::string challenge);
+	void checkInputs(std::unique_ptr<Device> &device, char *currentChallenge);
+	void pushTarget(std::unique_ptr<Device> &device);
+	void pushMessage(std::unique_ptr<Device> &device);
+	void submitSolutions(std::set<uint64_t> solutions, std::string challenge, int const deviceID);
 
 	uint64_t getNextWorkPosition(std::unique_ptr<Device>& device);
 	state_t const getMidState(message_t &newMessage);

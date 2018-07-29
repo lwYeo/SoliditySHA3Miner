@@ -144,7 +144,7 @@ __device__ __forceinline__ nonce_t ROTRfrom32(nonce_t rtdby32, uint32_t const ma
 	return rtdby32;										// return rotation from the rotation by 32
 }
 
-__global__ void hashMidState(uint64_t* __restrict__ solutions, uint32_t* __restrict__ solutionCount, uint64_t const startPosition)
+__global__ void hashMidstate(uint64_t* __restrict__ solutions, uint32_t* __restrict__ solutionCount, uint64_t const startPosition)
 {
 	nonce_t nonce, state[25], C[5], D[5], n[11];
 	nonce.uint64 = startPosition + (blockDim.x * blockIdx.x + threadIdx.x);
@@ -411,14 +411,14 @@ void CUDASolver::findSolution(int const deviceID)
 
 	device->mining = true;
 	device->hashCount.store(0ull);
-	device->hashStartTime.store(std::chrono::steady_clock::now());
+	device->hashStartTime.store(std::chrono::steady_clock::now() - std::chrono::milliseconds(200)); // reduce excessive high hashrate reporting at start
 	do
 	{
 		while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
 
 		checkInputs(device, c_currentChallenge);
 
-		hashMidState<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
+		hashMidstate<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
 
 		CudaCheckError();
 
@@ -451,7 +451,7 @@ void CUDASolver::findSolution(int const deviceID)
 					uniqueSolutions.emplace(tempSolution);
 			}
 
-			std::thread t{ &CUDASolver::submitSolutions, this, uniqueSolutions, std::string{ c_currentChallenge } };
+			std::thread t{ &CUDASolver::submitSolutions, this, uniqueSolutions, std::string{ c_currentChallenge }, device->deviceID };
 			t.detach();
 
 			std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);

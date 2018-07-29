@@ -115,44 +115,48 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 	std::string deviceName{ assignDevice->name };
 	std::transform(deviceName.begin(), deviceName.end(), deviceName.begin(), ::toupper);
 
-	if (assignDevice->computeVersion > 350)
+	if (assignDevice->computeVersion >= 500)
 	{
 		float defaultIntensity{ DEFALUT_INTENSITY };
 
 		if (deviceName.find("1180") != std::string::npos || deviceName.find("1080") != std::string::npos
 			|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
-			defaultIntensity = 29.0F;
+			defaultIntensity = 29.01f;
 
 		else if (deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
-			defaultIntensity = 28.0F;
+			defaultIntensity = 28.0f;
 
-		else if (deviceName.find("1060") != std::string::npos || deviceName.find("1050") != std::string::npos
-			|| deviceName.find("970") != std::string::npos)
-			defaultIntensity = 27.0F;
+		else if (deviceName.find("1060") != std::string::npos || deviceName.find("970") != std::string::npos)
+			defaultIntensity = 27.0f;
 
-		assignDevice->intensity = (intensity < 1.000F) ? defaultIntensity : intensity;
+		else if (deviceName.find("1050") != std::string::npos || deviceName.find("960") != std::string::npos)
+			defaultIntensity = 26.0f;
+
+		assignDevice->intensity = (intensity < 1.000f) ? defaultIntensity : intensity;
 	}
-	else assignDevice->intensity = (intensity < 1.000F) ? 24.0F : intensity; // For old GPUs
+	else assignDevice->intensity = (intensity < 1.000f) ? 24.0f : intensity; // For older GPUs
 
-	std::string message = "Assigned CUDA device (" + assignDevice->name + ")...";
-#ifndef NDEBUG
-	message += "\n Compute capability: " + std::to_string(deviceProp.major) + "." + std::to_string(deviceProp.minor);
-#endif // !NDEBUG
-	message += "\n Intensity: " + std::to_string(assignDevice->intensity);
+	onMessage(assignDevice->deviceID, "Info", "Assigned CUDA device (" + assignDevice->name + ")...");
 
-	if (!assignDevice->foundNvAPI64()) message += "NvAPI library not found.";
+	onMessage(assignDevice->deviceID, "Info", "Compute capability: " + std::to_string(deviceProp.major) + "." + std::to_string(deviceProp.minor));
+
+	onMessage(assignDevice->deviceID, "Info", "Intensity: " + std::to_string(assignDevice->intensity));
+
+	if (!assignDevice->foundNvAPI64()) onMessage(assignDevice->deviceID, "Warn", "NvAPI library not found.");
 	else
 	{
-		message += "\n Core OC: " + std::to_string(assignDevice->CoreOC()) + "MHz";
+		//std::string message;
+
+		//message += "\n Core OC: " + std::to_string(assignDevice->CoreOC()) + "MHz";
 		//if (assignDevice->CoreOC() <= 0)
-			//message += " (Recommended to OC for improved performance)";
+		//	message += " (Recommended to OC for improved performance)";
 
-		message += "\n Memory OC: " + std::to_string(assignDevice->MemoryOC()) + "MHz";
-		if (assignDevice->MemoryOC() > 0)
-			message += " (Memory OC has no improvement to performance)";
+		//message += "\n Memory OC: " + std::to_string(assignDevice->MemoryOC()) + "MHz";
+		//if (assignDevice->MemoryOC() > 0)
+		//	message += " (Memory OC has no improvement to performance)";
+
+		//onMessage(assignDevice->deviceID, "Info", message);
 	}
-
-	onMessage(assignDevice->deviceID, "Info", message);
 
 	return true;
 }
@@ -332,7 +336,7 @@ void CUDASolver::incrementWorkPosition(uint64_t &lastPosition, uint64_t incremen
 	m_incrementWorkPositionCallback(lastPosition, increment);
 }
 
-void CUDASolver::onMessage(int deviceID, const char* type, const char* message)
+void CUDASolver::onMessage(int deviceID, const char *type, const char *message)
 {
 	m_messageCallback(deviceID, type, message);
 }
@@ -357,14 +361,14 @@ const std::string CUDASolver::keccak256(std::string const message)
 	return bytesToHexString(out);
 }
 
-void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
+void CUDASolver::onSolution(byte32_t const solution, std::string challenge, std::unique_ptr<Device> &device)
 {
 	if (!isSubmitStale && challenge != s_challenge)
 		return;
 	else if (isSubmitStale && challenge != s_challenge)
-		onMessage(-1, "Warn", "GPU found stale solution, verifying...");
+		onMessage(device->deviceID, "Warn", "GPU found stale solution, verifying...");
 	else
-		onMessage(-1, "Info", "GPU found solution, verifying...");
+		onMessage(device->deviceID, "Info", "GPU found solution, verifying...");
 
 	prefix_t prefix;
 	std::memcpy(&prefix, &m_miningMessage, PREFIX_LENGTH);
@@ -373,7 +377,7 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 	std::memset(&emptySolution, 0u, UINT256_LENGTH);
 	if (solution == emptySolution)
 	{
-		onMessage(-1, "Error", "CPU verification failed: empty solution"
+		onMessage(device->deviceID, "Error", "CPU verification failed: empty solution"
 			+ std::string("\nChallenge: ") + challenge
 			+ "\nAddress: " + s_address
 			+ "\nTarget: " + s_target);
@@ -385,7 +389,7 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 
 	std::string digestStr = keccak256(prefixStr + solutionStr);
 	arith_uint256 digest = arith_uint256(digestStr);
-	onMessage(-1, "Debug", "Digest: 0x" + digestStr);
+	onMessage(device->deviceID, "Debug", "Digest: 0x" + digestStr);
 
 	if (digest >= m_target)
 	{
@@ -394,10 +398,10 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 		arith_uint256 high64Target{ s_hi64Target };
 		
 		if (digest <= high64Target) // on rare ocassion where it falls in between m_target and high64Target
-			onMessage(-1, "Warn", "CPU verification failed: invalid solution");
+			onMessage(device->deviceID, "Warn", "CPU verification failed: invalid solution");
 		else
 		{
-			onMessage(-1, "Error", "CPU verification failed: invalid solution"
+			onMessage(device->deviceID, "Error", "CPU verification failed: invalid solution"
 				+ std::string("\nChallenge: ") + challenge
 				+ "\nAddress: " + s_address
 				+ "\nSolution: 0x" + solutionStr
@@ -407,13 +411,15 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge)
 	}
 	else
 	{
-		onMessage(-1, "Info", "Solution verified by CPU, submitting nonce 0x" + solutionStr + "...");
+		onMessage(device->deviceID, "Info", "Solution verified by CPU, submitting nonce 0x" + solutionStr + "...");
 		m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_difficulty.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str(), m_customDifficulty > 0u);
 	}
 }
 
-void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string challenge)
+void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string challenge, int const deviceID)
 {
+	auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
+
 	for (uint64_t midStateSolution : solutions)
 	{
 		byte32_t solution{ m_solutionTemplate };
@@ -422,11 +428,11 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string chall
 		else
 			std::memcpy(&solution[ADDRESS_LENGTH], &midStateSolution, UINT64_LENGTH); // Shifted for King address
 
-		onSolution(solution, challenge);
+		onSolution(solution, challenge, device);
 	}
 }
 
-uint64_t CUDASolver::getNextWorkPosition(std::unique_ptr<Device>& device)
+uint64_t CUDASolver::getNextWorkPosition(std::unique_ptr<Device> &device)
 {
 	uint64_t lastPosition;
 	incrementWorkPosition(lastPosition, device->threads());

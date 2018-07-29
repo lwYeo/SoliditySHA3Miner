@@ -65,3 +65,18 @@ It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
 There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st if Pool mine, or starting from 50th if Solo mine).
 You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nounce mod devFee) = 0").
 Dev fee in solo mining is by sending the current reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.
+
+Please report your results so that I can improve the miner. You can either add an issue in the repository, or find me in discord (Amano7). Thanks for trying out this miner!
+
+CREDITS
+Donations are encouraged to help support further development of this miner!
+Many thanks to the following developers and testers in the 0xBitcoin discord :
+Azlehria
+mining-visualizer
+LtTofu/Mag517
+Infernal Toast
+0x1d00ffff
+Mikers
+Ghorge
+BRob
+Sly

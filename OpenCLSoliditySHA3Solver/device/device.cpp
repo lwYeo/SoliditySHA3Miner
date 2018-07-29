@@ -228,6 +228,7 @@ Device::Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platf
 		cl_uint computeCapabilityMajor, computeCapabilityMinor;
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(cl_uint), &computeCapabilityMajor, NULL);
 		if (status != CL_SUCCESS) throw std::exception("Failed to get CUDA compute capability.");
+
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(cl_uint), &computeCapabilityMinor, NULL);
 		if (status != CL_SUCCESS) throw std::exception("Failed to get CUDA compute capability.");
 
@@ -292,20 +293,37 @@ void Device::initialize(std::string& errorMessage)
 		return;
 	}
 
-	h_Solutions = reinterpret_cast<uint64_t *>(malloc(UINT64_LENGTH * (MAX_SOLUTION_COUNT_DEVICE + 1)));
-	std::memset(h_Solutions, 0u, UINT64_LENGTH * (MAX_SOLUTION_COUNT_DEVICE + 1));
+	h_solutions = reinterpret_cast<uint64_t *>(malloc(UINT64_LENGTH * MAX_SOLUTION_COUNT_DEVICE));
+	std::memset(h_solutions, 0u, UINT64_LENGTH * MAX_SOLUTION_COUNT_DEVICE);
 
-	solutionsBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, UINT64_LENGTH * (MAX_SOLUTION_COUNT_DEVICE + 1), h_Solutions, &status);
+	solutionsBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, UINT64_LENGTH * MAX_SOLUTION_COUNT_DEVICE, h_solutions, &status);
 	if (status != CL_SUCCESS)
 	{
 		errorMessage = std::string{ "Failed to use solutions buffer (" } + Device::getOpenCLErrorCodeStr(status) + ')';
 		return;
 	}
 
-	midstateBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, UINT64_LENGTH * STATE_LENGTH, NULL, &status);
+	h_solutionCount = reinterpret_cast<uint32_t *>(malloc(UINT32_LENGTH));
+	std::memset(h_solutionCount, 0u, UINT32_LENGTH);
+
+	solutionCountBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, UINT32_LENGTH, h_solutionCount, &status);
+	if (status != CL_SUCCESS)
+	{
+		errorMessage = std::string{ "Failed to use solution count buffer (" } + Device::getOpenCLErrorCodeStr(status) + ')';
+		return;
+	}
+
+	midstateBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, STATE_LENGTH, NULL, &status);
 	if (status != CL_SUCCESS)
 	{
 		errorMessage = std::string{ "Failed to allocate midstate buffer (" } + getOpenCLErrorCodeStr(status) + ')';
+		return;
+	}
+
+	targetBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, UINT64_LENGTH, NULL, &status);
+	if (status != CL_SUCCESS)
+	{
+		errorMessage = std::string{ "Failed to allocate target buffer (" } + getOpenCLErrorCodeStr(status) + ')';
 		return;
 	}
 
@@ -344,7 +362,7 @@ void Device::initialize(std::string& errorMessage)
 		return;
 	}
 
-	kernel = clCreateKernel(program, "mineSolidity", &status);
+	kernel = clCreateKernel(program, "hashMidstate", &status);
 	if (status != CL_SUCCESS)
 	{
 		errorMessage = std::string{ "Failed to create kernel from program (" } + getOpenCLErrorCodeStr(status) + ')';

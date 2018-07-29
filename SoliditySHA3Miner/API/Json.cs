@@ -64,7 +64,7 @@ namespace SoliditySHA3Miner.API
                 try { socket.Bind(new IPEndPoint(ipAddress, port)); }
                 catch (Exception)
                 {
-                    Program.Print("[ERROR] JSON-API failed to bind to: " + apiBind);
+                    Program.Print("[ERROR] JSON-API failed to bind to: " + (string.IsNullOrEmpty(apiBind) ? Defaults.JsonAPIPath : apiBind));
                     return; 
                 }
             };

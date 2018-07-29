@@ -97,6 +97,7 @@ namespace SoliditySHA3Miner
         {
             new TaskFactory().StartNew(() =>
             {
+                message = message.Replace("Accelerated Parallel Processing", "APP");
                 Console.WriteLine(string.Format("[{0}] {1}", GetCurrentTimestamp(), message));
                 if (message.Contains("Mining stopped")) m_manualResetEvent.Set();
             });
@@ -652,13 +653,13 @@ namespace SoliditySHA3Miner
 
                 API.Ccminer.StartListening(minerCcminerAPI, m_allMiners);
 
-                if (m_cudaMiner.HasAssignedDevices)
-                    m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                            hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
-
                 if (m_openCLMiner.HasAssignedDevices)
                     m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
                                               hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+
+                if (m_cudaMiner.HasAssignedDevices)
+                    m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
+                                            hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
 
                 if (m_cpuMiner.HasAssignedDevices)
                     m_cpuMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,

@@ -1,8 +1,8 @@
 #pragma once
 
-#define DEFAULT_INTENSITY 25.0F
-#define DEFAULT_LOCAL_WORK_SIZE 128
-#define MAX_SOLUTION_COUNT_DEVICE 32
+#define DEFAULT_INTENSITY 24.223f
+#define DEFAULT_LOCAL_WORK_SIZE 128u
+#define MAX_SOLUTION_COUNT_DEVICE 32u
 
 #define KERNEL_FILE "sha3Kernel.cl"
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
@@ -23,10 +23,8 @@
 
 #if defined(__APPLE__) || defined(__MACOSX)
 #	include <OpenCL/cl.hpp>
-//#	include <OpenCL/opencl.h>
 #else
 #	include <CL/cl.hpp>
-//#	include <CL/opencl.h>
 #endif
 
 #	define _M_CEE 001 
@@ -35,10 +33,8 @@
 
 #if defined(__APPLE__) || defined(__MACOSX)
 #	include <OpenCL/cl.hpp>
-//#	include <OpenCL/opencl.h>
 #else
 #	include <CL/cl.hpp>
-//#	include <CL/opencl.h>
 #endif
 
 #endif 
@@ -78,6 +74,13 @@ public:
 	std::string name;
 	std::string extensions;
 
+	bool checkChanges;
+	bool isNewTarget;
+	bool isNewMessage;
+
+	state_t currentMidState;
+	uint64_t currentHigh64Target[1];
+
 	std::vector<size_t> maxWorkItemSizes;
 	size_t maxWorkGroupSize;
 	cl_uint maxComputeUnits;
@@ -87,10 +90,13 @@ public:
 	size_t localWorkSize;
 	size_t globalWorkSize;
 
-	uint64_t *h_Solutions;
+	uint32_t *h_solutionCount;
+	uint64_t *h_solutions;
 
+	cl_mem solutionCountBuffer;
 	cl_mem solutionsBuffer;
 	cl_mem midstateBuffer;
+	cl_mem targetBuffer;
 
 	cl_command_queue queue;
 	cl_context context;
