@@ -44,6 +44,8 @@ namespace SoliditySHA3Miner
         public const int PauseOnFailedScan = 3;
         public const int NetworkUpdateInterval = 15000;
         public const int HashrateUpdateInterval = 30000;
+
+        public const bool LogFile = false;
     }
 
     class Program
@@ -85,6 +87,12 @@ namespace SoliditySHA3Miner
 
         public static ulong WaitSeconds { get; private set; }
 
+        public static bool IsLogFile { get; set; }
+
+        public static string LogFileFormat => $"{DateTime.Today:yyyy-MM-dd}.log";
+
+        public static string AppDirPath => Path.GetDirectoryName(typeof(Program).Assembly.Location);
+
         public static string GetApplicationName() => typeof(Program).Assembly.GetName().Name;
 
         public static string GetApplicationVersion() => typeof(Program).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
@@ -93,18 +101,44 @@ namespace SoliditySHA3Miner
 
         public static string GetCurrentTimestamp() => string.Format("{0:s}", DateTime.Now);
 
-        public static void Print(string message)
+        public static void Print(string message, bool excludePrefix = false)
         {
             new TaskFactory().StartNew(() =>
             {
-                message = message.Replace("Accelerated Parallel Processing", "APP");
-                Console.WriteLine(string.Format("[{0}] {1}", GetCurrentTimestamp(), message));
+                message = message.Replace("Accelerated Parallel Processing", "APP").Replace("\n", Environment.NewLine);
+                if (!excludePrefix) message = string.Format("[{0}] {1}", GetCurrentTimestamp(), message);
+
+                Console.WriteLine(message);
+
+                if (IsLogFile)
+                {
+                    var logFilePath = Path.Combine(AppDirPath, "Log", LogFileFormat);
+
+                    lock (m_manualResetEvent)
+                    {
+                        try
+                        {
+                            if (!Directory.Exists(Path.GetDirectoryName(logFilePath))) Directory.CreateDirectory(Path.GetDirectoryName(logFilePath));
+                            
+                            using (var logStream = File.AppendText(logFilePath))
+                            {
+                                logStream.WriteLine(message);
+                                logStream.Close();
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine(string.Format("[ERROR] Failed writing to log file '{0}'", logFilePath));
+                        }
+                    }
+                }
+
                 if (message.Contains("Mining stopped")) m_manualResetEvent.Set();
             });
         }
 
+        private static ManualResetEvent m_manualResetEvent = new ManualResetEvent(false);
         private static System.Timers.Timer m_waitCheckTimer;
-        private static ManualResetEvent m_manualResetEvent;
         private static Miner.CPU m_cpuMiner;
         private static Miner.CUDA m_cudaMiner;
         private static Miner.OpenCL m_openCLMiner;
@@ -138,7 +172,7 @@ namespace SoliditySHA3Miner
                 "  intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)\n" +
                 "  listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)\n" +
                 "  amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)\n" +
-                "  amdIntensity            GPU (AMD OpenCL) intensity (default: 25, decimals allowed)\n" +
+                "  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.223, decimals allowed)\n" +
                 "  listCudaDevices         List of all CUDA devices in this system and exit (device ID: GPU name)\n" +
                 "  cudaDevice              Comma separated list of CUDA devices to use (default: all devices)\n" +
                 "  cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)\n" +
@@ -154,12 +188,13 @@ namespace SoliditySHA3Miner
                 "  contract                Token contract address (default: 0xbtc contract address)\n" +
                 "  hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: " + Defaults.HashrateUpdateInterval + ")\n" +
                 "  networkUpdateInterval   Interval (miliseconds) to scan for new work (default: " + Defaults.NetworkUpdateInterval + ")\n" +
-                "  kingAddress             Add MiningKing address to nounce, only CPU mining supported (default: none)\n" +
+                "  kingAddress             Add MiningKing address to nonce, only CPU mining supported (default: none)\n" +
                 "  address                 (Pool only) Miner's ethereum address (default: developer's address)\n" +
                 "  privateKey              (Solo only) Miner's private key\n" +
                 "  gasToMine               (Solo only) Gas price to mine in GWei (default: " + Defaults.GasToMine + ")\n" +
                 "  pool                    (Pool only) URL of pool mining server (default: " + Defaults.PoolPrimary + ")\n" +
                 "  secondaryPool           (Optional) URL of failover pool mining server\n" +
+                "  logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)\n" +
                 "  devFee                  Set dev fee in percentage (default: " + DevFee.Percent + "%, minimum: " + DevFee.MinimumPercent + "%)\n";
             Console.WriteLine(help);
         }
@@ -317,13 +352,34 @@ namespace SoliditySHA3Miner
 
         static void Main(string[] args)
         {
+            IsLogFile = Defaults.LogFile;
+
+            foreach (var arg in args)
+            {
+                try
+                {
+                    switch (arg.Split('=')[0])
+                    {
+                        case "logFile":
+                            IsLogFile = bool.Parse(arg.Split('=')[1]);
+                            break;
+                    }
+                }
+                catch (Exception)
+                {
+                    Print("[ERROR] Failed parsing argument: " + arg);
+                    m_manualResetEvent.Set();
+                    Environment.Exit(1);
+                }
+            }
+
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             Console.Title = string.Format("{0} {1} by lwYeo@github ({2})", GetApplicationName(), GetApplicationVersion(), GetApplicationYear());
-            Console.WriteLine(GetHeader());
+            
+            Print(GetHeader(), excludePrefix:true);
 
             m_handler += new EventHandler(Handler);
             SetConsoleCtrlHandler(m_handler, true);
-            m_manualResetEvent = new ManualResetEvent(false);
 
             Miner.Device[] cpuDevices = new Miner.Device[] { };
             Miner.Device[] amdDevices = new Miner.Device[] { };
@@ -351,7 +407,7 @@ namespace SoliditySHA3Miner
             var allowAMD = true;
             var allowCUDA = true;
             var cpuMode = false;
-            
+
             foreach (var arg in args)
             {
                 try

@@ -1,7 +1,9 @@
 # SoliditySHA3Miner
-Multi-GPU miner solves proof of work to mine supported ERC20/918 tokens (With API).
+Multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (With API).
 
-Built with C#.NET 4.7.1, VC++ 2017 and nVidia CUDA SDK 9.2 64-bits (Windows 10 64-bit)
+Current latest public release version: 1.1.0.0
+
+Built with C#.NET 4.7.1, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL) (Windows 10 64-bits)
 
 - .NET 4.7.1 can be downloaded from [https://microsoft.com/en-us/download/details.aspx?id=56116]
 
@@ -47,42 +49,112 @@ Usage: SoliditySHA3Miner [OPTIONS]
 Options:
 
     help                    Display this help text and exit
-    
+	
+    cpuMode                 Set this miner to run in CPU mode only, disables GPU (default: false)
+	
+    cpuID                   Comma separated list of CPU thread ID to use (default: all logical CPUs except first)
+	
+    allowIntel              Allow to use Intel GPU (OpenCL) (default: true)
+	
+    allowAMD                Allow to use AMD GPU (OpenCL) (default: true)
+	
+    allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)
+	
+    intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)
+	
+    listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)
+	
+    amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
+	
+    amdIntensity            GPU (AMD OpenCL) intensity (default: 25, decimals allowed)
+	
     listCudaDevices         List of all CUDA devices in this system (device ID: GPU name)
-    
+	
     cudaDevice              Comma separated list of CUDA devices to use (default: all devices)
-    
+	
     cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)
-    
+	
     minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: http://127.0.0.1:4078), 0 disabled
-    
+	
     minerCcminerAPI         'IP:port' for the ccminer-style API (default: 127.0.0.1:4068), 0 disabled
 	
     overrideMaxDiff         (Pool only) Use maximum difficulty and skips query from web3
-    
+	
     customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)
-    
+	
     maxScanRetry            Number of retries to scan for new work (default: 5)
-    
+	
     pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)
-    
-    submitStale             Submit stale jobs, may create more rejected shares (default: true)
-    
+	
+    submitStale             Submit stale jobs, may create more rejected shares (default: false)
+	
     abiFile                 Token abi in a file (default: '0xbtc.abi' in the same folder as this miner)
-    
+	
     web3api                 User-defined web3 provider URL (default: Infura mainnet provider)
-    
+	
     contract                Token contract address (default: 0xbtc contract address)
-    
+	
     hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: 30000)
-    
+	
     networkUpdateInterval   Interval (miliseconds) to scan for new work (default: 15000)
-    
-    address                 Miner's ethereum address (default: developer's address)
-    
+	
+    kingAddress             Add MiningKing address to nounce, only CPU mining supported (default: none)
+	
+    address                 (Pool only) Miner's ethereum address (default: developer's address)
+	
+    privateKey              (Solo only) Miner's private key
+	
+    gasToMine               (Solo only) Gas price to mine in GWei (default: 5)
+	
     pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
-    
+	
     secondaryPool           (Optional) URL of failover pool mining server
+	
+	logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)
+	
+    devFee                  Set developer fee in percentage (default: 2%, minimum: 1.5%)
     
-    donate                  Set donaton in percentage (default: 2%, minimum: 1.5)
-    
+
+### NOTES
+
+Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
+
+A sample CLI launch parameter can be found in the ".bat" file found together with this miner, please refer to it if you need help.
+
+You will have to supply your own Ethereum address (or Private key if you solo mine). It is your own responsibility to mine to the correct address/account.
+
+It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
+
+There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st if Pool mine, or starting from 50th if Solo mine).
+
+You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nounce mod devFee) = 0").
+
+Dev fee in solo mining is by sending the current reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.
+
+In the case if the compute load for your GPU is not >= 99%, you can adjust the intensity via (amdIntensity/cudaIntensity/intelIntensity).
+
+Please feedback your results and suggestions so that I can improve the miner. You can either add an issue in the repository, or find me in discord (Amano7). Thanks for trying out this miner!
+
+### CREDITS
+
+Donations are encouraged to help support further development of this miner!
+
+Many thanks to the following developers and testers in the 0xBitcoin discord :
+
+Azlehria
+
+mining-visualizer
+
+LtTofu/Mag517
+
+Infernal Toast
+
+0x1d00ffff
+
+Mikers
+
+Ghorge
+
+BRob
+
+Sly

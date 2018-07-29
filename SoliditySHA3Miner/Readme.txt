@@ -1,5 +1,7 @@
 ﻿SoliditySHA3Miner
-Solves proof of work to mine supported ERC20/918 tokens.
+Multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (With API).
+
+Current latest public release version: 1.1.0.0
 
 Built with C#.NET 4.7.1, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL) (Windows 10 64-bits)
 .NET 4.7.1 can be downloaded from https://microsoft.com/en-us/download/details.aspx?id=56116
@@ -33,7 +35,7 @@ Options:
   intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)
   listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)
   amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
-  amdIntensity            GPU (AMD OpenCL) intensity (default: 25, decimals allowed)
+  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.223, decimals allowed)
   listCudaDevices         List of all CUDA devices in this system (device ID: GPU name)
   cudaDevice              Comma separated list of CUDA devices to use (default: all devices)
   cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)
@@ -49,13 +51,14 @@ Options:
   contract                Token contract address (default: 0xbtc contract address)
   hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: 30000)
   networkUpdateInterval   Interval (miliseconds) to scan for new work (default: 15000)
-  kingAddress             Add MiningKing address to nounce, only CPU mining supported (default: none)
+  kingAddress             Add MiningKing address to nonce, only CPU mining supported (default: none)
   address                 (Pool only) Miner's ethereum address (default: developer's address)
   privateKey              (Solo only) Miner's private key
   gasToMine               (Solo only) Gas price to mine in GWei (default: 5)
   pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
   secondaryPool           (Optional) URL of failover pool mining server
-  devFee                  Set dev fee in percentage (default: 2%, minimum: 1.5%)
+  logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)
+  devFee                  Set developer fee in percentage (default: 2%, minimum: 1.5%)
 
 NOTES
 Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
@@ -65,8 +68,9 @@ It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
 There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st if Pool mine, or starting from 50th if Solo mine).
 You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nounce mod devFee) = 0").
 Dev fee in solo mining is by sending the current reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.
+In the case if the compute load for your GPU is not >= 99%, you can adjust the intensity via (amdIntensity/cudaIntensity/intelIntensity).
 
-Please report your results so that I can improve the miner. You can either add an issue in the repository, or find me in discord (Amano7). Thanks for trying out this miner!
+Please feedback your results and suggestions so that I can improve the miner. You can either add an issue in the repository, or find me in discord (Amano7). Thanks for trying out this miner!
 
 CREDITS
 Donations are encouraged to help support further development of this miner!

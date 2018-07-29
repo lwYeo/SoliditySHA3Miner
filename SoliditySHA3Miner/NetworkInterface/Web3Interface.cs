@@ -17,7 +17,7 @@ namespace SoliditySHA3Miner.NetworkInterface
     public class Web3Interface : INetworkInterface
     {
         private const int MAX_TIMEOUT = 10;
-        private const string DEFAULT_WEB3_API = "https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE";
+        private const string DEFAULT_WEB3_API = Defaults.InfuraAPI_mainnet;
 
         private readonly Web3 m_web3;
         private readonly Contract m_contract;
@@ -42,13 +42,17 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (string.IsNullOrWhiteSpace(contractAddress))
             {
                 Program.Print("[INFO] Contract address not specified, default 0xBTC");
-                contractAddress = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
+                contractAddress = Defaults.Contract0xBTC_mainnet;
             }
 
             var addressUtil = new AddressUtil();
-            if (!addressUtil.IsValidAddressLength(contractAddress) || !addressUtil.IsChecksumAddress(contractAddress))
+            if (!addressUtil.IsValidAddressLength(contractAddress))
             {
-                throw new Exception("Invalid contract address provided.");
+                throw new Exception("Invalid contract address provided, ensure address is 42 characters long (including '0x').");
+            }
+            else if (!addressUtil.IsChecksumAddress(contractAddress))
+            {
+                throw new Exception("Invalid contract address provided, ensure capitalization is correct.");
             }
 
             if (!string.IsNullOrWhiteSpace(privateKey))
@@ -56,10 +60,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_account = new Account(privateKey);
                 minerAddress = m_account.Address;
             }
-
+            
             if (!addressUtil.IsValidAddressLength(minerAddress))
             {
-                throw new Exception("Invalid miner address provided.");
+                throw new Exception("Invalid miner address provided, ensure address is 42 characters long (including '0x').");
+            }
+            else if (!addressUtil.IsChecksumAddress(minerAddress))
+            {
+                throw new Exception("Invalid miner address provided, ensure capitalization is correct.");
             }
 
             m_minerAddress = minerAddress;
