@@ -66,7 +66,7 @@ Options:
 	
     amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
 	
-    amdIntensity            GPU (AMD OpenCL) intensity (default: 25, decimals allowed)
+    amdIntensity            GPU (AMD OpenCL) intensity (default: 24.223, decimals allowed)
 	
     listCudaDevices         List of all CUDA devices in this system (device ID: GPU name)
 	
