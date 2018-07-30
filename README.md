@@ -117,7 +117,7 @@ Options:
 
 ### NOTES
 
-Do refer to 'GuideForPoolMining.txt' [https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForPoolMining.txt] and 'GuideForSoloMining.txt' [https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForSoloMining.txt] on how to get started.
+Do refer to [GuideForPoolMining.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForPoolMining.txt) and [GuideForSoloMining.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForSoloMining.txt) on how to get started.
 
 Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
 
