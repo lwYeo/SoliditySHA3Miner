@@ -20,7 +20,7 @@
   * If omitted, 0xBTC contract address will be used by default.
   * Replace the value with the following address if you are mining a different token (case-sensitive):
 
-    0xBTC    0xB6eD7644C69416d67B522e20bC294A9a9B405B31
+	0xBTC    0xB6eD7644C69416d67B522e20bC294A9a9B405B31
 	0xBCH    0xe5b9746dfCC2eF1054D47A451A77bb5f390c468d
 	0xCATE   0x8F7DbF90E71285552a687097220E1035C2e87639
 	0xLTC    0x33D99EFc0C3cC4F93dA6931EC2CCcF19Ca874b6D
