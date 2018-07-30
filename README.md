@@ -1,5 +1,5 @@
 # SoliditySHA3Miner
-Multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (With API).
+All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
 Current latest public release version: 1.1.0.0
 
@@ -104,7 +104,7 @@ Options:
 	
     privateKey              (Solo only) Miner's private key
 	
-    gasToMine               (Solo only) Gas price to mine in GWei (default: 5)
+    gasToMine               (Solo only) Gas price to mine in GWei (default: 5, decimals allowed)
 	
     pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
 	
@@ -117,6 +117,8 @@ Options:
 
 ### NOTES
 
+Do refer to 'GuideForPoolMining.txt' [https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForPoolMining.txt] and 'GuideForSoloMining.txt' [https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForSoloMining.txt] on how to get started.
+
 Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
 
 A sample CLI launch parameter can be found in the ".bat" file found together with this miner, please refer to it if you need help.
@@ -127,7 +129,7 @@ It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
 
 There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st if Pool mine, or starting from 50th if Solo mine).
 
-You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nounce mod devFee) = 0").
+You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nonce mod devFee) = 0").
 
 Dev fee in solo mining is by sending the current reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.
 

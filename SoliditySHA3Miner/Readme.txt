@@ -1,5 +1,5 @@
 ﻿SoliditySHA3Miner
-Multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (With API).
+All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
 Current latest public release version: 1.1.0.0
 
@@ -54,19 +54,20 @@ Options:
   kingAddress             Add MiningKing address to nonce, only CPU mining supported (default: none)
   address                 (Pool only) Miner's ethereum address (default: developer's address)
   privateKey              (Solo only) Miner's private key
-  gasToMine               (Solo only) Gas price to mine in GWei (default: 5)
+  gasToMine               (Solo only) Gas price to mine in GWei (default: 5, decimals allowed)
   pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
   secondaryPool           (Optional) URL of failover pool mining server
   logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)
   devFee                  Set developer fee in percentage (default: 2%, minimum: 1.5%)
 
 NOTES
+Do refer to 'GuideForPoolMining.txt' and 'GuideForSoloMining.txt' on how to get started.
 Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
 A sample CLI launch parameter can be found in the ".bat" file found together with this miner, please refer to it if you need help.
 You will have to supply your own Ethereum address (or Private key if you solo mine). It is your own responsibility to mine to the correct address/account.
 It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
 There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st if Pool mine, or starting from 50th if Solo mine).
-You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nounce mod devFee) = 0").
+You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nonce mod devFee) = 0").
 Dev fee in solo mining is by sending the current reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.
 In the case if the compute load for your GPU is not >= 99%, you can adjust the intensity via (amdIntensity/cudaIntensity/intelIntensity).
 

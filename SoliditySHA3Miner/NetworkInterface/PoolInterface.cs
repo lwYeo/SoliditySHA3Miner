@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexTypes;
-using Nethereum.Util;
 using Newtonsoft.Json.Linq;
 
 namespace SoliditySHA3Miner.NetworkInterface
