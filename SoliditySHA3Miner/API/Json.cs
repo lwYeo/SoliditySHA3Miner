@@ -110,31 +110,30 @@ namespace SoliditySHA3Miner.API
                 var api = new JsonAPI();
                 float divisor = 0;
                 ulong totalHashRate = 0ul;
+
                 foreach (var miner in m_miners)
-                {
                     totalHashRate += miner.GetTotalHashrate();
-                }
 
                 var sTotalHashRate = totalHashRate.ToString();
-                if (sTotalHashRate.Length >= 12)
+                if (sTotalHashRate.Length > 12 + 1)
                 {
                     divisor = 1000000000000;
                     api.HashRateUnit = "TH/s";
                     api.TotalHashRate = totalHashRate / divisor;
                 }
-                else if (sTotalHashRate.Length >= 9)
+                else if (sTotalHashRate.Length > 9 + 1)
                 {
                     divisor = 1000000000;
                     api.HashRateUnit = "GH/s";
                     api.TotalHashRate = totalHashRate / divisor;
                 }
-                else if (sTotalHashRate.Length >= 6)
+                else if (sTotalHashRate.Length > 6 + 1)
                 {
                     divisor = 1000000;
                     api.HashRateUnit = "MH/s";
                     api.TotalHashRate = totalHashRate / divisor;
                 }
-                else if (sTotalHashRate.Length >= 3)
+                else if (sTotalHashRate.Length > 3 + 1)
                 {
                     divisor = 1000;
                     api.HashRateUnit = "KH/s";

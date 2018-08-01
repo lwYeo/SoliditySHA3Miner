@@ -274,6 +274,41 @@ uint64_t Device::hashRate()
 	return (uint64_t)((long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime.load()).count()));
 }
 
+bool Device::setKernelArgs(std::string& errorMessage)
+{
+	errorMessage = "";
+
+	status = clSetKernelArg(kernel, 0u, sizeof(cl_mem), &midstateBuffer);
+	if (status != CL_SUCCESS)
+	{
+		errorMessage = std::string{ "Error setting midsate buffer to kernel (" } + Device::getOpenCLErrorCodeStr(status) + ")...";
+		return false;
+	}
+
+	status = clSetKernelArg(kernel, 1u, sizeof(cl_mem), &targetBuffer);
+	if (status != CL_SUCCESS)
+	{
+		errorMessage = std::string{ "Error setting target buffer to kernel (" } + Device::getOpenCLErrorCodeStr(status) + ")...";
+		return false;
+	}
+
+	status = clSetKernelArg(kernel, 3u, sizeof(cl_mem), &solutionsBuffer);
+	if (status != CL_SUCCESS)
+	{
+		errorMessage = std::string{ "Error setting solutions buffer to kernel (" } + Device::getOpenCLErrorCodeStr(status) + ")...";
+		return false;
+	}
+
+	status = clSetKernelArg(kernel, 4u, sizeof(cl_mem), &solutionCountBuffer);
+	if (status != CL_SUCCESS)
+	{
+		errorMessage = std::string{ "Error setting solution count buffer to kernel (" } + Device::getOpenCLErrorCodeStr(status) + ")...";
+		return false;
+	}
+
+	return true;
+}
+
 void Device::initialize(std::string& errorMessage)
 {
 	errorMessage = "";
@@ -369,13 +404,15 @@ void Device::initialize(std::string& errorMessage)
 		return;
 	}
 
+	if (!setKernelArgs(errorMessage)) return;;
+
 	initialized = true;
 }
 
 void Device::setIntensity(float const intensity)
 {
-	if (isINTEL()) userDefinedIntensity = (intensity > 1.0F) ? intensity : 21.0F; // iGPU
-	else userDefinedIntensity = (intensity > 1.0F) ? intensity : DEFAULT_INTENSITY;
+	if (isINTEL()) userDefinedIntensity = (intensity > 1.0f) ? intensity : 20.5f; // iGPU
+	else userDefinedIntensity = (intensity > 1.0f) ? intensity : DEFAULT_INTENSITY;
 
 	auto userTotalWorkSize = (uint32_t)std::pow(2, userDefinedIntensity);
 	globalWorkSize = (uint32_t)(userTotalWorkSize / localWorkSize) * localWorkSize; // in multiples of localWorkSize

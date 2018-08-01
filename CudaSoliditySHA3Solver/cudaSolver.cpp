@@ -158,6 +158,8 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 		//onMessage(assignDevice->deviceID, "Info", message);
 	}
 
+	initializeDevice(assignDevice);
+
 	return true;
 }
 

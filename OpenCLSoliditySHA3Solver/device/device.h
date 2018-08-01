@@ -120,4 +120,7 @@ public:
 
 	void initialize(std::string& errorMessage);
 	void setIntensity(float const intensity);
+
+private:
+	bool setKernelArgs(std::string& errorMessage);
 };

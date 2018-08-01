@@ -28,14 +28,18 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly Function m_transferMethod;
         private readonly List<string> m_submittedChallengeList;
 
+        private int m_updateInterval;
+        private MiningParameters m_cacheParameters;
+
         public bool IsPool => false;
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
 
         public bool IsChallengedSubmitted(string challenge) => m_submittedChallengeList.Contains(challenge);
 
-        public Web3Interface(string web3ApiPath, string contractAddress, string minerAddress, string privateKey, float gasToMine, string abiFileName)
+        public Web3Interface(string web3ApiPath, string contractAddress, string minerAddress, string privateKey, float gasToMine, string abiFileName, int updateInterval)
         {
+            m_updateInterval = updateInterval;
             m_submittedChallengeList = new List<string>();
             Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout = MAX_TIMEOUT * 1000;
 
@@ -108,7 +112,18 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public MiningParameters GetMiningParameters()
         {
-            return MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
+            if (m_cacheParameters != null) return m_cacheParameters;
+
+            Program.Print("[INFO] Getting latest parameters from network...");
+            m_cacheParameters = MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
+
+            Task.Factory.StartNew(() =>
+            {
+                Task.Delay(m_updateInterval / 3);
+                m_cacheParameters = null;
+            });
+
+            return m_cacheParameters;
         }
 
         void INetworkInterface.SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, bool isCustomDifficulty)

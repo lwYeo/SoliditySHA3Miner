@@ -99,8 +99,6 @@ namespace SoliditySHA3Miner.Miner
         {
             try
             {
-                if (NetworkInterface.IsPool) Program.Print("[INFO] Waiting for pool to respond...");
-                else Program.Print("[INFO] Waiting for network to respond...");
                 UpdateMiner(Solver).Wait();
 
                 m_updateMinerTimer = new Timer(networkUpdateInterval);

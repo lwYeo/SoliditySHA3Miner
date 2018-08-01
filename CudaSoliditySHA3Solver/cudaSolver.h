@@ -104,6 +104,7 @@ public:
 	uint64_t getHashRateByDeviceID(int const deviceID);
 
 private:
+	void initializeDevice(std::unique_ptr<Device> &device);
 	void getWorkPosition(uint64_t &workPosition);
 	void resetWorkPosition(uint64_t &lastPosition);
 	void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);

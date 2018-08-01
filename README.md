@@ -1,7 +1,7 @@
 # SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
-Current latest public release version: 1.1.0.0
+Current latest public release version: 1.1.1.0
 
 Built with C#.NET 4.7.1, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL) (Windows 10 64-bits)
 
@@ -60,7 +60,7 @@ Options:
 	
     allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)
 	
-    intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)
+    intelIntensity          GPU (Intel OpenCL) intensity (default: 20.5, decimals allowed)
 	
     listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)
 	

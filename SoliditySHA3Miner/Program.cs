@@ -69,16 +69,19 @@ namespace SoliditySHA3Miner
 
         private static bool Handler(CtrlType sig)
         {
-            foreach(var miner in m_allMiners)
+            lock (m_handler)
             {
-                try { if (miner != null) miner.Dispose(); }
-                catch (Exception ex) { Print(ex.Message); }
+                foreach (var miner in m_allMiners)
+                {
+                    try { if (miner != null) miner.Dispose(); }
+                    catch (Exception ex) { Print(ex.Message); }
+                }
+
+                if (m_waitCheckTimer != null) m_waitCheckTimer.Stop();
+                if (m_manualResetEvent != null) m_manualResetEvent.Set();
+
+                return true;
             }
-
-            if (m_waitCheckTimer != null) m_waitCheckTimer.Stop();
-            if (m_manualResetEvent != null) m_manualResetEvent.Set();
-
-            return true;
         }
 
         #endregion
@@ -677,10 +680,10 @@ namespace SoliditySHA3Miner
             try
             {
                 var solutionTemplate = Miner.CPU.GetSolutionTemplate(kingAddress);
-                var web3Interface = new NetworkInterface.Web3Interface(web3api, contractAddress, minerAddress, privateKey, gasToMine, abiFile);
+                var web3Interface = new NetworkInterface.Web3Interface(web3api, contractAddress, minerAddress, privateKey, gasToMine, abiFile, networkUpdateInterval);
 
-                var secondaryPoolInterface = string.IsNullOrWhiteSpace(secondaryPool) ? null : new NetworkInterface.PoolInterface(minerAddress, secondaryPool, maxScanRetry);
-                var primaryPoolInterface = new NetworkInterface.PoolInterface(minerAddress, primaryPool, maxScanRetry, secondaryPoolInterface);
+                var secondaryPoolInterface = string.IsNullOrWhiteSpace(secondaryPool) ? null : new NetworkInterface.PoolInterface(minerAddress, secondaryPool, maxScanRetry, networkUpdateInterval);
+                var primaryPoolInterface = new NetworkInterface.PoolInterface(minerAddress, primaryPool, maxScanRetry, networkUpdateInterval, secondaryPoolInterface);
 
                 var mainNetworkInterface = (string.IsNullOrWhiteSpace(privateKey)) ? primaryPoolInterface : (NetworkInterface.INetworkInterface)web3Interface;
 

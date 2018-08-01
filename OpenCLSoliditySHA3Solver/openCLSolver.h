@@ -3,6 +3,8 @@
 #define ROTL64(x, y) (((x) << (y)) ^ ((x) >> (64 - (y))))
 #define ROTR64(x, y) (((x) >> (y)) ^ ((x) << (64 - (y))))
 
+#define MAX_WORK_POSITION_STORE 4
+
 #include <algorithm>
 #include <chrono>
 #include <memory>

@@ -13,16 +13,19 @@ namespace SoliditySHA3Miner.NetworkInterface
         private bool m_runFailover;
         private int m_retryCount;
 
+        private int m_updateInterval;
+        private MiningParameters m_cacheParameters;
+
         public bool IsPool => true;
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
         public PoolInterface SecondaryPool { get; }
-
-
-        public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, PoolInterface secondaryPool = null)
+        
+        public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, int updateInterval, PoolInterface secondaryPool = null)
         {
             m_retryCount = 0;
             m_maxScanRetry = maxScanRetry;
+            m_updateInterval = updateInterval;
             SecondaryPool = secondaryPool;
 
             s_MinerAddress = minerAddress;
@@ -33,6 +36,10 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public MiningParameters GetMiningParameters()
         {
+            if (m_cacheParameters != null) return m_cacheParameters;
+
+            Program.Print("[INFO] Getting latest parameters from pool...");
+
             var getPoolEthAddress = GetPoolParameter("getPoolEthAddress");
             var getPoolChallengeNumber = GetPoolParameter("getChallengeNumber");
             var getPoolMinimumShareDifficulty = GetPoolParameter("getMinimumShareDifficulty", s_MinerAddress);
@@ -41,8 +48,16 @@ namespace SoliditySHA3Miner.NetworkInterface
             bool success = true;
             try
             {
-                return MiningParameters.GetPoolMiningParameters(s_PoolURL, getPoolEthAddress, getPoolChallengeNumber,
-                                                                getPoolMinimumShareDifficulty, getPoolMinimumShareTarget);
+                m_cacheParameters = MiningParameters.GetPoolMiningParameters(s_PoolURL, getPoolEthAddress, getPoolChallengeNumber,
+                                                                             getPoolMinimumShareDifficulty, getPoolMinimumShareTarget);
+
+                Task.Factory.StartNew(() =>
+                {
+                    Task.Delay(m_updateInterval / 2);
+                    m_cacheParameters = null;
+                });
+
+                return m_cacheParameters;
             }
             catch (AggregateException ex)
             {

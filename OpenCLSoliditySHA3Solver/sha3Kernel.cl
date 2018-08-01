@@ -9,7 +9,10 @@
 #if PLATFORM == OPENCL_PLATFORM_AMD
 #pragma OPENCL EXTENSION		cl_amd_media_ops : enable
 #endif
-#pragma OPENCL EXTENSION		cl_khr_int64_base_atomics : enable
+
+#if PLATFORM != OPENCL_PLATFORM_UNKNOWN
+//#pragma OPENCL EXTENSION		cl_khr_int64_base_atomics : enable
+#endif
 
 #ifndef COMPUTE
 #define COMPUTE					0
@@ -28,7 +31,7 @@ typedef union
 {
 	uint2		uint2_s[STATE_LENGTH / sizeof(uint2)];
 	ulong		ulong_s[STATE_LENGTH / sizeof(ulong)];
-	nonce_t	nonce_s[STATE_LENGTH / sizeof(nonce_t)];
+	nonce_t		nonce_s[STATE_LENGTH / sizeof(nonce_t)];
 } state_t;
 
 __constant static uint2 const Keccak_f1600_RC[24] = {
@@ -78,46 +81,50 @@ static inline nonce_t bswap64(const nonce_t input)
 	return output;
 }
 
-static inline uint2 ROL2(const uint2 a, const uint offset)
+static inline uint2 rol_lte32(const uint2 a, const uint offset)
 {
+	uint2 result;
+
 #if PLATFORM == OPENCL_PLATFORM_AMD
 
-	if (offset < 33u)
-		return amd_bitalign(a.xy, a.yx, 32u - offset);
-	else
-		return amd_bitalign(a.yx, a.xy, 64u - offset);
+	result = amd_bitalign(a.xy, a.yx, 32u - offset);
 
 #elif PLATFORM == OPENCL_PLATFORM_NVIDIA && COMPUTE >= 35
 
-	uint2 result;
-	if (offset < 33u)
-	{
-		asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(result.x) : "r"(a.y), "r"(a.x), "r"(offset));
-		asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(result.y) : "r"(a.x), "r"(a.y), "r"(offset));
-	}
-	else
-	{
-		asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(result.x) : "r"(a.x), "r"(a.y), "r"(offset));
-		asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(result.y) : "r"(a.y), "r"(a.x), "r"(offset));
-	}
-	return result;
+	asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(result.x) : "r"(a.y), "r"(a.x), "r"(offset));
+	asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(result.y) : "r"(a.x), "r"(a.y), "r"(offset));
 
 #else
 
-	uint2 result;
-	if (offset < 33u)
-	{
-		result.y = ((a.y << (offset)) | (a.x >> (32u - offset)));
-		result.x = ((a.x << (offset)) | (a.y >> (32u - offset)));
-	}
-	else
-	{
-		result.y = ((a.x << (offset - 32u)) | (a.y >> (64u - offset)));
-		result.x = ((a.y << (offset - 32u)) | (a.x >> (64u - offset)));
-	}
-	return result;
+	result.y = ((a.y << (offset)) | (a.x >> (32u - offset)));
+	result.x = ((a.x << (offset)) | (a.y >> (32u - offset)));
 
 #endif
+
+	return result;
+}
+
+static inline uint2 rol_gt32(const uint2 a, const uint offset)
+{
+	uint2 result;
+
+#if PLATFORM == OPENCL_PLATFORM_AMD
+
+	result = amd_bitalign(a.yx, a.xy, 64u - offset);
+
+#elif PLATFORM == OPENCL_PLATFORM_NVIDIA && COMPUTE >= 35
+
+	asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(result.x) : "r"(a.x), "r"(a.y), "r"(offset));
+	asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(result.y) : "r"(a.y), "r"(a.x), "r"(offset));
+
+#else
+
+	result.y = ((a.x << (offset - 32u)) | (a.y >> (64u - offset)));
+	result.x = ((a.y << (offset - 32u)) | (a.x >> (64u - offset)));
+
+#endif
+
+	return result;
 }
 
 static inline uint2 chi(uint2 const a, uint2 const b, uint2 const c)
@@ -142,21 +149,21 @@ static void keccak_first_round(uint2* state, __constant uint2 const* midstate, u
 {
 	uint2 C[5];
 
-	state[2] = midstate[2] ^ ROL2(nounce, 44);
-	state[4] = midstate[4] ^ ROL2(nounce, 14);
+	state[2] = midstate[2] ^ rol_gt32(nounce, 44);
+	state[4] = midstate[4] ^ rol_lte32(nounce, 14);
 
-	state[6] = midstate[6] ^ ROL2(nounce, 20);
-	state[9] = midstate[9] ^ ROL2(nounce, 62);
+	state[6] = midstate[6] ^ rol_lte32(nounce, 20);
+	state[9] = midstate[9] ^ rol_gt32(nounce, 62);
 
-	state[11] = midstate[11] ^ ROL2(nounce, 7);
-	state[13] = midstate[13] ^ ROL2(nounce, 8);
+	state[11] = midstate[11] ^ rol_lte32(nounce, 7);
+	state[13] = midstate[13] ^ rol_lte32(nounce, 8);
 
-	state[15] = midstate[15] ^ ROL2(nounce, 27);
-	state[18] = midstate[18] ^ ROL2(nounce, 16);
+	state[15] = midstate[15] ^ rol_lte32(nounce, 27);
+	state[18] = midstate[18] ^ rol_lte32(nounce, 16);
 
-	state[20] = midstate[20] ^ ROL2(nounce, 63);
-	state[21] = midstate[21] ^ ROL2(nounce, 55);
-	state[22] = midstate[22] ^ ROL2(nounce, 39);
+	state[20] = midstate[20] ^ rol_gt32(nounce, 63);
+	state[21] = midstate[21] ^ rol_gt32(nounce, 55);
+	state[22] = midstate[22] ^ rol_gt32(nounce, 39);
 
 	state[0] = chi(midstate[0], midstate[1], state[2]);
 	state[0] ^= Keccak_f1600_RC[0];
@@ -199,6 +206,7 @@ static void keccak_skip_first_round(uint2* state)
 {
 	uint2 C[5], D[5];
 
+#	pragma unroll 8
 	for (uint i = 1u; i < 24u; ++i)
 	{
 		C[0] = state[0] ^ state[5] ^ state[10] ^ state[15] ^ state[20];
@@ -207,35 +215,35 @@ static void keccak_skip_first_round(uint2* state)
 		C[3] = state[3] ^ state[8] ^ state[13] ^ state[18] ^ state[23];
 		C[4] = state[4] ^ state[9] ^ state[14] ^ state[19] ^ state[24];
 
-		D[0] = ROL2(C[1], 1) ^ C[4];
+		D[0] = rol_lte32(C[1], 1) ^ C[4];
 		state[0] ^= D[0];
 		state[5] ^= D[0];
 		state[10] ^= D[0];
 		state[15] ^= D[0];
 		state[20] ^= D[0];
 
-		D[0] = ROL2(C[2], 1) ^ C[0];
+		D[0] = rol_lte32(C[2], 1) ^ C[0];
 		state[1] ^= D[0];
 		state[6] ^= D[0];
 		state[11] ^= D[0];
 		state[16] ^= D[0];
 		state[21] ^= D[0];
 
-		D[0] = ROL2(C[3], 1) ^ C[1];
+		D[0] = rol_lte32(C[3], 1) ^ C[1];
 		state[2] ^= D[0];
 		state[7] ^= D[0];
 		state[12] ^= D[0];
 		state[17] ^= D[0];
 		state[22] ^= D[0];
 
-		D[0] = ROL2(C[4], 1) ^ C[2];
+		D[0] = rol_lte32(C[4], 1) ^ C[2];
 		state[3] ^= D[0];
 		state[8] ^= D[0];
 		state[13] ^= D[0];
 		state[18] ^= D[0];
 		state[23] ^= D[0];
 
-		D[0] = ROL2(C[0], 1) ^ C[3];
+		D[0] = rol_lte32(C[0], 1) ^ C[3];
 		state[4] ^= D[0];
 		state[9] ^= D[0];
 		state[14] ^= D[0];
@@ -243,30 +251,30 @@ static void keccak_skip_first_round(uint2* state)
 		state[24] ^= D[0];
 
 		C[0] = state[1];
-		state[1] = ROL2(state[6], 44);
-		state[6] = ROL2(state[9], 20);
-		state[9] = ROL2(state[22], 61);
-		state[22] = ROL2(state[14], 39);
-		state[14] = ROL2(state[20], 18);
-		state[20] = ROL2(state[2], 62);
-		state[2] = ROL2(state[12], 43);
-		state[12] = ROL2(state[13], 25);
-		state[13] = ROL2(state[19], 8);
-		state[19] = ROL2(state[23], 56);
-		state[23] = ROL2(state[15], 41);
-		state[15] = ROL2(state[4], 27);
-		state[4] = ROL2(state[24], 14);
-		state[24] = ROL2(state[21], 2);
-		state[21] = ROL2(state[8], 55);
-		state[8] = ROL2(state[16], 45);
-		state[16] = ROL2(state[5], 36);
-		state[5] = ROL2(state[3], 28);
-		state[3] = ROL2(state[18], 21);
-		state[18] = ROL2(state[17], 15);
-		state[17] = ROL2(state[11], 10);
-		state[11] = ROL2(state[7], 6);
-		state[7] = ROL2(state[10], 3);
-		state[10] = ROL2(C[0], 1);
+		state[1] = rol_gt32(state[6], 44);
+		state[6] = rol_lte32(state[9], 20);
+		state[9] = rol_gt32(state[22], 61);
+		state[22] = rol_gt32(state[14], 39);
+		state[14] = rol_lte32(state[20], 18);
+		state[20] = rol_gt32(state[2], 62);
+		state[2] = rol_gt32(state[12], 43);
+		state[12] = rol_lte32(state[13], 25);
+		state[13] = rol_lte32(state[19], 8);
+		state[19] = rol_gt32(state[23], 56);
+		state[23] = rol_gt32(state[15], 41);
+		state[15] = rol_lte32(state[4], 27);
+		state[4] = rol_lte32(state[24], 14);
+		state[24] = rol_lte32(state[21], 2);
+		state[21] = rol_gt32(state[8], 55);
+		state[8] = rol_gt32(state[16], 45);
+		state[16] = rol_gt32(state[5], 36);
+		state[5] = rol_lte32(state[3], 28);
+		state[3] = rol_lte32(state[18], 21);
+		state[18] = rol_lte32(state[17], 15);
+		state[17] = rol_lte32(state[11], 10);
+		state[11] = rol_lte32(state[7], 6);
+		state[7] = rol_lte32(state[10], 3);
+		state[10] = rol_lte32(C[0], 1);
 
 		C[0] = state[0];
 		C[1] = state[1];
@@ -323,7 +331,7 @@ __kernel void hashMidstate(
 
 	keccak_skip_first_round(state.uint2_s);
 
-	if (bswap64(state.nonce_s[0]).ulong_s <= target[0]) // LTE is allowed because d_target is high 64 bits of uint256 (let CPU do the verification)
+	if (bswap64(state.nonce_s[0]).ulong_s <= target[0]) // LTE is allowed because target is high 64 bits of uint256 (let CPU do the verification)
 	{
 #ifdef cl_khr_int64_base_atomics
 		uint position = atomic_inc(&solutionCount[0]);

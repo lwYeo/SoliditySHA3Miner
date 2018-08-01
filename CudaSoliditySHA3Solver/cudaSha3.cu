@@ -378,30 +378,11 @@ void CUDASolver::findSolution(int const deviceID)
 {
 	auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
 
+	if (!device->initialized) return;
+
 	while (!(device->isNewTarget || device->isNewMessage)) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
 
 	CudaSafeCall(cudaSetDevice(device->deviceID));
-
-	if (!device->initialized)
-	{
-		onMessage(device->deviceID, "Info", "Initializing device...");
-
-		device->h_Solutions = reinterpret_cast<uint64_t *>(malloc(MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH));
-		device->h_SolutionCount = reinterpret_cast<uint32_t *>(malloc(UINT32_LENGTH));
-		std::memset(device->h_Solutions, 0u, MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH);
-		std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
-
-		CudaSafeCall(cudaDeviceReset());
-		CudaSafeCall(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync | cudaDeviceMapHost));
-
-		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&device->h_SolutionCount), UINT32_LENGTH, cudaHostAllocMapped));
-		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&device->h_Solutions), MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH, cudaHostAllocMapped));
-
-		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&device->d_SolutionCount), reinterpret_cast<void *>(device->h_SolutionCount), 0));
-		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&device->d_Solutions), reinterpret_cast<void *>(device->h_Solutions), 0));
-
-		device->initialized = true;
-	}
 
 	char *c_currentChallenge = (char *)malloc(s_challenge.size());
 	strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
@@ -411,7 +392,7 @@ void CUDASolver::findSolution(int const deviceID)
 
 	device->mining = true;
 	device->hashCount.store(0ull);
-	device->hashStartTime.store(std::chrono::steady_clock::now() - std::chrono::milliseconds(200)); // reduce excessive high hashrate reporting at start
+	device->hashStartTime.store(std::chrono::steady_clock::now() - std::chrono::milliseconds(500)); // reduce excessive high hashrate reporting at start
 	do
 	{
 		while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
@@ -467,4 +448,31 @@ void CUDASolver::findSolution(int const deviceID)
 
 	device->initialized = false;
 	onMessage(device->deviceID, "Info", "Mining stopped.");
+}
+
+void CUDASolver::initializeDevice(std::unique_ptr<Device> &device)
+{
+	auto deviceID = device->deviceID;
+
+	if (!device->initialized)
+	{
+		onMessage(deviceID, "Info", "Initializing device...");
+		CudaSafeCall(cudaSetDevice(deviceID));
+
+		device->h_Solutions = reinterpret_cast<uint64_t *>(malloc(MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH));
+		device->h_SolutionCount = reinterpret_cast<uint32_t *>(malloc(UINT32_LENGTH));
+		std::memset(device->h_Solutions, 0u, MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH);
+		std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
+
+		CudaSafeCall(cudaDeviceReset());
+		CudaSafeCall(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync | cudaDeviceMapHost));
+
+		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&device->h_SolutionCount), UINT32_LENGTH, cudaHostAllocMapped));
+		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&device->h_Solutions), MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH, cudaHostAllocMapped));
+
+		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&device->d_SolutionCount), reinterpret_cast<void *>(device->h_SolutionCount), 0));
+		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&device->d_Solutions), reinterpret_cast<void *>(device->h_Solutions), 0));
+
+		device->initialized = true;
+	}
 }

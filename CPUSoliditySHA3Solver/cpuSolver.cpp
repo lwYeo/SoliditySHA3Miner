@@ -17,9 +17,7 @@ namespace CPUSolver
 		std::mt19937_64 rGen{ rand() };
 		std::uniform_int_distribution<uint64_t> uInt_d{ 0, UINT64_MAX };
 
-		reinterpret_cast<uint64_t&>(b_solutionTemp[0]) = 06055134500533075101ull;
-
-		for (uint_fast8_t i{ UINT64_LENGTH }; i < UINT256_LENGTH; i += UINT64_LENGTH)
+		for (uint32_t i{ 0u }; i < UINT256_LENGTH; i += UINT64_LENGTH)
 			reinterpret_cast<uint64_t&>(b_solutionTemp[i]) = uInt_d(rGen);
 
 		if (kingAddress.empty())
