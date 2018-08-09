@@ -275,7 +275,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0ul;
                 else SubmittedShares++;
 
-                Program.Print(string.Format("[INFO] Share [{0}] submitted: {1}, block: {2}," +
+                Program.Print(string.Format("[INFO] Miner share [{0}] submitted: {1}, block: {2}," +
                                             "\n transaction ID: {3}",
                                             SubmittedShares,
                                             success ? "success" : "failed",
@@ -319,7 +319,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 var miningReward = GetMiningReward();
 
-                Program.Print(string.Format("[INFO] Transferring dev fee for successful mint share [{0}]...", shareNo));
+                Program.Print(string.Format("[INFO] Transferring dev. fee for successful miner share [{0}]...", shareNo));
 
                 var txInput = new object[] { DevFee.Address, miningReward };
 

@@ -125,7 +125,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         SubmittedShares++;
 
                         Program.Print(string.Format("[INFO] {0} [{1}] submitted: {2}", 
-                                                    (minerAddress == DevFee.Address ? "Dev. share" : "Share"),
+                                                    (minerAddress == DevFee.Address ? "Dev. fee share" : "Miner share"),
                                                     SubmittedShares, 
                                                     (success ? "success" : "failed")));
 #if DEBUG
