@@ -79,6 +79,8 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
+        public bool HasMonitoringAPI => false;
+
         public bool IsAnyInitialised
         {
             get

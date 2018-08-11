@@ -474,5 +474,36 @@ void CUDASolver::initializeDevice(std::unique_ptr<Device> &device)
 		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&device->d_Solutions), reinterpret_cast<void *>(device->h_Solutions), 0));
 
 		device->initialized = true;
+
+		if (NvAPI::foundNvAPI64())
+		{
+			std::string errorMessage;
+			int maxCoreClock, maxMemoryClock, powerLimit, thermalLimit, fanLevel;
+
+			if (device->getSettingMaxCoreClock(&maxCoreClock, &errorMessage))
+				onMessage(device->deviceID, "Info", "Max core clock setting: " + std::to_string(maxCoreClock) + "MHz.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get max core clock setting: " + errorMessage);
+
+			if (device->getSettingMaxMemoryClock(&maxMemoryClock, &errorMessage))
+				onMessage(device->deviceID, "Info", "Max memory clock setting: " + std::to_string(maxMemoryClock) + "MHz.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get max memory clock setting: " + errorMessage);
+
+			if (device->getSettingPowerLimit(&powerLimit, &errorMessage))
+				onMessage(device->deviceID, "Info", "Power limit setting: " + std::to_string(powerLimit) + "%.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get power limit setting: " + errorMessage);
+
+			if (device->getSettingThermalLimit(&thermalLimit, &errorMessage))
+				onMessage(device->deviceID, "Info", "Thermal limit setting: " + std::to_string(thermalLimit) + "C.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get thermal limit setting: " + errorMessage);
+
+			if (device->getSettingFanLevelPercent(&fanLevel, &errorMessage))
+				onMessage(device->deviceID, "Info", "Fan level setting: " + std::to_string(fanLevel) + "%.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get fan level setting: " + errorMessage);
+		}
 	}
 }

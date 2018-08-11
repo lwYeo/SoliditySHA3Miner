@@ -42,6 +42,11 @@ namespace CudaSolver
 		catch(...) {}
 	}
 
+	bool Solver::foundNvAPI64()
+	{
+		return CUDASolver::foundNvAPI64();
+	}
+
 	int Solver::getDeviceCount(System::String ^%errorMessage)
 	{
 		std::string errMsg;
@@ -139,6 +144,66 @@ namespace CudaSolver
 	{
 		if (m_Instance == nullptr) return 0ull;
 		return m_Instance->getHashRateByDeviceID(deviceID);
+	}
+
+	int Solver::getDeviceSettingMaxCoreClock(int deviceID)
+	{
+		return m_Instance->getDeviceSettingMaxCoreClock(deviceID);
+	}
+
+	int Solver::getDeviceSettingMaxMemoryClock(int deviceID)
+	{
+		return m_Instance->getDeviceSettingMaxMemoryClock(deviceID);
+	}
+
+	int Solver::getDeviceSettingPowerLimit(int deviceID)
+	{
+		return m_Instance->getDeviceSettingPowerLimit(deviceID);
+	}
+
+	int Solver::getDeviceSettingThermalLimit(int deviceID)
+	{
+		return m_Instance->getDeviceSettingThermalLimit(deviceID);
+	}
+
+	int Solver::getDeviceSettingFanLevelPercent(int deviceID)
+	{
+		return m_Instance->getDeviceSettingFanLevelPercent(deviceID);
+	}
+
+	int Solver::getDeviceCurrentFanTachometerRPM(int deviceID)
+	{
+		return m_Instance->getDeviceCurrentFanTachometerRPM(deviceID);
+	}
+
+	int Solver::getDeviceCurrentTemperature(int deviceID)
+	{
+		return m_Instance->getDeviceCurrentTemperature(deviceID);
+	}
+
+	int Solver::getDeviceCurrentCoreClock(int deviceID)
+	{
+		return m_Instance->getDeviceCurrentCoreClock(deviceID);
+	}
+
+	int Solver::getDeviceCurrentMemoryClock(int deviceID)
+	{
+		return m_Instance->getDeviceCurrentMemoryClock(deviceID);
+	}
+
+	int Solver::getDeviceCurrentUtilizationPercent(int deviceID)
+	{
+		return m_Instance->getDeviceCurrentUtilizationPercent(deviceID);
+	}
+
+	int Solver::getDeviceCurrentPstate(int deviceID)
+	{
+		return m_Instance->getDeviceCurrentPstate(deviceID);
+	}
+
+	System::String ^Solver::getDeviceCurrentThrottleReasons(int deviceID)
+	{
+		return ToManagedString(m_Instance->getDeviceCurrentThrottleReasons(deviceID));
 	}
 
 	void Solver::OnGetWorkPosition(unsigned __int64 %workPosition)

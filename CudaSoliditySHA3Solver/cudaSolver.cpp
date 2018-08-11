@@ -11,6 +11,11 @@
 
 bool CUDASolver::m_pause{ false };
 
+bool CUDASolver::foundNvAPI64()
+{
+	return NvAPI::foundNvAPI64();
+}
+
 std::string CUDASolver::getCudaErrorString(cudaError_t &error)
 {
 	return std::string(cudaGetErrorString(error));
@@ -58,6 +63,8 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemp
 	m_maxDifficulty{ maxDifficulty },
 	s_kingAddress{ kingAddress }
 {
+	if (NvAPI::foundNvAPI64()) NvAPI::initialize();
+
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
 	hexStringToBytes(solutionTemplate, m_solutionTemplate);
@@ -66,6 +73,8 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemp
 CUDASolver::~CUDASolver() noexcept
 {
 	stopFinding();
+
+	NvAPI::unload();
 }
 
 void CUDASolver::setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback)
@@ -105,10 +114,9 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 		return false;
 	}
 
-	m_devices.push_back(std::make_unique<Device>());
+	m_devices.push_back(std::make_unique<Device>(deviceID));
 	auto& assignDevice = m_devices.back();
 
-	assignDevice->deviceID = deviceID;
 	assignDevice->name = deviceProp.name;
 	assignDevice->computeVersion = deviceProp.major * 100 + deviceProp.minor * 10;
 
@@ -141,22 +149,6 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 	onMessage(assignDevice->deviceID, "Info", "Compute capability: " + std::to_string(deviceProp.major) + "." + std::to_string(deviceProp.minor));
 
 	onMessage(assignDevice->deviceID, "Info", "Intensity: " + std::to_string(assignDevice->intensity));
-
-	if (!assignDevice->foundNvAPI64()) onMessage(assignDevice->deviceID, "Warn", "NvAPI library not found.");
-	else
-	{
-		//std::string message;
-
-		//message += "\n Core OC: " + std::to_string(assignDevice->CoreOC()) + "MHz";
-		//if (assignDevice->CoreOC() <= 0)
-		//	message += " (Recommended to OC for improved performance)";
-
-		//message += "\n Memory OC: " + std::to_string(assignDevice->MemoryOC()) + "MHz";
-		//if (assignDevice->MemoryOC() > 0)
-		//	message += " (Memory OC has no improvement to performance)";
-
-		//onMessage(assignDevice->deviceID, "Info", message);
-	}
 
 	initializeDevice(assignDevice);
 
@@ -293,6 +285,7 @@ void CUDASolver::startFinding()
 void CUDASolver::stopFinding()
 {
 	for (auto& device : m_devices) device->mining = false;
+
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
@@ -317,6 +310,162 @@ uint64_t CUDASolver::getHashRateByDeviceID(int const deviceID)
 			return device->hashRate();
 
 	return 0ull;
+}
+
+int CUDASolver::getDeviceSettingMaxCoreClock(int deviceID)
+{
+	std::string errorMessage;
+	int maxCoreClock;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getSettingMaxCoreClock(&maxCoreClock, &errorMessage))
+				return maxCoreClock;
+
+	return -1;
+}
+
+int CUDASolver::getDeviceSettingMaxMemoryClock(int deviceID)
+{
+	std::string errorMessage;
+	int maxMemoryClock;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getSettingMaxMemoryClock(&maxMemoryClock, &errorMessage))
+				return maxMemoryClock;
+
+	return -1;
+}
+
+int CUDASolver::getDeviceSettingPowerLimit(int deviceID)
+{
+	std::string errorMessage;
+	int powerLimit;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getSettingPowerLimit(&powerLimit, &errorMessage))
+				return powerLimit;
+
+	return -1;
+}
+
+int CUDASolver::getDeviceSettingThermalLimit(int deviceID)
+{
+	std::string errorMessage;
+	int thermalLimit;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getSettingThermalLimit(&thermalLimit, &errorMessage))
+				return thermalLimit;
+
+	return -1;
+}
+
+int CUDASolver::getDeviceSettingFanLevelPercent(int deviceID)
+{
+	std::string errorMessage;
+	int fanLevel;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getSettingFanLevelPercent(&fanLevel, &errorMessage))
+				return fanLevel;
+;
+
+	return -1;
+}
+
+int CUDASolver::getDeviceCurrentFanTachometerRPM(int deviceID)
+{
+	std::string errorMessage;
+	int currentReading;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getCurrentFanTachometerRPM(&currentReading, &errorMessage))
+				return currentReading;
+
+	return -1;
+}
+
+int CUDASolver::getDeviceCurrentTemperature(int deviceID)
+{
+	std::string errorMessage;
+	int currentTemperature;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getCurrentTemperature(&currentTemperature, &errorMessage))
+				return currentTemperature;
+
+	return INT32_MIN;
+}
+
+int CUDASolver::getDeviceCurrentCoreClock(int deviceID)
+{
+	std::string errorMessage;
+	int currentCoreClock;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getCurrentCoreClock(&currentCoreClock, &errorMessage))
+				return currentCoreClock;
+
+	return -1;
+}
+
+int CUDASolver::getDeviceCurrentMemoryClock(int deviceID)
+{
+	std::string errorMessage;
+	int currentMemoryClock;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getCurrentMemoryClock(&currentMemoryClock, &errorMessage))
+				return currentMemoryClock;
+
+	return -1;
+}
+
+int CUDASolver::getDeviceCurrentUtilizationPercent(int deviceID)
+{
+	std::string errorMessage;
+	int currentUtilization;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getCurrentUtilizationPercent(&currentUtilization, &errorMessage))
+				return currentUtilization;
+
+	return -1;
+}
+
+int CUDASolver::getDeviceCurrentPstate(int deviceID)
+{
+	std::string errorMessage;
+	int currentPstate;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getCurrentPstate(&currentPstate, &errorMessage))
+				return currentPstate;
+
+	return -1;
+}
+
+std::string CUDASolver::getDeviceCurrentThrottleReasons(int deviceID)
+{
+	std::string errorMessage, throttleReasons;
+
+	for (auto& device : m_devices)
+		if (device->deviceID == deviceID)
+			if (device->getCurrentThrottleReasons(&throttleReasons, &errorMessage))
+				return throttleReasons;
+
+	return "";
 }
 
 // --------------------------------------------------------------------

@@ -27,6 +27,7 @@ namespace CudaSolver
 		OnSolutionDelegate ^m_managedOnSolution;
 
 	public:
+		static bool foundNvAPI64();
 		static int getDeviceCount(System::String ^%errorMessage);
 		static System::String ^getDeviceName(int deviceID, System::String ^%errorMessage);
 
@@ -58,6 +59,20 @@ namespace CudaSolver
 		uint64_t getTotalHashRate();
 		// individual hashrate by deviceID, in H/s
 		uint64_t getHashRateByDeviceID(int const deviceID);
+
+		int getDeviceSettingMaxCoreClock(int deviceID);
+		int getDeviceSettingMaxMemoryClock(int deviceID);
+		int getDeviceSettingPowerLimit(int deviceID);
+		int getDeviceSettingThermalLimit(int deviceID);
+		int getDeviceSettingFanLevelPercent(int deviceID);
+
+		int getDeviceCurrentFanTachometerRPM(int deviceID);
+		int getDeviceCurrentTemperature(int deviceID);
+		int getDeviceCurrentCoreClock(int deviceID);
+		int getDeviceCurrentMemoryClock(int deviceID);
+		int getDeviceCurrentUtilizationPercent(int deviceID);
+		int getDeviceCurrentPstate(int deviceID);
+		System::String ^getDeviceCurrentThrottleReasons(int deviceID);
 
 	private:
 		void OnGetWorkPosition(unsigned __int64 %workPosition);

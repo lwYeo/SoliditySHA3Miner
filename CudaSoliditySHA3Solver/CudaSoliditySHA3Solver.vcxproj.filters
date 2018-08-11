@@ -68,6 +68,9 @@
     <ClInclude Include="managed\managedObject.h">
       <Filter>managed</Filter>
     </ClInclude>
+    <ClInclude Include="device\nvapiEnum.h">
+      <Filter>device</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="uint256">

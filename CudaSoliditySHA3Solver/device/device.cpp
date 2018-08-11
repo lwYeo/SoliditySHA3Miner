@@ -1,13 +1,11 @@
 #include "device.h"
-#include "nvapi.h"
 
-bool Device::foundNvAPI64()
-{
-	return NVAPI::foundNvAPI64();
-}
+// --------------------------------------------------------------------
+// Public
+// --------------------------------------------------------------------
 
-Device::Device() :
-	deviceID{ -1 },
+Device::Device(int deviceID) :
+	deviceID{ deviceID },
 	name{ "" },
 	computeVersion{ 0u },
 	intensity{ DEFALUT_INTENSITY },
@@ -22,18 +20,132 @@ Device::Device() :
 	m_lastThreads{ 1u },
 	m_lastIntensity{ 0.0F }
 {
+	char pciBusID_s[13];
+	if (cudaDeviceGetPCIBusId(pciBusID_s, 13, deviceID) == NVAPI_OK)
+	{
+		pciBusID = strtoul(std::string{ pciBusID_s }.substr(5, 2).c_str(), NULL, 16);
+		m_api.assignPciBusID(pciBusID);
+	}
 }
 
-int Device::CoreOC()
+bool Device::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage)
 {
-	int& tempDeviceID{ deviceID };
-	return NVAPI::getCoreOC(tempDeviceID);
+	auto status = m_api.getSettingMaxCoreClock(maxCoreClock);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
 }
 
-int Device::MemoryOC()
+bool Device::getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage)
 {
-	int& tempDeviceID{ deviceID };
-	return NVAPI::getMemoryOC(tempDeviceID);
+	auto status = m_api.getSettingMaxMemoryClock(maxMemoryClock);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getSettingPowerLimit(int *powerLimit, std::string *errorMessage)
+{
+	auto status = m_api.getSettingPowerLimit(powerLimit);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getSettingThermalLimit(int *thermalLimit, std::string *errorMessage)
+{
+	auto status = m_api.getSettingThermalLimit(thermalLimit);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage)
+{
+	auto status = m_api.getSettingFanLevelPercent(fanLevel);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getCurrentFanTachometerRPM(int *value, std::string *errorMessage)
+{
+	auto status = m_api.getCurrentFanTachometerRPM(value);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getCurrentTemperature(int *temperature, std::string *errorMessage)
+{
+	auto status = m_api.getCurrentTemperature(temperature);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getCurrentCoreClock(int *coreClock, std::string *errorMessage)
+{
+	auto status = m_api.getCurrentCoreClock(coreClock);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getCurrentMemoryClock(int *memoryClock, std::string *errorMessage)
+{
+	auto status = m_api.getCurrentMemoryClock(memoryClock);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getCurrentUtilizationPercent(int *utilization, std::string *errorMessage)
+{
+	auto status = m_api.getCurrentUtilizationPercent(utilization);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getCurrentPstate(int *pstate, std::string *errorMessage)
+{
+	auto status = m_api.getCurrentPstate(pstate);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
+}
+
+bool Device::getCurrentThrottleReasons(std::string *reasons, std::string *errorMessage)
+{
+	auto status = m_api.getCurrentThrottleReasons(reasons);
+
+	if (status != NVAPI_OK)
+		m_api.getErrorMessage(status, errorMessage);
+
+	return (status == NVAPI_OK);
 }
 
 uint32_t Device::threads()

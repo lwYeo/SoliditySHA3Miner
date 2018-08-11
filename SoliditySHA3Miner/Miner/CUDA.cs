@@ -68,6 +68,8 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
+        public bool HasMonitoringAPI { get; private set; }
+
         public bool IsAnyInitialised
         {
             get
@@ -174,6 +176,9 @@ namespace SoliditySHA3Miner.Miner
                 NetworkInterface = networkInterface;
                 m_pauseOnFailedScan = pauseOnFailedScans;
                 m_failedScanCount = 0;
+                HasMonitoringAPI = Solver.foundNvAPI64();
+
+                if (!HasMonitoringAPI) Program.Print("[WARN] NvAPI64 library not found.");
 
                 Solver = new Solver(maxDifficulty.HexValue, solutionTemplate, kingAddress)
                 {
@@ -259,6 +264,37 @@ namespace SoliditySHA3Miner.Miner
 
             Program.Print(hashString.ToString());
             Program.Print(string.Format("CUDA [INFO] Total Hashrate: {0} MH/s", Solver.getTotalHashRate() / 1000000.0f));
+
+            if (HasMonitoringAPI)
+            {
+                var coreClockString = new StringBuilder();
+                coreClockString.Append("CUDA [INFO] Core clocks:");
+
+                foreach (var device in Devices)
+                    if (device.DeviceID > -1)
+                        coreClockString.AppendFormat(" {0}MHz", Solver.getDeviceCurrentCoreClock(device.DeviceID));
+
+                Program.Print(coreClockString.ToString());
+
+                var temperatureString = new StringBuilder();
+                temperatureString.Append("CUDA [INFO] Temperatures:");
+
+                foreach (var device in Devices)
+                    if (device.DeviceID > -1)
+                        temperatureString.AppendFormat(" {0}C", Solver.getDeviceCurrentTemperature(device.DeviceID));
+
+                Program.Print(temperatureString.ToString());
+
+                var fanTachometerRpmString = new StringBuilder();
+                fanTachometerRpmString.Append("CUDA [INFO] Fan tachometers: ");
+
+                foreach (var device in Devices)
+                    if (device.DeviceID > -1)
+                        fanTachometerRpmString.AppendFormat(" {0}RPM", Solver.getDeviceCurrentFanTachometerRPM(device.DeviceID));
+
+                Program.Print(fanTachometerRpmString.ToString());
+            }
+
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
         }
 

@@ -144,18 +144,51 @@ namespace SoliditySHA3Miner.API
                 {
                     foreach (var device in miner.Devices.Where(d => d.DeviceID > -1))
                     {
-                        var newMiner = new JsonAPI.Miner()
+                        JsonAPI.Miner newMiner;
+                        if (miner.HasMonitoringAPI && device.Type == "CUDA")
                         {
-                            Type = device.Type,
-                            DeviceID = device.DeviceID,
-                            ModelName = device.Name,
-                            HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor
-                        };
+                            var solver = ((Miner.CUDA)miner).Solver;
+
+                            newMiner = new JsonAPI.CudaMiner()
+                            {
+                                Type = device.Type,
+                                DeviceID = device.DeviceID,
+                                ModelName = device.Name,
+                                HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                                HasMonitoringAPI = miner.HasMonitoringAPI,
+
+                                SettingMaxCoreClockMHz = solver.getDeviceSettingMaxCoreClock(device.DeviceID),
+                                SettingMaxMemoryClockMHz = solver.getDeviceSettingMaxMemoryClock(device.DeviceID),
+                                SettingPowerLimit = solver.getDeviceSettingPowerLimit(device.DeviceID),
+                                SettingThermalLimitC = solver.getDeviceSettingThermalLimit(device.DeviceID),
+                                SettingFanLevelPercent = solver.getDeviceSettingFanLevelPercent(device.DeviceID),
+
+                                CurrentFanTachometerRPM = solver.getDeviceCurrentFanTachometerRPM(device.DeviceID),
+                                CurrentTemperatureC = solver.getDeviceCurrentTemperature(device.DeviceID),
+                                CurrentCoreClockMHz = solver.getDeviceCurrentCoreClock(device.DeviceID),
+                                CurrentMemoryClockMHz = solver.getDeviceCurrentMemoryClock(device.DeviceID),
+                                CurrentUtilizationPercent = solver.getDeviceCurrentUtilizationPercent(device.DeviceID),
+                                CurrentPState = solver.getDeviceCurrentPstate(device.DeviceID),
+                                CurrentThrottleReasons = solver.getDeviceCurrentThrottleReasons(device.DeviceID)
+                            };
+                        }
+                        else
+                        {
+                            newMiner = new JsonAPI.Miner()
+                            {
+                                Type = device.Type,
+                                DeviceID = device.DeviceID,
+                                ModelName = device.Name,
+                                HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                                HasMonitoringAPI = miner.HasMonitoringAPI
+                            };
+                        }
+                        
                         api.Miners.Add(newMiner);
                     }
                 }
-
-                byte[] buffer = Encoding.UTF8.GetBytes(Utils.Json.SerializeFromObject(api));
+                
+                byte[] buffer = Encoding.UTF8.GetBytes(Utils.Json.SerializeFromObject(api, Utils.Json.BaseClassFirstSettings));
                 response.ContentLength64 = buffer.Length;
 
                 using (var output = response.OutputStream)
@@ -186,6 +219,24 @@ namespace SoliditySHA3Miner.API
                 public int DeviceID { get; set; }
                 public string ModelName { get; set; }
                 public float HashRate { get; set; }
+                public bool HasMonitoringAPI { get; set; }
+            }
+
+            public class CudaMiner : Miner
+            {
+                public int SettingMaxCoreClockMHz { get; set; }
+                public int SettingMaxMemoryClockMHz { get; set; }
+                public int SettingPowerLimit { get; set; }
+                public int SettingThermalLimitC { get; set; }
+                public int SettingFanLevelPercent { get; set; }
+
+                public int CurrentFanTachometerRPM { get; set; }
+                public int CurrentTemperatureC { get; set; }
+                public int CurrentCoreClockMHz { get; set; }
+                public int CurrentMemoryClockMHz { get; set; }
+                public int CurrentUtilizationPercent { get; set; }
+                public int CurrentPState { get; set; }
+                public string CurrentThrottleReasons { get; set; }
             }
         }
     }

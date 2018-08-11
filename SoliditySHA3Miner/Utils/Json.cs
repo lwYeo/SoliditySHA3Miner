@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using Newtonsoft.Json;
@@ -17,6 +18,9 @@ namespace SoliditySHA3Miner.Utils
         private static object _Object3 = new object();
         private static object _Object4 = new object();
         private static object _Object5 = new object();
+
+        public static readonly JsonSerializerSettings BaseClassFirstSettings =
+            new JsonSerializerSettings { ContractResolver = BaseFirstContractResolver.Instance };
 
         public static string SerializeFromObject(object obj, JsonSerializerSettings settings = null)
         {
@@ -131,11 +135,49 @@ namespace SoliditySHA3Miner.Utils
 
         public class ClassNameContractResolver : DefaultContractResolver
         {
+            private ClassNameContractResolver() { }
+
+            static ClassNameContractResolver() => Instance = new ClassNameContractResolver();
+
+            public static ClassNameContractResolver Instance { get; private set; }
+
             protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
             {
-                IList<JsonProperty> propList = base.CreateProperties(type, memberSerialization);
-                foreach (JsonProperty prop in propList) { prop.PropertyName = prop.UnderlyingName; }
-                return propList;
+                return base.CreateProperties(type, memberSerialization).
+                            Select(p =>
+                            {
+                                p.PropertyName = p.UnderlyingName;
+                                return p;
+                            }).
+                            ToList();
+            }
+        }
+
+        public class BaseFirstContractResolver : DefaultContractResolver
+        {
+            private BaseFirstContractResolver() { }
+
+            static BaseFirstContractResolver() => Instance = new BaseFirstContractResolver();
+
+            public static BaseFirstContractResolver Instance { get; private set; }
+
+            protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+            {
+                return base.CreateProperties(type, memberSerialization).
+                            OrderBy(p => p.DeclaringType.BaseTypesAndSelf().Count()).
+                            ToList();
+            }
+        }
+    }
+
+    public static class TypeExtensions
+    {
+        public static IEnumerable<Type> BaseTypesAndSelf(this Type type)
+        {
+            while (type != null)
+            {
+                yield return type;
+                type = type.BaseType;
             }
         }
     }

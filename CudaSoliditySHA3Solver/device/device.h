@@ -3,6 +3,7 @@
 #include <atomic>
 #include <chrono>
 #include <cuda_runtime.h>
+#include "nvapi.h"
 #include "..\types.h"
 
 #pragma managed(push, off)
@@ -59,13 +60,25 @@ private:
 	uint32_t m_lastThreads;
 	float m_lastIntensity;
 
+	NvAPI m_api;
+	uint32_t pciBusID;
+
 public:
-	static bool foundNvAPI64();
+	Device(int deviceID);
 
-	Device();
+	bool getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage);
+	bool getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage);
+	bool getSettingPowerLimit(int *powerLimit, std::string *errorMessage);
+	bool getSettingThermalLimit(int *thermalLimit, std::string *errorMessage);
+	bool getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage);
 
-	int CoreOC();
-	int MemoryOC();
+	bool getCurrentFanTachometerRPM(int *value, std::string *errorMessage);
+	bool getCurrentTemperature(int *temperature, std::string *errorMessage);
+	bool getCurrentCoreClock(int *coreClock, std::string *errorMessage);
+	bool getCurrentMemoryClock(int *memoryClock, std::string *errorMessage);
+	bool getCurrentUtilizationPercent(int *utilization, std::string *errorMessage);
+	bool getCurrentPstate(int *pstate, std::string *errorMessage);
+	bool getCurrentThrottleReasons(std::string *reasons, std::string *errorMessage);
 
 	uint32_t threads();
 	dim3 block();

@@ -71,6 +71,8 @@ private:
 	std::thread m_runThread;
 
 public:
+	static bool foundNvAPI64();
+
 	static std::string getCudaErrorString(cudaError_t &error);
 	static int getDeviceCount(std::string &errorMessage);
 	static std::string getDeviceName(int deviceID, std::string &errorMessage);
@@ -102,6 +104,20 @@ public:
 
 	uint64_t getTotalHashRate();
 	uint64_t getHashRateByDeviceID(int const deviceID);
+
+	int getDeviceSettingMaxCoreClock(int deviceID);
+	int getDeviceSettingMaxMemoryClock(int deviceID);
+	int getDeviceSettingPowerLimit(int deviceID);
+	int getDeviceSettingThermalLimit(int deviceID);
+	int getDeviceSettingFanLevelPercent(int deviceID);
+
+	int getDeviceCurrentFanTachometerRPM(int deviceID);
+	int getDeviceCurrentTemperature(int deviceID);
+	int getDeviceCurrentCoreClock(int deviceID);
+	int getDeviceCurrentMemoryClock(int deviceID);
+	int getDeviceCurrentUtilizationPercent(int deviceID);
+	int getDeviceCurrentPstate(int deviceID);
+	std::string getDeviceCurrentThrottleReasons(int deviceID);
 
 private:
 	void initializeDevice(std::unique_ptr<Device> &device);

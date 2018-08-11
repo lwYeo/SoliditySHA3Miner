@@ -39,6 +39,8 @@ namespace SoliditySHA3Miner.Miner
 
         public bool HasAssignedDevices => Solver != null && Devices.Any(d => d.DeviceID > -1);
 
+        public bool HasMonitoringAPI => false;
+
         public Device[] Devices { get; }
 
         public bool IsAnyInitialised => true; // CPU is always initialised

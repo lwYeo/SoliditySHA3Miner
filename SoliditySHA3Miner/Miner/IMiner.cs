@@ -6,6 +6,7 @@ namespace SoliditySHA3Miner.Miner
     {
         NetworkInterface.INetworkInterface NetworkInterface { get; }
         bool HasAssignedDevices { get; }
+        bool HasMonitoringAPI { get; }
         Device[] Devices { get; }
         bool IsAnyInitialised { get; }
         bool IsMining { get; }
