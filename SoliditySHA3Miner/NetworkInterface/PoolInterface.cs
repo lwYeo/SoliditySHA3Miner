@@ -10,10 +10,11 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly string s_MinerAddress;
         private readonly string s_PoolURL;
         private readonly int m_maxScanRetry;
+        private readonly int m_updateInterval;
         private bool m_runFailover;
         private int m_retryCount;
 
-        private int m_updateInterval;
+        private readonly object m_cacheParamLock = new object();
         private MiningParameters m_cacheParameters;
 
         public bool IsPool => true;
@@ -36,57 +37,60 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public MiningParameters GetMiningParameters()
         {
-            if (m_cacheParameters != null) return m_cacheParameters;
-
-            Program.Print("[INFO] Getting latest parameters from pool...");
-
-            var getPoolEthAddress = GetPoolParameter("getPoolEthAddress");
-            var getPoolChallengeNumber = GetPoolParameter("getChallengeNumber");
-            var getPoolMinimumShareDifficulty = GetPoolParameter("getMinimumShareDifficulty", s_MinerAddress);
-            var getPoolMinimumShareTarget = GetPoolParameter("getMinimumShareTarget", s_MinerAddress);
-
-            bool success = true;
-            try
+            lock (m_cacheParamLock)
             {
-                m_cacheParameters = MiningParameters.GetPoolMiningParameters(s_PoolURL, getPoolEthAddress, getPoolChallengeNumber,
-                                                                             getPoolMinimumShareDifficulty, getPoolMinimumShareTarget);
-
-                Task.Factory.StartNew(() =>
-                {
-                    Task.Delay(m_updateInterval / 2);
-                    m_cacheParameters = null;
-                });
-
-                return m_cacheParameters;
-            }
-            catch (AggregateException ex)
-            {
-                success = false;
-                m_retryCount++;
-
-                string errorMsg = ex.Message;
-                foreach (var iEx in ex.InnerExceptions) errorMsg += ("\n " + iEx.Message);
+                if (m_cacheParameters != null) return m_cacheParameters;
                 
-                Program.Print("[ERROR] " + errorMsg);
-            }
-            catch (Exception ex)
-            {
-                success = false;
-                m_retryCount++;
+                Program.Print("[INFO] Getting latest parameters from pool...");
 
-                string errorMsg = ex.Message;
-                if (ex.InnerException != null) errorMsg += ("\n " + ex.InnerException.Message);
-                Program.Print("[ERROR] " + errorMsg );
-            }
+                var getPoolEthAddress = GetPoolParameter("getPoolEthAddress");
+                var getPoolChallengeNumber = GetPoolParameter("getChallengeNumber");
+                var getPoolMinimumShareDifficulty = GetPoolParameter("getMinimumShareDifficulty", s_MinerAddress);
+                var getPoolMinimumShareTarget = GetPoolParameter("getMinimumShareTarget", s_MinerAddress);
 
-            if (!success && SecondaryPool != null && m_retryCount >= m_maxScanRetry)
-            {
-                m_runFailover = true;
-                Program.Print("[INFO] Getting mining parameters from secondary pool...");
-                return SecondaryPool.GetMiningParameters();
-            }
+                bool success = true;
+                try
+                {
+                    m_cacheParameters = MiningParameters.GetPoolMiningParameters(s_PoolURL, getPoolEthAddress, getPoolChallengeNumber,
+                                                                                 getPoolMinimumShareDifficulty, getPoolMinimumShareTarget);
 
-            return null;
+                    Task.Factory.StartNew(() =>
+                    {
+                        Task.Delay(m_updateInterval / 2);
+                        m_cacheParameters = null;
+                    });
+
+                    return m_cacheParameters;
+                }
+                catch (AggregateException ex)
+                {
+                    success = false;
+                    m_retryCount++;
+
+                    string errorMsg = ex.Message;
+                    foreach (var iEx in ex.InnerExceptions) errorMsg += ("\n " + iEx.Message);
+
+                    Program.Print("[ERROR] " + errorMsg);
+                }
+                catch (Exception ex)
+                {
+                    success = false;
+                    m_retryCount++;
+
+                    string errorMsg = ex.Message;
+                    if (ex.InnerException != null) errorMsg += ("\n " + ex.InnerException.Message);
+                    Program.Print("[ERROR] " + errorMsg);
+                }
+
+                if (!success && SecondaryPool != null && m_retryCount >= m_maxScanRetry)
+                {
+                    m_runFailover = true;
+                    Program.Print("[INFO] Getting mining parameters from secondary pool...");
+                    return SecondaryPool.GetMiningParameters();
+                }
+
+                return null;
+            }
         }
 
         void INetworkInterface.SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, bool isCustomDifficulty)

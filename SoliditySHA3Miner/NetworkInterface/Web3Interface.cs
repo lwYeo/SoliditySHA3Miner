@@ -27,8 +27,9 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly Function m_mintMethod;
         private readonly Function m_transferMethod;
         private readonly List<string> m_submittedChallengeList;
+        private readonly int m_updateInterval;
 
-        private int m_updateInterval;
+        private readonly object m_cacheParamLock = new object();
         private MiningParameters m_cacheParameters;
 
         public bool IsPool => false;
@@ -112,18 +113,22 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public MiningParameters GetMiningParameters()
         {
-            if (m_cacheParameters != null) return m_cacheParameters;
-
-            Program.Print("[INFO] Getting latest parameters from network...");
-            m_cacheParameters = MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
-
-            Task.Factory.StartNew(() =>
+            lock (m_cacheParamLock)
             {
-                Task.Delay(m_updateInterval / 3);
-                m_cacheParameters = null;
-            });
+                if (m_cacheParameters != null) return m_cacheParameters;
+                
+                Program.Print("[INFO] Getting latest parameters from network...");
 
-            return m_cacheParameters;
+                m_cacheParameters = MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
+
+                Task.Factory.StartNew(() =>
+                {
+                    Task.Delay(m_updateInterval / 3);
+                    m_cacheParameters = null;
+                });
+
+                return m_cacheParameters;
+            }
         }
 
         void INetworkInterface.SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, bool isCustomDifficulty)
