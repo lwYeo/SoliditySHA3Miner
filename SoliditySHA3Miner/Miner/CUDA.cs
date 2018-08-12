@@ -167,7 +167,7 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        public CUDA(NetworkInterface.INetworkInterface networkInterface, Device[] cudaDevices, string solutionTemplate, string kingAddress, 
+        public CUDA(NetworkInterface.INetworkInterface networkInterface, Device[] cudaDevices, string kingAddress, 
                     HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
@@ -180,14 +180,18 @@ namespace SoliditySHA3Miner.Miner
 
                 if (!HasMonitoringAPI) Program.Print("[WARN] NvAPI64 library not found.");
 
-                Solver = new Solver(maxDifficulty.HexValue, solutionTemplate, kingAddress)
+                unsafe
                 {
-                    OnGetWorkPositionHandler = Work.GetPosition,
-                    OnResetWorkPositionHandler = Work.ResetPosition,
-                    OnIncrementWorkPositionHandler = Work.IncrementPosition,
-                    OnMessageHandler = m_cudaSolver_OnMessage,
-                    OnSolutionHandler = m_cudaSolver_OnSolution
-                };
+                    Solver = new Solver(maxDifficulty.HexValue, kingAddress)
+                    {
+                        OnGetSolutionTemplateHandler = Work.GetSolutionTemplate,
+                        OnGetWorkPositionHandler = Work.GetPosition,
+                        OnResetWorkPositionHandler = Work.ResetPosition,
+                        OnIncrementWorkPositionHandler = Work.IncrementPosition,
+                        OnMessageHandler = m_cudaSolver_OnMessage,
+                        OnSolutionHandler = m_cudaSolver_OnSolution
+                    };
+                }
 
                 if (customDifficulty > 0u) Solver.setCustomDifficulty(customDifficulty);
                 Solver.setSubmitStale(isSubmitStale);

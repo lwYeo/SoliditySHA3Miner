@@ -62,11 +62,11 @@ namespace SoliditySHA3Miner.NetworkInterface
                                 throw ex;
                             }
                         }).
-                        ContinueWith(task => MiningTargetByte32 = ByteArrToByte32(MiningTarget.Value.ToByteArray(littleEndian: false))).
-                        ContinueWith(task => MiningTargetByte32String = BigIntegerToByte32HexString(MiningTarget.Value)),
+                        ContinueWith(task => MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false))).
+                        ContinueWith(task => MiningTargetByte32String = Utils.Numerics.BigIntegerToByte32HexString(MiningTarget.Value)),
                         Task.Factory.StartNew(() =>
                         {
-                            try { ChallengeNumberByte32 = ByteArrToByte32(contract.GetFunction("getChallengeNumber").CallAsync<byte[]>().Result); }
+                            try { ChallengeNumberByte32 = Utils.Numerics.FilterByte32Array(contract.GetFunction("getChallengeNumber").CallAsync<byte[]>().Result); }
                             catch (System.AggregateException ex)
                             {
                                 exceptions.Add(ex);
@@ -74,7 +74,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                             }
                         }).
                         ContinueWith(Task => ChallengeNumber = new HexBigInteger(HexByteConvertorExtensions.ToHex(ChallengeNumberByte32, prefix: true))).
-                        ContinueWith(task => ChallengeNumberByte32String = BigIntegerToByte32HexString(ChallengeNumber.Value))
+                        ContinueWith(task => ChallengeNumberByte32String = Utils.Numerics.BigIntegerToByte32HexString(ChallengeNumber.Value))
                     });
                     success = true;
                 }
@@ -92,30 +92,13 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 Task.Factory.StartNew(() => EthAddress = Utils.Json.InvokeJObjectRPC(poolURL, getPoolEthAddress).SelectToken("$.result").Value<string>()),
                 Task.Factory.StartNew(() => ChallengeNumber = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getChallengeNumber).SelectToken("$.result").Value<string>())).
-                             ContinueWith(task => ChallengeNumberByte32 = ByteArrToByte32(ChallengeNumber.Value.ToByteArray(littleEndian: false))).
-                             ContinueWith(task => ChallengeNumberByte32String = BigIntegerToByte32HexString(ChallengeNumber.Value)),
+                             ContinueWith(task => ChallengeNumberByte32 = Utils.Numerics.FilterByte32Array(ChallengeNumber.Value.ToByteArray(littleEndian: false))).
+                             ContinueWith(task => ChallengeNumberByte32String = Utils.Numerics.BigIntegerToByte32HexString(ChallengeNumber.Value)),
                 Task.Factory.StartNew(() => MiningDifficulty = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareDifficulty).SelectToken("$.result").Value<string>()))),
                 Task.Factory.StartNew(() => MiningTarget = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareTarget).SelectToken("$.result").Value<string>()))).
-                             ContinueWith(task => MiningTargetByte32 = ByteArrToByte32(MiningTarget.Value.ToByteArray(littleEndian: false))).
-                             ContinueWith(task => MiningTargetByte32String = BigIntegerToByte32HexString(MiningTarget.Value))
+                             ContinueWith(task => MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false))).
+                             ContinueWith(task => MiningTargetByte32String = Utils.Numerics.BigIntegerToByte32HexString(MiningTarget.Value))
             });
-        }
-
-        private byte[] ByteArrToByte32(byte[] bytes)
-        {
-            var outBytes = (byte[])System.Array.CreateInstance(typeof(byte), 32);
-            for (int i = 0; i < 32; i++) outBytes[i] = 0;
-
-            for (int i = 31, j = (bytes.Length - 1); i >= 0 && j >= 0; i--, j--) outBytes[i] = bytes[j];
-            return outBytes;
-        }
-
-        private string BigIntegerToByte32HexString(BigInteger value)
-        {
-            var tempString = value.ToString("x64");
-            var hexString = "0x";
-            for (int i = tempString.Length - (32 * 2); i < tempString.Length; i++) hexString += tempString[i];
-            return hexString;
         }
     }
 }

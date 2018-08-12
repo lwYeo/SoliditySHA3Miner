@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace SoliditySHA3Miner.Miner
 {
@@ -23,7 +24,22 @@ namespace SoliditySHA3Miner.Miner
     public static class Work
     {
         private static ulong m_Position = 0;
+
         private static readonly object m_positionLock = new object();
+
+        public static byte[] SolutionTemplate { get; set; }
+
+        public static unsafe void GetSolutionTemplate(ref byte* solutionTemplate)
+        {
+            if (SolutionTemplate == null) return;
+
+            fixed (byte *tempSolutionTemplate = SolutionTemplate)
+            {
+                Buffer.MemoryCopy(tempSolutionTemplate, solutionTemplate, 32L, 32L);
+            }
+        }
+
+        public static void SetSolutionTemplate(string solutionTemplate) => SolutionTemplate = Utils.Numerics.HexStringToByte32Array(solutionTemplate);
 
         public static void GetPosition(ref ulong workPosition)
         {

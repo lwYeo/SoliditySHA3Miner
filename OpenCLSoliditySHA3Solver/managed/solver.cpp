@@ -2,9 +2,15 @@
 
 namespace OpenCLSolver
 {
-	Solver::Solver(System::String ^maxDifficulty, System::String ^solutionTemplate, System::String ^kingAddress) :
-		ManagedObject(new openCLSolver(ToNativeString(maxDifficulty), ToNativeString(solutionTemplate), ToNativeString(kingAddress)))
+	Solver::Solver(System::String ^maxDifficulty, System::String ^kingAddress) :
+		ManagedObject(new openCLSolver(ToNativeString(maxDifficulty), ToNativeString(kingAddress)))
 	{
+		m_managedOnGetSolutionTemplate = gcnew OnGetSolutionTemplateDelegate(this, &Solver::OnGetSolutionTemplate);
+		System::IntPtr getSolutionTemplateStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetSolutionTemplate);
+		openCLSolver::GetSolutionTemplateCallback getSolutionTemplateFnPtr = static_cast<openCLSolver::GetSolutionTemplateCallback>(getSolutionTemplateStubPtr.ToPointer());
+		m_Instance->setGetSolutionTemplateCallback(getSolutionTemplateFnPtr);
+		System::GC::KeepAlive(m_managedOnGetSolutionTemplate);
+
 		m_managedOnGetWorkPosition = gcnew OnGetWorkPositionDelegate(this, &Solver::OnGetWorkPosition);
 		System::IntPtr getWorkPositionStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetWorkPosition);
 		openCLSolver::GetWorkPositionCallback getWorkPositionFnPtr = static_cast<openCLSolver::GetWorkPositionCallback>(getWorkPositionStubPtr.ToPointer());
@@ -155,6 +161,11 @@ namespace OpenCLSolver
 	{
 		if (m_Instance == nullptr) return 0ull;
 		return m_Instance->getHashRateByDevice(ToNativeString(platformName), deviceID);
+	}
+
+	void Solver::OnGetSolutionTemplate(uint8_t *%solutionTemplate)
+	{
+		OnGetSolutionTemplateHandler(solutionTemplate);
 	}
 
 	void Solver::OnGetWorkPosition(unsigned __int64 %workPosition)

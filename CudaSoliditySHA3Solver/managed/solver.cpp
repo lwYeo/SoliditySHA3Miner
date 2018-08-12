@@ -2,9 +2,15 @@
 
 namespace CudaSolver
 {
-	Solver::Solver(System::String ^maxDifficulty, System::String ^solutionTemplate, System::String ^kingAddress) :
-		ManagedObject(new CUDASolver(ToNativeString(maxDifficulty), ToNativeString(solutionTemplate), ToNativeString(kingAddress)))
+	Solver::Solver(System::String ^maxDifficulty, System::String ^kingAddress) :
+		ManagedObject(new CUDASolver(ToNativeString(maxDifficulty), ToNativeString(kingAddress)))
 	{
+		m_managedOnGetSolutionTemplate = gcnew OnGetSolutionTemplateDelegate(this, &Solver::OnGetSolutionTemplate);
+		System::IntPtr getSolutionTemplateStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetSolutionTemplate);
+		CUDASolver::GetSolutionTemplateCallback getSolutionTemplateFnPtr = static_cast<CUDASolver::GetSolutionTemplateCallback>(getSolutionTemplateStubPtr.ToPointer());
+		m_Instance->setGetSolutionTemplateCallback(getSolutionTemplateFnPtr);
+		System::GC::KeepAlive(m_managedOnGetSolutionTemplate);
+
 		m_managedOnGetWorkPosition = gcnew OnGetWorkPositionDelegate(this, &Solver::OnGetWorkPosition);
 		System::IntPtr getWorkPositionStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetWorkPosition);
 		CUDASolver::GetWorkPositionCallback getWorkPositionFnPtr = static_cast<CUDASolver::GetWorkPositionCallback>(getWorkPositionStubPtr.ToPointer());
@@ -204,6 +210,11 @@ namespace CudaSolver
 	System::String ^Solver::getDeviceCurrentThrottleReasons(int deviceID)
 	{
 		return ToManagedString(m_Instance->getDeviceCurrentThrottleReasons(deviceID));
+	}
+
+	void Solver::OnGetSolutionTemplate(uint8_t *%solutionTemplate)
+	{
+		OnGetSolutionTemplateHandler(solutionTemplate);
 	}
 
 	void Solver::OnGetWorkPosition(unsigned __int64 %workPosition)

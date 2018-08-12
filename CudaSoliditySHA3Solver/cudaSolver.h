@@ -32,15 +32,17 @@
 class CUDASolver
 {
 public:
+	typedef void(*GetSolutionTemplateCallback)(uint8_t *&);
 	typedef void(*GetWorkPositionCallback)(uint64_t &);
 	typedef void(*ResetWorkPositionCallback)(uint64_t &);
 	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
-	typedef void(*MessageCallback)(int, const char*, const char*);
-	typedef void(*SolutionCallback)(const char*, const char*, const char*, const char*, const char*, const char*, bool);
+	typedef void(*MessageCallback)(int, const char *, const char *);
+	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *, const char *, bool);
 
 	bool isSubmitStale;
 
 private:
+	GetSolutionTemplateCallback m_getSolutionTemplateCallback;
 	GetWorkPositionCallback m_getWorkPositionCallback;
 	ResetWorkPositionCallback m_resetWorkPositionCallback;
 	IncrementWorkPositionCallback m_incrementWorkPositionCallback;
@@ -58,7 +60,6 @@ private:
 	std::string s_customDifficulty;
 	
 	address_t m_address;
-	byte32_t m_solutionTemplate;
 	prefix_t m_prefix; // challenge32 + address20
 	message_t m_miningMessage; // challenge32 + address20 + solution32
 
@@ -78,9 +79,10 @@ public:
 	static std::string getDeviceName(int deviceID, std::string &errorMessage);
 	
 	// require web3 contract getMethod -> _MAXIMUM_TARGET
-	CUDASolver(std::string const maxDifficulty, std::string solutionTemplate, std::string kingAddress) noexcept;
+	CUDASolver(std::string const maxDifficulty, std::string kingAddress) noexcept;
 	~CUDASolver() noexcept;
 
+	void setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback);
 	void setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback);
 	void setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback);
 	void setIncrementWorkPositionCallback(IncrementWorkPositionCallback incrementWorkPositionCallback);
@@ -121,6 +123,7 @@ public:
 
 private:
 	void initializeDevice(std::unique_ptr<Device> &device);
+	void getSolutionTemplate(uint8_t *&solutionTemplate);
 	void getWorkPosition(uint64_t &workPosition);
 	void resetWorkPosition(uint64_t &lastPosition);
 	void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);

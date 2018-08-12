@@ -10,11 +10,11 @@
 #include <memory>
 #include <random>
 #include <set>
-#include "device\device.h"
+#include "device/device.h"
 #include "uint256/arith_uint256.h"
 
 #define SPH_KECCAK_64 1
-#include "sph\sph_keccak.h"
+#include "sph/sph_keccak.h"
 
 #pragma managed(push, off)
 
@@ -45,11 +45,12 @@
 class openCLSolver
 {
 public:
+	typedef void(*GetSolutionTemplateCallback)(uint8_t *&);
 	typedef void(*GetWorkPositionCallback)(uint64_t &);
 	typedef void(*ResetWorkPositionCallback)(uint64_t &);
 	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
-	typedef void(*MessageCallback)(const char*, int, const char*, const char*);
-	typedef void(*SolutionCallback)(const char*, const char*, const char*, const char*, const char*, const char*, bool);
+	typedef void(*MessageCallback)(const char *, int, const char *, const char *);
+	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *, const char *, bool);
 	typedef struct { cl_platform_id id; std::string name; } Platform;
 
 	static void preInitialize(bool allowIntel, std::string &errorMessage);
@@ -62,6 +63,7 @@ public:
 private:
 	static std::vector<Platform> platforms;
 
+	GetSolutionTemplateCallback m_getSolutionTemplateCallback;
 	GetWorkPositionCallback m_getWorkPositionCallback;
 	ResetWorkPositionCallback m_resetWorkPositionCallback;
 	IncrementWorkPositionCallback m_incrementWorkPositionCallback;
@@ -79,7 +81,6 @@ private:
 	std::string s_customDifficulty;
 
 	address_t m_address;
-	byte32_t m_solutionTemplate;
 	prefix_t m_prefix; // challenge32 + address20
 	message_t m_miningMessage; // challenge32 + address20 + solution32
 
@@ -93,9 +94,10 @@ private:
 
 public:
 	// require web3 contract getMethod -> _MAXIMUM_TARGET
-	openCLSolver(std::string const maxDifficulty, std::string solutionTemplate, std::string kingAddress) noexcept;
+	openCLSolver(std::string const maxDifficulty, std::string kingAddress) noexcept;
 	~openCLSolver() noexcept;
 
+	void setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback);
 	void setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback);
 	void setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback);
 	void setIncrementWorkPositionCallback(IncrementWorkPositionCallback incrementWorkPositionCallback);
@@ -121,6 +123,7 @@ public:
 	void pauseFinding(bool pauseFinding);
 
 private:
+	void getSolutionTemplate(uint8_t *&solutionTemplate);
 	void getWorkPosition(uint64_t &workPosition);
 	void resetWorkPosition(uint64_t &lastPosition);
 	void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);

@@ -145,7 +145,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 var gasLimit = new HexBigInteger(1704624ul);
                 var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasToMine), UnitConversion.EthUnit.Gwei));
 
-                var oSolution = new BigInteger(new HexBigInteger(solution).ToHexByteArray().Reverse().ToArray());
+                var oSolution = new BigInteger(Utils.Numerics.HexStringToByte32Array(solution));
                 // Note: do not directly use -> new HexBigInteger(solution).Value
                 //Because two's complement representation always interprets the highest-order bit of the last byte in the array
                 //(the byte at position Array.Length- 1) as the sign bit,

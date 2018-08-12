@@ -2,9 +2,15 @@
 
 namespace CPUSolver
 {
-	Solver::Solver(System::String ^maxDifficulty, System::String ^threads, System::String ^solutionTemplate, System::String ^kingAddress) :
-		ManagedObject(new cpuSolver(ToNativeString(maxDifficulty), ToNativeString(threads), ToNativeString(solutionTemplate), ToNativeString(kingAddress)))
+	Solver::Solver(System::String ^maxDifficulty, System::String ^threads, System::String ^kingAddress) :
+		ManagedObject(new cpuSolver(ToNativeString(maxDifficulty), ToNativeString(threads), ToNativeString(kingAddress)))
 	{
+		m_managedOnGetSolutionTemplate = gcnew OnGetSolutionTemplateDelegate(this, &Solver::OnGetSolutionTemplate);
+		System::IntPtr getSolutionTemplateStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetSolutionTemplate);
+		cpuSolver::GetSolutionTemplateCallback getSolutionTemplateFnPtr = static_cast<cpuSolver::GetSolutionTemplateCallback>(getSolutionTemplateStubPtr.ToPointer());
+		m_Instance->setGetSolutionTemplateCallback(getSolutionTemplateFnPtr);
+		System::GC::KeepAlive(m_managedOnGetSolutionTemplate);
+
 		m_managedOnMessage = gcnew OnMessageDelegate(this, &Solver::OnMessage);
 		System::IntPtr messageStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnMessage);
 		cpuSolver::MessageCallback messageFnPtr = static_cast<cpuSolver::MessageCallback>(messageStubPtr.ToPointer());
@@ -24,14 +30,19 @@ namespace CPUSolver
 		catch(...) {}
 	}
 
+	void Solver::OnGetSolutionTemplate(uint8_t *%solutionTemplate)
+	{
+		OnGetSolutionTemplateHandler(solutionTemplate);
+	}
+
 	unsigned int Solver::getLogicalProcessorsCount()
 	{
 		return cpuSolver::getLogicalProcessorsCount();
 	}
 
-	System::String ^Solver::getSolutionTemplate(System::String ^kingAddress)
+	System::String ^Solver::getNewSolutionTemplate(System::String ^kingAddress)
 	{
-		return ToManagedString(cpuSolver::getSolutionTemplate(ToNativeString(kingAddress)));
+		return ToManagedString(cpuSolver::getNewSolutionTemplate(ToNativeString(kingAddress)));
 	}
 
 	void Solver::setCustomDifficulty(uint32_t customDifficulty)

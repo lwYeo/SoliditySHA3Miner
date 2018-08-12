@@ -1,5 +1,5 @@
-#pragma unmanaged
 #include "openCLSolver.h"
+#pragma unmanaged
 
 // --------------------------------------------------------------------
 // Static
@@ -127,13 +127,12 @@ std::string openCLSolver::getDeviceName(std::string platformName, int deviceEnum
 // Public
 // --------------------------------------------------------------------
 
-openCLSolver::openCLSolver(std::string const maxDifficulty, std::string solutionTemplate, std::string kingAddress) noexcept :
+openCLSolver::openCLSolver(std::string const maxDifficulty, std::string kingAddress) noexcept :
 	s_address{ "" },
 	s_challenge{ "" },
 	s_target{ "" },
 	s_difficulty{ "" },
 	m_address{ 0 },
-	m_solutionTemplate{ 0 },
 	m_prefix{ 0 },
 	m_miningMessage{ 0 },
 	m_target{ 0 },
@@ -142,13 +141,16 @@ openCLSolver::openCLSolver(std::string const maxDifficulty, std::string solution
 	s_kingAddress{ kingAddress }
 {
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
-
-	hexStringToBytes(solutionTemplate, m_solutionTemplate);
 }
 
 openCLSolver::~openCLSolver() noexcept
 {
 	stopFinding();
+}
+
+void openCLSolver::setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback)
+{
+	m_getSolutionTemplateCallback = solutionTemplateCallback;
 }
 
 void openCLSolver::setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback)
@@ -271,7 +273,11 @@ void openCLSolver::updatePrefix(std::string const prefix)
 
 	std::memcpy(&m_prefix, &tempPrefix, PREFIX_LENGTH);
 	std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
-	std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH);
+
+	uint8_t *solutionTemplate = new uint8_t[UINT256_LENGTH]{ 0 };
+	getSolutionTemplate(solutionTemplate);
+	std::memcpy(&m_miningMessage[PREFIX_LENGTH], solutionTemplate, UINT256_LENGTH);
+
 	state_t tempMidState{ getMidState(m_miningMessage) };
 
 	for (auto& device : m_devices)
@@ -283,6 +289,7 @@ void openCLSolver::updatePrefix(std::string const prefix)
 	}
 
 	onMessage("", -1, "Info", "New challenge detected " + s_challenge.substr(0, 18) + "...");
+	free(solutionTemplate);
 }
 
 void openCLSolver::updateTarget(std::string const target)
@@ -393,6 +400,11 @@ void openCLSolver::pauseFinding(bool pauseFinding)
 // Private
 // --------------------------------------------------------------------
 
+void openCLSolver::getSolutionTemplate(uint8_t *&solutionTemplate)
+{
+	m_getSolutionTemplateCallback(solutionTemplate);
+}
+
 void openCLSolver::getWorkPosition(uint64_t &workPosition)
 {
 	m_getWorkPositionCallback(workPosition);
@@ -490,9 +502,14 @@ void openCLSolver::submitSolutions(std::set<uint64_t> solutions, std::string cha
 		return device->platformName == platformName && device->deviceEnum == deviceEnum;
 	});
 
+	uint8_t *solutionTemplate = new uint8_t[UINT256_LENGTH]{ 0 };
+	getSolutionTemplate(solutionTemplate);
+
 	for (uint64_t midStateSolution : solutions)
 	{
-		byte32_t solution{ m_solutionTemplate };
+		byte32_t solution{ 0 };
+		std::memcpy(&solution, solutionTemplate, UINT256_LENGTH);
+
 		if (s_kingAddress.empty())
 			std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
 		else
@@ -500,6 +517,7 @@ void openCLSolver::submitSolutions(std::set<uint64_t> solutions, std::string cha
 
 		onSolution(solution, challenge, device);
 	}
+	free(solutionTemplate);
 }
 
 state_t const openCLSolver::getMidState(message_t &newMessage)

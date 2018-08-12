@@ -1,6 +1,5 @@
-#pragma unmanaged
-
 #include "cudasolver.h"
+#pragma unmanaged
 
 #define ROTL64(x, y) (((x) << (y)) ^ ((x) >> (64 - (y))))
 #define ROTR64(x, y) (((x) >> (y)) ^ ((x) << (64 - (y))))
@@ -49,13 +48,12 @@ std::string CUDASolver::getDeviceName(int deviceID, std::string &errorMessage)
 // Public
 // --------------------------------------------------------------------
 
-CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemplate, std::string kingAddress) noexcept :
+CUDASolver::CUDASolver(std::string const maxDifficulty, std::string kingAddress) noexcept :
 	s_address{ "" },
 	s_challenge{ "" },
 	s_target{ "" },
 	s_difficulty{ "" },
 	m_address{ 0 },
-	m_solutionTemplate{ 0 },
 	m_prefix{ 0 },
 	m_miningMessage{ 0 },
 	m_target{ 0 },
@@ -66,8 +64,6 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string solutionTemp
 	if (NvAPI::foundNvAPI64()) NvAPI::initialize();
 
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
-
-	hexStringToBytes(solutionTemplate, m_solutionTemplate);
 }
 
 CUDASolver::~CUDASolver() noexcept
@@ -75,6 +71,11 @@ CUDASolver::~CUDASolver() noexcept
 	stopFinding();
 
 	NvAPI::unload();
+}
+
+void CUDASolver::setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback)
+{
+	m_getSolutionTemplateCallback = solutionTemplateCallback;
 }
 
 void CUDASolver::setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback)
@@ -204,7 +205,10 @@ void CUDASolver::updatePrefix(std::string const prefix)
 	
 	std::memcpy(&m_prefix, &tempPrefix, PREFIX_LENGTH);
 	std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
-	std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH);
+
+	uint8_t *solutionTemplate = new uint8_t[UINT256_LENGTH]{ 0 };
+	getSolutionTemplate(solutionTemplate);
+	std::memcpy(&m_miningMessage[PREFIX_LENGTH], solutionTemplate, UINT256_LENGTH);
 
 	state_t tempMidState{ getMidState(m_miningMessage) };
 
@@ -217,6 +221,7 @@ void CUDASolver::updatePrefix(std::string const prefix)
 	}
 
 	onMessage(-1, "Info", "New challenge detected " + s_challenge.substr(0, 18) + "...");
+	free(solutionTemplate);
 }
 
 void CUDASolver::updateTarget(std::string const target)
@@ -472,6 +477,11 @@ std::string CUDASolver::getDeviceCurrentThrottleReasons(int deviceID)
 // Private
 // --------------------------------------------------------------------
 
+void CUDASolver::getSolutionTemplate(uint8_t *&solutionTemplate)
+{
+	m_getSolutionTemplateCallback(solutionTemplate);
+}
+
 void CUDASolver::getWorkPosition(uint64_t &workPosition)
 {
 	m_getWorkPositionCallback(workPosition);
@@ -523,7 +533,7 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge, std:
 
 	prefix_t prefix;
 	std::memcpy(&prefix, &m_miningMessage, PREFIX_LENGTH);
-	
+
 	byte32_t emptySolution;
 	std::memset(&emptySolution, 0u, UINT256_LENGTH);
 	if (solution == emptySolution)
@@ -547,7 +557,7 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge, std:
 		std::string s_hi64Target{ s_target.substr(2).substr(0, UINT64_LENGTH * 2) };
 		for (uint32_t i{ 0 }; i < (UINT256_LENGTH - UINT64_LENGTH); ++i) s_hi64Target += "00";
 		arith_uint256 high64Target{ s_hi64Target };
-		
+
 		if (digest <= high64Target) // on rare ocassion where it falls in between m_target and high64Target
 			onMessage(device->deviceID, "Warn", "CPU verification failed: invalid solution");
 		else
@@ -571,9 +581,14 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string chall
 {
 	auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
 
+	uint8_t *solutionTemplate = new uint8_t[UINT256_LENGTH]{ 0 };
+	getSolutionTemplate(solutionTemplate);
+
 	for (uint64_t midStateSolution : solutions)
 	{
-		byte32_t solution{ m_solutionTemplate };
+		byte32_t solution{ 0 };
+		std::memcpy(&solution, solutionTemplate, UINT256_LENGTH);
+
 		if (s_kingAddress.empty())
 			std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
 		else
@@ -581,6 +596,7 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string chall
 
 		onSolution(solution, challenge, device);
 	}
+	free(solutionTemplate);
 }
 
 uint64_t CUDASolver::getNextWorkPosition(std::unique_ptr<Device> &device)

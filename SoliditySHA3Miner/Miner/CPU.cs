@@ -17,9 +17,9 @@ namespace SoliditySHA3Miner.Miner
             return Solver.getLogicalProcessorsCount();
         }
 
-        public static string GetSolutionTemplate(string solutionTemplate = "")
+        public static string GetNewSolutionTemplate(string solutionTemplate = "")
         {
-            return Solver.getSolutionTemplate(solutionTemplate);
+            return Solver.getNewSolutionTemplate(solutionTemplate);
         }
 
         #endregion
@@ -133,7 +133,7 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        public CPU(NetworkInterface.INetworkInterface networkInterface, Device[] devices, string solutionTemplate, string kingAddress, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
+        public CPU(NetworkInterface.INetworkInterface networkInterface, Device[] devices, string kingAddress, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {
@@ -151,11 +151,15 @@ namespace SoliditySHA3Miner.Miner
                     devicesStr += device.DeviceID.ToString("X64");
                 }
 
-                Solver = new Solver(maxDifficulty.HexValue, devicesStr, solutionTemplate, kingAddress)
+                unsafe
                 {
-                    OnMessageHandler = m_cpuSolver_OnMessage,
-                    OnSolutionHandler = m_cpuSolver_OnSolution
-                };
+                    Solver = new Solver(maxDifficulty.HexValue, devicesStr, kingAddress)
+                    {
+                        OnGetSolutionTemplateHandler = Work.GetSolutionTemplate,
+                        OnMessageHandler = m_cpuSolver_OnMessage,
+                        OnSolutionHandler = m_cpuSolver_OnSolution
+                    };
+                }
 
                 if (customDifficulty > 0u) Solver.setCustomDifficulty(customDifficulty);
                 Solver.setSubmitStale(isSubmitStale);
@@ -222,10 +226,9 @@ namespace SoliditySHA3Miner.Miner
             var hashString = new StringBuilder();
             hashString.Append("OpenCL [INFO] Hashrates:");
 
-            foreach (var device in Devices)
-                if (device.DeviceID > -1)
-                    hashString.AppendFormat(" {0} MH/s", Solver.getHashRateByThreadID((uint)device.DeviceID) / 1000000.0f);
-
+            for (uint threadID = 0; threadID < Devices.Count(d => d.DeviceID > -1); threadID++)
+                hashString.AppendFormat(" {0} MH/s", Solver.getHashRateByThreadID(threadID) / 1000000.0f);
+            
             Program.Print(hashString.ToString());
             Program.Print(string.Format("OpenCL [INFO] Total Hashrate: {0} MH/s", Solver.getTotalHashRate() / 1000000.0f));
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);

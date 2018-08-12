@@ -4,26 +4,29 @@
 
 namespace CPUSolver
 {
-	public delegate void OnMessageDelegate(int, System::String^, System::String^);
-	public delegate void OnSolutionDelegate(System::String^, System::String^, System::String^, System::String^, System::String^, System::String^, bool);
-
 	public ref class Solver : public ManagedObject<cpuSolver>
 	{
 	public:
+		delegate void OnGetSolutionTemplateDelegate(uint8_t *%);
+		delegate void OnMessageDelegate(int, System::String ^, System::String ^);
+		delegate void OnSolutionDelegate(System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, bool);
+
+		OnGetSolutionTemplateDelegate ^OnGetSolutionTemplateHandler;
 		OnMessageDelegate ^ OnMessageHandler;
 		OnSolutionDelegate ^ OnSolutionHandler;
 
 	private:
+		OnGetSolutionTemplateDelegate ^m_managedOnGetSolutionTemplate;
 		OnMessageDelegate ^ m_managedOnMessage;
 		OnSolutionDelegate ^ m_managedOnSolution;
 
 	public:
 		static unsigned int getLogicalProcessorsCount();
-		static System::String ^getSolutionTemplate(System::String ^kingAddress);
+		static System::String ^getNewSolutionTemplate(System::String ^kingAddress);
 
 	public:
 		// require web3 contract getMethod -> _MAXIMUM_TARGET
-		Solver(System::String ^maxDifficulty, System::String ^threads, System::String ^solutionTemplate, System::String ^kingAddress);
+		Solver(System::String ^maxDifficulty, System::String ^threads, System::String ^kingAddress);
 		~Solver();
 
 		void setCustomDifficulty(uint32_t customDifficulty);
@@ -48,6 +51,7 @@ namespace CPUSolver
 		uint64_t getHashRateByThreadID(unsigned int const threadID);
 
 	private:
+		void OnGetSolutionTemplate(uint8_t *%solutionTemplate);
 		void OnMessage(int threadID, System::String^ type, System::String^ message);
 		void OnSolution(System::String^ digest, System::String^ address, System::String^ challenge, System::String^ difficulty, System::String^ target, System::String^ solution, bool isCustomDifficulty);
 	};

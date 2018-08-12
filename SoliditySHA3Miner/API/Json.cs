@@ -179,7 +179,9 @@ namespace SoliditySHA3Miner.API
                                 Type = device.Type,
                                 DeviceID = device.DeviceID,
                                 ModelName = device.Name,
-                                HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                                HashRate = miner.GetHashrateByDevice(device.Platform, (device.Type == "CPU")
+                                                                                      ? Array.IndexOf(miner.Devices, device)
+                                                                                      : device.DeviceID) / divisor,
                                 HasMonitoringAPI = miner.HasMonitoringAPI
                             };
                         }

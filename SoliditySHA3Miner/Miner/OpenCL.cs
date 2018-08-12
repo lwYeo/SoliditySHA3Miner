@@ -178,7 +178,7 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device[] devices, string solutionTemplate, string kingAddress, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
+        public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device[] devices, string kingAddress, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {
@@ -187,14 +187,18 @@ namespace SoliditySHA3Miner.Miner
                 m_pauseOnFailedScan = pauseOnFailedScans;
                 m_failedScanCount = 0;
 
-                Solver = new Solver(maxDifficulty.HexValue, solutionTemplate, kingAddress)
+                unsafe
                 {
-                    OnGetWorkPositionHandler = Work.GetPosition,
-                    OnResetWorkPositionHandler = Work.ResetPosition,
-                    OnIncrementWorkPositionHandler = Work.IncrementPosition,
-                    OnMessageHandler = m_openCLSolver_OnMessage,
-                    OnSolutionHandler = m_openCLSolver_OnSolution
-                };
+                    Solver = new Solver(maxDifficulty.HexValue, kingAddress)
+                    {
+                        OnGetSolutionTemplateHandler = Work.GetSolutionTemplate,
+                        OnGetWorkPositionHandler = Work.GetPosition,
+                        OnResetWorkPositionHandler = Work.ResetPosition,
+                        OnIncrementWorkPositionHandler = Work.IncrementPosition,
+                        OnMessageHandler = m_openCLSolver_OnMessage,
+                        OnSolutionHandler = m_openCLSolver_OnSolution
+                    };
+                }
 
                 if (customDifficulty > 0u) Solver.setCustomDifficulty(customDifficulty);
                 Solver.setSubmitStale(isSubmitStale);

@@ -24,14 +24,16 @@ namespace CPUSolver
 	class cpuSolver
 	{
 	public:
-		typedef void(*MessageCallback)(int, const char*, const char*);
-		typedef void(*SolutionCallback)(const char*, const char*, const char*, const char*, const char*, const char*, bool);
+		typedef void(*GetSolutionTemplateCallback)(uint8_t *&);
+		typedef void(*MessageCallback)(int, const char *, const char *);
+		typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *, const char *, bool);
 
 		bool m_SubmitStale;
 
 	private:
 		static std::atomic<bool> m_pause;
 
+		GetSolutionTemplateCallback m_getSolutionTemplateCallback;
 		MessageCallback m_messageCallback;
 		SolutionCallback m_solutionCallback;
 
@@ -49,7 +51,6 @@ namespace CPUSolver
 		std::string s_customDifficulty;
 
 		address_t m_address;
-		byte32_t m_solutionTemplate;
 		prefix_t m_prefix; // challenge32 + address20
 
 		uint32_t m_miningThreadCount;
@@ -63,11 +64,12 @@ namespace CPUSolver
 
 	public:
 		static uint32_t getLogicalProcessorsCount();
-		static std::string getSolutionTemplate(std::string kingAddress = "");
+		static std::string getNewSolutionTemplate(std::string kingAddress = "");
 
-		cpuSolver(std::string const maxDifficulty, std::string const threads, std::string solutionTemplate, std::string kingAddress) noexcept;
+		cpuSolver(std::string const maxDifficulty, std::string const threads, std::string kingAddress) noexcept;
 		~cpuSolver() noexcept;
 
+		void setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback);
 		void setMessageCallback(MessageCallback messageCallback);
 		void setSolutionCallback(SolutionCallback solutionCallback);
 
@@ -87,6 +89,7 @@ namespace CPUSolver
 		void pauseFinding(bool pauseFinding);
 
 	private:
+		void getSolutionTemplate(uint8_t *&solutionTemplate);
 		void onMessage(int threadID, const char* type, const char* message);
 		void onMessage(int threadID, std::string type, std::string message);
 		void onSolution(byte32_t const solution, byte32_t const digest, std::string challenge);
