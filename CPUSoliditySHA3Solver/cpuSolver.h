@@ -51,6 +51,7 @@ namespace CPUSolver
 		std::string s_customDifficulty;
 
 		address_t m_address;
+		uint8_t *m_solutionTemplate;
 		prefix_t m_prefix; // challenge32 + address20
 
 		uint32_t m_miningThreadCount;

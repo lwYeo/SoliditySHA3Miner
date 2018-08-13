@@ -290,7 +290,7 @@ namespace SoliditySHA3Miner.Miner
                 Program.Print(temperatureString.ToString());
 
                 var fanTachometerRpmString = new StringBuilder();
-                fanTachometerRpmString.Append("CUDA [INFO] Fan tachometers: ");
+                fanTachometerRpmString.Append("CUDA [INFO] Fan tachometers:");
 
                 foreach (var device in Devices)
                     if (device.DeviceID > -1)

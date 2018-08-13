@@ -81,6 +81,7 @@ private:
 	std::string s_customDifficulty;
 
 	address_t m_address;
+	uint8_t *m_solutionTemplate;
 	prefix_t m_prefix; // challenge32 + address20
 	message_t m_miningMessage; // challenge32 + address20 + solution32
 

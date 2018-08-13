@@ -47,6 +47,7 @@ namespace CPUSolver
 		m_target{ 0 },
 		m_difficulty{ 0 },
 		m_maxDifficulty{ maxDifficulty },
+		m_solutionTemplate{ new uint8_t[UINT256_LENGTH]{ 0 } },
 		s_kingAddress{ kingAddress }
 	{
 		b_target.store(byte32_t{ 0 });
@@ -96,6 +97,8 @@ namespace CPUSolver
 	cpuSolver::~cpuSolver() noexcept
 	{
 		stopFinding();
+
+		free(m_solutionTemplate);
 		free(m_miningThreadAffinities);
 		free(m_isThreadMining);
 	}
@@ -255,7 +258,7 @@ namespace CPUSolver
 		else return 0ull;
 	}
 
-#include <Windows.h>
+#	include <Windows.h>
 	bool cpuSolver::setCurrentThreadAffinity(uint32_t const affinityMask)
 	{
 		return (bool)SetThreadAffinityMask(GetCurrentThread(), 1ull << affinityMask);
@@ -293,33 +296,29 @@ namespace CPUSolver
 					currentChallenge = std::string(c_currentChallenge);
 				}
 
-				byte32_t solutionTemplate;
-				{
-					uint8_t *solutionTemplatePtr = new uint8_t[UINT256_LENGTH];
-					getSolutionTemplate(solutionTemplatePtr);
-					std::memcpy(&solutionTemplate, solutionTemplatePtr, UINT256_LENGTH);
-					free(solutionTemplatePtr);
-				}
-
-				byte32_t currentSolution;
-				std::memcpy(&currentSolution, &solutionTemplate, UINT256_LENGTH);
+				getSolutionTemplate(m_solutionTemplate);
 
 				m_threadHashes[threadID]++;
 				uint64_t hashID{ m_solutionHashCount.fetch_add(1u) };
 
 				if (s_kingAddress.empty())
-					std::memcpy(&currentSolution[12], &hashID, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
+					std::memcpy(&m_solutionTemplate[12], &hashID, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
 				else
-					std::memcpy(&currentSolution[ADDRESS_LENGTH], &hashID, UINT64_LENGTH); // Shifted for King address
+					std::memcpy(&m_solutionTemplate[ADDRESS_LENGTH], &hashID, UINT64_LENGTH); // Shifted for King address
 				
 				message_t miningMessage; // challenge32 + address20 + solution32
 				std::memcpy(&miningMessage, &m_prefix, PREFIX_LENGTH); // challenge32 + address20
-				std::memcpy(&miningMessage[PREFIX_LENGTH], &currentSolution, UINT256_LENGTH); // solution32
+				std::memcpy(&miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH); // solution32
 
 				byte32_t digest;
 				keccak_256(&digest[0], UINT256_LENGTH, &miningMessage[0], MESSAGE_LENGTH);
 
-				if (islessThan(digest, b_target.load())) onSolution(currentSolution, digest, currentChallenge);
+				if (islessThan(digest, b_target.load()))
+				{
+					byte32_t currentSolution;
+					std::memcpy(&currentSolution, &m_solutionTemplate, UINT256_LENGTH);
+					onSolution(currentSolution, digest, currentChallenge);
+				}
 
 				if (hashID > INT64_MAX)
 				{
