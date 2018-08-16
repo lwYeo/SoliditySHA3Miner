@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "nvapiEnum.h"
+#include "nv_apiEnum.h"
 #include "..\types.h"
 
 #define NvAPI64										"nvapi64.dll"
@@ -61,7 +61,7 @@ NV_DECLARE_HANDLE(NvPhysicalGpuHandle);									//!< A single physical GPU
 // =========================================================================================
 #define MAKE_NVAPI_VERSION(typeName, ver)			(NvU32)(sizeof(typeName) | ((ver) << 16))
 
-class NvAPI
+class NV_API
 {
 private:
 	typedef struct _NV_GPU_PERF_PSTATES20_PARAM_DELTA					//! Used to describe both voltage and frequency deltas
@@ -227,49 +227,49 @@ private:
 	} NV_GPU_COOLER_SETTINGS_V2;
 #	define NV_GPU_COOLER_SETTINGS_VER_2				MAKE_NVAPI_VERSION(NV_GPU_COOLER_SETTINGS_V2, 2)
 
-	typedef void *(*QueryInterface_t)(NvAPI_FUNCTIONS offset);
-	typedef NvAPI_Status(*GetErrorMessage_t)(NvAPI_Status status, NvAPI_ShortString message);
+	typedef void *(*QueryInterface_t)							(NvAPI_FUNCTIONS offset);
+	typedef NvAPI_Status(*GetErrorMessage_t)					(NvAPI_Status status, NvAPI_ShortString message);
 
-	typedef NvAPI_Status(*Initialize_t)();
-	typedef NvAPI_Status(*Unload_t)();
-	typedef NvAPI_Status(*EnumPhysicalGPUs_t)(NvPhysicalGpuHandle gpuHandles[NVAPI_MAX_PHYSICAL_GPUS], NvU32 *gpuCount);
-	typedef NvAPI_Status(*GPU_GetBusID_t)(NvPhysicalGpuHandle handle, NvU32 *busid);
+	typedef NvAPI_Status(*Initialize_t)							();
+	typedef NvAPI_Status(*Unload_t)								();
+	typedef NvAPI_Status(*EnumPhysicalGPUs_t)					(NvPhysicalGpuHandle gpuHandles[NVAPI_MAX_PHYSICAL_GPUS], NvU32 *gpuCount);
+	typedef NvAPI_Status(*GPU_GetBusID_t)						(NvPhysicalGpuHandle handle, NvU32 *busid);
 
-	typedef NvAPI_Status(*GPU_GetAllClockFrequencies_t)(NvPhysicalGpuHandle handle, NV_GPU_CLOCK_FREQUENCIES_V2 *pClkFreqs);
-	typedef NvAPI_Status(*DLL_ClientPowerPoliciesGetStatus_t)(NvPhysicalGpuHandle handle, NVAPI_GPU_POWER_STATUS *powerStatus);
-	typedef NvAPI_Status(*DLL_ClientThermalPoliciesGetLimit_t)(NvPhysicalGpuHandle handle, NVAPI_GPU_THERMAL_LIMIT_V2 *thermalLimit);
-	typedef NvAPI_Status(*GPU_GetCoolersSettings_t)(NvPhysicalGpuHandle handle, NvU32 coolerIndex, NV_GPU_COOLER_SETTINGS_V2* coolerSettings);
+	typedef NvAPI_Status(*GPU_GetAllClockFrequencies_t)			(NvPhysicalGpuHandle handle, NV_GPU_CLOCK_FREQUENCIES_V2 *pClkFreqs);
+	typedef NvAPI_Status(*DLL_ClientPowerPoliciesGetStatus_t)	(NvPhysicalGpuHandle handle, NVAPI_GPU_POWER_STATUS *powerStatus);
+	typedef NvAPI_Status(*DLL_ClientThermalPoliciesGetLimit_t)	(NvPhysicalGpuHandle handle, NVAPI_GPU_THERMAL_LIMIT_V2 *thermalLimit);
+	typedef NvAPI_Status(*GPU_GetCoolersSettings_t)				(NvPhysicalGpuHandle handle, NvU32 coolerIndex, NV_GPU_COOLER_SETTINGS_V2* coolerSettings);
 
-	typedef NvAPI_Status(*GPU_GetTachReading_t)(NvPhysicalGpuHandle handle, NvU32 *value);
-	typedef NvAPI_Status(*GPU_GetThermalSettings_t)(NvPhysicalGpuHandle handle, NvU32 sensorIndex, NV_GPU_THERMAL_SETTINGS_V2 *thermalSettings);
-	typedef NvAPI_Status(*GPU_GetPstates20_t)(NvPhysicalGpuHandle handle, NV_GPU_PERF_PSTATES20_INFO_V1 *pstatesInfo);
-	typedef NvAPI_Status(*GPU_GetCurrentPstate_t)(NvPhysicalGpuHandle handle, NV_GPU_PERF_PSTATE_ID *currentPstate);
-	typedef NvAPI_Status(*GPU_GetDynamicPstatesInfoEx_t)(NvPhysicalGpuHandle handle, NV_GPU_DYNAMIC_PSTATES_INFO_EX *dynamicPstatesInfoEx);
-	typedef NvAPI_Status(*GPU_GetPerfDecreaseInfo_t)(NvPhysicalGpuHandle handle, NVAPI_GPU_PERF_DECREASE *perfDescInfo);
+	typedef NvAPI_Status(*GPU_GetTachReading_t)					(NvPhysicalGpuHandle handle, NvU32 *value);
+	typedef NvAPI_Status(*GPU_GetThermalSettings_t)				(NvPhysicalGpuHandle handle, NvU32 sensorIndex, NV_GPU_THERMAL_SETTINGS_V2 *thermalSettings);
+	typedef NvAPI_Status(*GPU_GetPstates20_t)					(NvPhysicalGpuHandle handle, NV_GPU_PERF_PSTATES20_INFO_V1 *pstatesInfo);
+	typedef NvAPI_Status(*GPU_GetCurrentPstate_t)				(NvPhysicalGpuHandle handle, NV_GPU_PERF_PSTATE_ID *currentPstate);
+	typedef NvAPI_Status(*GPU_GetDynamicPstatesInfoEx_t)		(NvPhysicalGpuHandle handle, NV_GPU_DYNAMIC_PSTATES_INFO_EX *dynamicPstatesInfoEx);
+	typedef NvAPI_Status(*GPU_GetPerfDecreaseInfo_t)			(NvPhysicalGpuHandle handle, NVAPI_GPU_PERF_DECREASE *perfDescInfo);
 
-	static QueryInterface_t QueryInterface;
-	static GetErrorMessage_t GetErrorMessage;
+	static QueryInterface_t										QueryInterface;
+	static GetErrorMessage_t									GetErrorMessage;
 
-	static Initialize_t Initialize;
-	static Unload_t Unload;
-	static EnumPhysicalGPUs_t EnumPhysicalGPUs;
-	static GPU_GetBusID_t GPU_GetBusID;
+	static Initialize_t											Initialize;
+	static Unload_t												Unload;
+	static EnumPhysicalGPUs_t									EnumPhysicalGPUs;
+	static GPU_GetBusID_t										GPU_GetBusID;
 
-	static GPU_GetAllClockFrequencies_t GPU_GetAllClockFrequencies;
-	static DLL_ClientPowerPoliciesGetStatus_t DLL_ClientPowerPoliciesGetStatus;
-	static DLL_ClientThermalPoliciesGetLimit_t DLL_ClientThermalPoliciesGetLimit;
-	static GPU_GetCoolersSettings_t GPU_GetCoolersSettings;
+	static GPU_GetAllClockFrequencies_t							GPU_GetAllClockFrequencies;
+	static DLL_ClientPowerPoliciesGetStatus_t					DLL_ClientPowerPoliciesGetStatus;
+	static DLL_ClientThermalPoliciesGetLimit_t					DLL_ClientThermalPoliciesGetLimit;
+	static GPU_GetCoolersSettings_t								GPU_GetCoolersSettings;
 
-	static GPU_GetTachReading_t GPU_GetTachReading;
-	static GPU_GetThermalSettings_t GPU_GetThermalSettings;
-	static GPU_GetPstates20_t GPU_GetPstates20;
-	static GPU_GetCurrentPstate_t GPU_GetCurrentPstate;
-	static GPU_GetDynamicPstatesInfoEx_t GPU_GetDynamicPstatesInfoEx;
-	static GPU_GetPerfDecreaseInfo_t GPU_GetPerfDecreaseInfo;
+	static GPU_GetTachReading_t									GPU_GetTachReading;
+	static GPU_GetThermalSettings_t								GPU_GetThermalSettings;
+	static GPU_GetPstates20_t									GPU_GetPstates20;
+	static GPU_GetCurrentPstate_t								GPU_GetCurrentPstate;
+	static GPU_GetDynamicPstatesInfoEx_t						GPU_GetDynamicPstatesInfoEx;
+	static GPU_GetPerfDecreaseInfo_t							GPU_GetPerfDecreaseInfo;
 
-	static bool isInitialized;
-	static NvPhysicalGpuHandle gpuHandles[NVAPI_MAX_PHYSICAL_GPUS];
-	static NvU32 gpuCount;
+	static bool													isInitialized;
+	static NvPhysicalGpuHandle									gpuHandles[NVAPI_MAX_PHYSICAL_GPUS];
+	static NvU32												gpuCount;
 
 	NvPhysicalGpuHandle deviceHandle;
 	NvU32 deviceBusID;
@@ -290,7 +290,7 @@ public:
 	NvAPI_Status getSettingThermalLimit(int *thermalLimit);
 	NvAPI_Status getSettingFanLevelPercent(int *fanLevel);
 
-	NvAPI_Status getCurrentFanTachometerRPM(int *value);
+	NvAPI_Status getCurrentFanTachometerRPM(int *tachometerRPM);
 	NvAPI_Status getCurrentTemperature(int *temperature);
 	NvAPI_Status getCurrentCoreClock(int *coreClock);
 	NvAPI_Status getCurrentMemoryClock(int *memoryClock);

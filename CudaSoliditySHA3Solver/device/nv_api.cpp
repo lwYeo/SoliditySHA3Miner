@@ -1,5 +1,5 @@
 #include <windows.h>
-#include "nvapi.h"
+#include "nv_api.h"
 
 #pragma unmanaged
 
@@ -7,36 +7,36 @@
 // Static
 // --------------------------------------------------------------------
 
-NvAPI::QueryInterface_t NvAPI::QueryInterface;
-NvAPI::GetErrorMessage_t NvAPI::GetErrorMessage;
+NV_API::QueryInterface_t NV_API::QueryInterface{ NULL };
+NV_API::GetErrorMessage_t NV_API::GetErrorMessage{ NULL };
 
-NvAPI::Initialize_t NvAPI::Initialize;
-NvAPI::Unload_t NvAPI::Unload;
-NvAPI::EnumPhysicalGPUs_t NvAPI::EnumPhysicalGPUs;
-NvAPI::GPU_GetBusID_t NvAPI::GPU_GetBusID;
+NV_API::Initialize_t NV_API::Initialize{ NULL };
+NV_API::Unload_t NV_API::Unload{ NULL };
+NV_API::EnumPhysicalGPUs_t NV_API::EnumPhysicalGPUs{ NULL };
+NV_API::GPU_GetBusID_t NV_API::GPU_GetBusID{ NULL };
 
-NvAPI::GPU_GetPstates20_t NvAPI::GPU_GetPstates20;
-NvAPI::GPU_GetAllClockFrequencies_t NvAPI::GPU_GetAllClockFrequencies;
-NvAPI::DLL_ClientPowerPoliciesGetStatus_t NvAPI::DLL_ClientPowerPoliciesGetStatus;
-NvAPI::DLL_ClientThermalPoliciesGetLimit_t NvAPI::DLL_ClientThermalPoliciesGetLimit;
-NvAPI::GPU_GetCoolersSettings_t NvAPI::GPU_GetCoolersSettings;
+NV_API::GPU_GetPstates20_t NV_API::GPU_GetPstates20{ NULL };
+NV_API::GPU_GetAllClockFrequencies_t NV_API::GPU_GetAllClockFrequencies{ NULL };
+NV_API::DLL_ClientPowerPoliciesGetStatus_t NV_API::DLL_ClientPowerPoliciesGetStatus{ NULL };
+NV_API::DLL_ClientThermalPoliciesGetLimit_t NV_API::DLL_ClientThermalPoliciesGetLimit{ NULL };
+NV_API::GPU_GetCoolersSettings_t NV_API::GPU_GetCoolersSettings{ NULL };
 
-NvAPI::GPU_GetTachReading_t NvAPI::GPU_GetTachReading;
-NvAPI::GPU_GetThermalSettings_t NvAPI::GPU_GetThermalSettings;
-NvAPI::GPU_GetCurrentPstate_t NvAPI::GPU_GetCurrentPstate;
-NvAPI::GPU_GetDynamicPstatesInfoEx_t NvAPI::GPU_GetDynamicPstatesInfoEx;
-NvAPI::GPU_GetPerfDecreaseInfo_t NvAPI::GPU_GetPerfDecreaseInfo;
+NV_API::GPU_GetTachReading_t NV_API::GPU_GetTachReading{ NULL };
+NV_API::GPU_GetThermalSettings_t NV_API::GPU_GetThermalSettings{ NULL };
+NV_API::GPU_GetCurrentPstate_t NV_API::GPU_GetCurrentPstate{ NULL };
+NV_API::GPU_GetDynamicPstatesInfoEx_t NV_API::GPU_GetDynamicPstatesInfoEx{ NULL };
+NV_API::GPU_GetPerfDecreaseInfo_t NV_API::GPU_GetPerfDecreaseInfo{ NULL };
 
-bool NvAPI::isInitialized;
-NvPhysicalGpuHandle NvAPI::gpuHandles[NVAPI_MAX_PHYSICAL_GPUS];
-NvU32 NvAPI::gpuCount;
+bool NV_API::isInitialized{ false };
+NvPhysicalGpuHandle NV_API::gpuHandles[NVAPI_MAX_PHYSICAL_GPUS];
+NvU32 NV_API::gpuCount{ 0 };
 
-bool NvAPI::foundNvAPI64()
+bool NV_API::foundNvAPI64()
 {
 	return (LoadLibrary(NvAPI64) != NULL);
 }
 
-void NvAPI::initialize()
+void NV_API::initialize()
 {
 	if (isInitialized) return;
 
@@ -67,7 +67,7 @@ void NvAPI::initialize()
 	EnumPhysicalGPUs(gpuHandles, &gpuCount);
 }
 
-void NvAPI::unload()
+void NV_API::unload()
 {
 	if (QueryInterface == NULL || Unload == NULL) return;
 
@@ -82,7 +82,7 @@ void NvAPI::unload()
 // Public
 // --------------------------------------------------------------------
 
-void NvAPI::assignPciBusID(uint32_t pciBusID)
+void NV_API::assignPciBusID(uint32_t pciBusID)
 {
 	NvU32 tempBusID;
 	deviceBusID = pciBusID;
@@ -97,7 +97,7 @@ void NvAPI::assignPciBusID(uint32_t pciBusID)
 	}
 }
 
-NvAPI_Status NvAPI::getErrorMessage(NvAPI_Status errStatus, std::string *message)
+NvAPI_Status NV_API::getErrorMessage(NvAPI_Status errStatus, std::string *message)
 {
 	NvAPI_ShortString errorMessage;
 
@@ -109,7 +109,7 @@ NvAPI_Status NvAPI::getErrorMessage(NvAPI_Status errStatus, std::string *message
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getSettingMaxCoreClock(int *maxCoreClock)
+NvAPI_Status NV_API::getSettingMaxCoreClock(int *maxCoreClock)
 {
 	*maxCoreClock = -1;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -124,7 +124,7 @@ NvAPI_Status NvAPI::getSettingMaxCoreClock(int *maxCoreClock)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getSettingMaxMemoryClock(int *maxMemoryClock)
+NvAPI_Status NV_API::getSettingMaxMemoryClock(int *maxMemoryClock)
 {
 	*maxMemoryClock = -1;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -140,7 +140,7 @@ NvAPI_Status NvAPI::getSettingMaxMemoryClock(int *maxMemoryClock)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getSettingPowerLimit(int *powerLimit)
+NvAPI_Status NV_API::getSettingPowerLimit(int *powerLimit)
 {
 	*powerLimit = -1;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -156,7 +156,7 @@ NvAPI_Status NvAPI::getSettingPowerLimit(int *powerLimit)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getSettingThermalLimit(int *thermalLimit)
+NvAPI_Status NV_API::getSettingThermalLimit(int *thermalLimit)
 {
 	*thermalLimit = INT32_MIN;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -172,7 +172,7 @@ NvAPI_Status NvAPI::getSettingThermalLimit(int *thermalLimit)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getSettingFanLevelPercent(int *fanLevel)
+NvAPI_Status NV_API::getSettingFanLevelPercent(int *fanLevel)
 {
 	*fanLevel = INT32_MIN;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -188,17 +188,17 @@ NvAPI_Status NvAPI::getSettingFanLevelPercent(int *fanLevel)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getCurrentFanTachometerRPM(int *value)
+NvAPI_Status NV_API::getCurrentFanTachometerRPM(int *tachometerRPM)
 {
-	*value = -1;
+	*tachometerRPM = -1;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
 
-	auto status = GPU_GetTachReading(deviceHandle, (NvU32 *)value);
+	auto status = GPU_GetTachReading(deviceHandle, (NvU32 *)tachometerRPM);
 
 	return status;
 }
 
-NvAPI_Status NvAPI::getCurrentTemperature(int *temperature)
+NvAPI_Status NV_API::getCurrentTemperature(int *temperature)
 {
 	*temperature = INT32_MIN;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -214,7 +214,7 @@ NvAPI_Status NvAPI::getCurrentTemperature(int *temperature)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getCurrentCoreClock(int *coreClock)
+NvAPI_Status NV_API::getCurrentCoreClock(int *coreClock)
 {
 	*coreClock = -1;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -233,7 +233,7 @@ NvAPI_Status NvAPI::getCurrentCoreClock(int *coreClock)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getCurrentMemoryClock(int *memoryClock)
+NvAPI_Status NV_API::getCurrentMemoryClock(int *memoryClock)
 {
 	*memoryClock = -1;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -250,7 +250,7 @@ NvAPI_Status NvAPI::getCurrentMemoryClock(int *memoryClock)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getCurrentUtilizationPercent(int *utilization)
+NvAPI_Status NV_API::getCurrentUtilizationPercent(int *utilization)
 {
 	*utilization = -1;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -266,7 +266,7 @@ NvAPI_Status NvAPI::getCurrentUtilizationPercent(int *utilization)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getCurrentPstate(int *pstate)
+NvAPI_Status NV_API::getCurrentPstate(int *pstate)
 {
 	*pstate = -1;
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
@@ -281,7 +281,7 @@ NvAPI_Status NvAPI::getCurrentPstate(int *pstate)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NvAPI::getCurrentThrottleReasons(std::string *reasons)
+NvAPI_Status NV_API::getCurrentThrottleReasons(std::string *reasons)
 {
 	*reasons = "";
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;

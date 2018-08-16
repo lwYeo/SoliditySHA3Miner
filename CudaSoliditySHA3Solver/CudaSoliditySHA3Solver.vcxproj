@@ -13,10 +13,10 @@
   <ItemGroup>
     <ClInclude Include="cudaSolver.h" />
     <ClInclude Include="device\device.h" />
-    <ClInclude Include="device\nvapi.h" />
+    <ClInclude Include="device\nv_api.h" />
     <ClInclude Include="managed\solver.h" />
     <ClInclude Include="managed\managedObject.h" />
-    <ClInclude Include="device\nvapiEnum.h" />
+    <ClInclude Include="device\nv_apiEnum.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sph\sph_keccak.h" />
     <ClInclude Include="sph\sph_types.h" />
@@ -36,7 +36,7 @@
     <ClCompile Include="cudaErrorCheck.cu" />
     <ClCompile Include="cudaSolver.cpp" />
     <ClCompile Include="device\device.cpp" />
-    <ClCompile Include="device\nvapi.cpp" />
+    <ClCompile Include="device\nv_api.cpp" />
     <ClCompile Include="managed\solver.cpp" />
     <ClCompile Include="sph\keccak.cpp" />
     <ClCompile Include="uint256\arith_uint256.cpp" />
@@ -107,7 +107,6 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <CodeGeneration>compute_32,sm_32;compute_35,sm_35;compute_52,sm_52;compute_61,sm_61;compute_70,sm_70;compute_70,compute_70;%(CodeGeneration)</CodeGeneration>
       <FastMath>true</FastMath>
-      <MaxRegCount>0</MaxRegCount>
       <PtxAsOptionV>true</PtxAsOptionV>
     </CudaCompile>
   </ItemDefinitionGroup>
@@ -134,7 +133,6 @@
       <CodeGeneration>compute_32,sm_32;compute_35,sm_35;compute_52,sm_52;compute_61,sm_61;compute_70,sm_70;compute_70,compute_70;%(CodeGeneration)</CodeGeneration>
       <FastMath>true</FastMath>
       <Optimization>O2</Optimization>
-      <MaxRegCount>0</MaxRegCount>
       <PtxAsOptionV>true</PtxAsOptionV>
     </CudaCompile>
   </ItemDefinitionGroup>

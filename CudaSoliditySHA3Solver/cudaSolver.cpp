@@ -12,7 +12,7 @@ bool CUDASolver::m_pause{ false };
 
 bool CUDASolver::foundNvAPI64()
 {
-	return NvAPI::foundNvAPI64();
+	return NV_API::foundNvAPI64();
 }
 
 std::string CUDASolver::getCudaErrorString(cudaError_t &error)
@@ -62,7 +62,8 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string kingAddress)
 	m_solutionTemplate{ new uint8_t[UINT256_LENGTH]{ 0 } },
 	s_kingAddress{ kingAddress }
 {
-	if (NvAPI::foundNvAPI64()) NvAPI::initialize();
+	try { if (NV_API::foundNvAPI64()) NV_API::initialize(); }
+	catch (std::exception ex) { onMessage(-1, "Error", ex.what()); }
 
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 }
@@ -73,7 +74,7 @@ CUDASolver::~CUDASolver() noexcept
 
 	free(m_solutionTemplate);
 
-	NvAPI::unload();
+	NV_API::unload();
 }
 
 void CUDASolver::setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback)
@@ -119,7 +120,7 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 	}
 
 	m_devices.push_back(std::make_unique<Device>(deviceID));
-	auto& assignDevice = m_devices.back();
+	auto &assignDevice = m_devices.back();
 
 	assignDevice->name = deviceProp.name;
 	assignDevice->computeVersion = deviceProp.major * 100 + deviceProp.minor * 10;
@@ -131,14 +132,14 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 	{
 		float defaultIntensity{ DEFALUT_INTENSITY };
 
-		if (deviceName.find("1180") != std::string::npos || deviceName.find("1080") != std::string::npos
+		if (deviceName.find("2080") != std::string::npos || deviceName.find("2070") != std::string::npos || deviceName.find("1080") != std::string::npos
 			|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
 			defaultIntensity = 29.01f;
 
-		else if (deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
+		else if (deviceName.find("2060") != std::string::npos || deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
 			defaultIntensity = 28.0f;
 
-		else if (deviceName.find("1060") != std::string::npos || deviceName.find("970") != std::string::npos)
+		else if (deviceName.find("2050") != std::string::npos || deviceName.find("1060") != std::string::npos || deviceName.find("970") != std::string::npos)
 			defaultIntensity = 27.0f;
 
 		else if (deviceName.find("1050") != std::string::npos || deviceName.find("960") != std::string::npos)
@@ -387,12 +388,12 @@ int CUDASolver::getDeviceSettingFanLevelPercent(int deviceID)
 int CUDASolver::getDeviceCurrentFanTachometerRPM(int deviceID)
 {
 	std::string errorMessage;
-	int currentReading;
+	int tachometerRPM;
 
 	for (auto& device : m_devices)
 		if (device->deviceID == deviceID)
-			if (device->getCurrentFanTachometerRPM(&currentReading, &errorMessage))
-				return currentReading;
+			if (device->getCurrentFanTachometerRPM(&tachometerRPM, &errorMessage))
+				return tachometerRPM;
 
 	return -1;
 }

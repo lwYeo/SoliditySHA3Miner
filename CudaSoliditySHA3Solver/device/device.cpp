@@ -78,9 +78,9 @@ bool Device::getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage)
 	return (status == NVAPI_OK);
 }
 
-bool Device::getCurrentFanTachometerRPM(int *value, std::string *errorMessage)
+bool Device::getCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorMessage)
 {
-	auto status = m_api.getCurrentFanTachometerRPM(value);
+	auto status = m_api.getCurrentFanTachometerRPM(tachometerRPM);
 
 	if (status != NVAPI_OK)
 		m_api.getErrorMessage(status, errorMessage);

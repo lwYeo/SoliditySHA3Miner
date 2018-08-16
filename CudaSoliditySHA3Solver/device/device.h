@@ -3,7 +3,7 @@
 #include <atomic>
 #include <chrono>
 #include <cuda_runtime.h>
-#include "nvapi.h"
+#include "nv_api.h"
 #include "..\types.h"
 
 #pragma managed(push, off)
@@ -60,7 +60,7 @@ private:
 	uint32_t m_lastThreads;
 	float m_lastIntensity;
 
-	NvAPI m_api;
+	NV_API m_api;
 	uint32_t pciBusID;
 
 public:
@@ -72,7 +72,7 @@ public:
 	bool getSettingThermalLimit(int *thermalLimit, std::string *errorMessage);
 	bool getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage);
 
-	bool getCurrentFanTachometerRPM(int *value, std::string *errorMessage);
+	bool getCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorMessage);
 	bool getCurrentTemperature(int *temperature, std::string *errorMessage);
 	bool getCurrentCoreClock(int *coreClock, std::string *errorMessage);
 	bool getCurrentMemoryClock(int *memoryClock, std::string *errorMessage);

@@ -21,7 +21,7 @@
     <ClCompile Include="device\device.cpp">
       <Filter>device</Filter>
     </ClCompile>
-    <ClCompile Include="device\nvapi.cpp">
+    <ClCompile Include="device\nv_api.cpp">
       <Filter>device</Filter>
     </ClCompile>
   </ItemGroup>
@@ -62,13 +62,13 @@
     <ClInclude Include="device\device.h">
       <Filter>device</Filter>
     </ClInclude>
-    <ClInclude Include="device\nvapi.h">
-      <Filter>device</Filter>
-    </ClInclude>
     <ClInclude Include="managed\managedObject.h">
       <Filter>managed</Filter>
     </ClInclude>
-    <ClInclude Include="device\nvapiEnum.h">
+    <ClInclude Include="device\nv_api.h">
+      <Filter>device</Filter>
+    </ClInclude>
+    <ClInclude Include="device\nv_apiEnum.h">
       <Filter>device</Filter>
     </ClInclude>
   </ItemGroup>

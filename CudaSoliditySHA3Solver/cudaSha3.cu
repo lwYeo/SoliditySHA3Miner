@@ -475,7 +475,7 @@ void CUDASolver::initializeDevice(std::unique_ptr<Device> &device)
 
 		device->initialized = true;
 
-		if (NvAPI::foundNvAPI64())
+		if (NV_API::foundNvAPI64())
 		{
 			std::string errorMessage;
 			int maxCoreClock, maxMemoryClock, powerLimit, thermalLimit, fanLevel;
