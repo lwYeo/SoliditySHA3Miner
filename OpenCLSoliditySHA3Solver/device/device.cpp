@@ -129,6 +129,8 @@ const char* Device::getOpenCLErrorCodeStr(T &input)
 	}
 }
 
+#pragma unmanaged
+
 // Load kernel source
 bool Device::preInitialize(std::string& errorMessage)
 {
@@ -165,7 +167,6 @@ bool Device::preInitialize(std::string& errorMessage)
 	return true;
 }
 
-#pragma unmanaged
 // --------------------------------------------------------------------
 // Public
 // --------------------------------------------------------------------
@@ -182,7 +183,8 @@ Device::Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platf
 	kernelWaitSleepDuration{ 1000u },
 	mining{ false },
 	platformID{ devPlatformID },
-	userDefinedIntensity{ userDefIntensity }
+	userDefinedIntensity{ userDefIntensity },
+	pciBusID{ -1 }
 {
 	char charBuffer[1024];
 	size_t sizeBuffer[3];
@@ -234,6 +236,18 @@ Device::Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platf
 
 		computeCapability = computeCapabilityMajor * 10 + computeCapabilityMinor;
 	}
+	else if (isAPP())
+	{
+		cl_device_topology_amd topology;
+		status = clGetDeviceInfo(deviceID, CL_DEVICE_TOPOLOGY_AMD, sizeof(cl_device_topology_amd), &topology, NULL);
+
+		if (status == CL_SUCCESS)
+			if (topology.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD)
+			{
+				pciBusID = (int)topology.pcie.bus;
+				m_api.assignPciBusID(pciBusID);
+			}
+	}
 
 	if (userLocalWorkSize > 0)
 	{
@@ -266,6 +280,56 @@ bool Device::isINTEL()
 	std::string tempPlatform{ platformName };
 	std::transform(tempPlatform.begin(), tempPlatform.end(), tempPlatform.begin(), ::toupper);
 	return tempPlatform.find("INTEL") != std::string::npos;
+}
+
+bool Device::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage)
+{
+	return m_api.getSettingMaxCoreClock(maxCoreClock, errorMessage);
+}
+
+bool Device::getSettingMaxMemoryClock(int *mamMemoryCloxk, std::string *errorMessage)
+{
+	return m_api.getSettingMaxMemoryClock(mamMemoryCloxk, errorMessage);
+}
+
+bool Device::getSettingPowerLimit(int *powerLimit, std::string *errorMessage)
+{
+	return m_api.getSettingPowerLimit(powerLimit, errorMessage);
+}
+
+bool Device::getSettingThermalLimit(int *thermalLimit, std::string *errorMessage)
+{
+	return m_api.getSettingThermalLimit(thermalLimit, errorMessage);
+}
+
+bool Device::getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage)
+{
+	return m_api.getSettingFanLevelPercent(fanLevel, errorMessage);
+}
+
+bool Device::getCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorMessage)
+{
+	return m_api.getCurrentFanTachometerRPM(tachometerRPM, errorMessage);
+}
+
+bool Device::getCurrentTemperature(int *temperature, std::string *errorMessage)
+{
+	return m_api.getCurrentTemperature(temperature, errorMessage);
+}
+
+bool Device::getCurrentCoreClock(int *coreClock, std::string *errorMessage)
+{
+	return m_api.getCurrentCoreClock(coreClock, errorMessage);
+}
+
+bool Device::getCurrentMemoryClock(int *memoryClock, std::string *errorMessage)
+{
+	return m_api.getCurrentMemoryClock(memoryClock, errorMessage);
+}
+
+bool Device::getCurrentUtilizationPercent(int *utilization, std::string *errorMessage)
+{
+	return m_api.getCurrentUtilizationPercent(utilization, errorMessage);
 }
 
 uint64_t Device::hashRate()

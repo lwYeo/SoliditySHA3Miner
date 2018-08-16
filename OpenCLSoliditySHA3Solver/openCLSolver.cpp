@@ -48,6 +48,11 @@ void openCLSolver::preInitialize(bool allowIntel, std::string &errorMessage)
 	Device::preInitialize(errorMessage);
 }
 
+bool openCLSolver::foundAdlApi()
+{
+	return ADL_API::foundAdlApi();
+}
+
 std::string openCLSolver::getPlatformNames()
 {
 	std::string platformNames{ "" };
@@ -141,6 +146,9 @@ openCLSolver::openCLSolver(std::string const maxDifficulty, std::string kingAddr
 	m_solutionTemplate{ new uint8_t[UINT256_LENGTH]{ 0 } },
 	s_kingAddress{ kingAddress }
 {
+	try { if (ADL_API::foundAdlApi()) ADL_API::initialize(); }
+	catch (std::exception ex) { onMessage("", -1, "Error", ex.what()); }
+
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 }
 
@@ -244,18 +252,52 @@ bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float 
 			{
 				m_devices.emplace_back(new Device(deviceEnum, deviceIDs[deviceEnum], CL_DEVICE_TYPE_GPU, platform.id, intensity, 0));
 
-				onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device (" + m_devices.back()->name + ")...");
-				onMessage(platformName.c_str(), deviceEnum, "Info", "Intensity: " + std::to_string(m_devices.back()->userDefinedIntensity));
+				auto &assignDevice = m_devices.back();
+
+				onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device (" + assignDevice->name + ")...");
+				onMessage(platformName.c_str(), deviceEnum, "Info", "Intensity: " + std::to_string(assignDevice->userDefinedIntensity));
+
+				if (assignDevice->isAPP() && foundAdlApi())
+				{
+					std::string errorMessage;
+					int maxCoreClock, maxMemoryClock, powerLimit, thermalLimit, fanLevel;
+
+					if (assignDevice->getSettingMaxCoreClock(&maxCoreClock, &errorMessage))
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Max core clock setting: " + std::to_string(maxCoreClock) + "MHz.");
+					else
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get max core clock setting: " + errorMessage);
+
+					if (assignDevice->getSettingMaxMemoryClock(&maxMemoryClock, &errorMessage))
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Max memory clock setting: " + std::to_string(maxMemoryClock) + "MHz.");
+					else
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get max memory clock setting: " + errorMessage);
+
+					if (assignDevice->getSettingPowerLimit(&powerLimit, &errorMessage))
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Power limit setting: " + std::to_string(powerLimit) + "%.");
+					else
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get power limit setting: " + errorMessage);
+
+					if (assignDevice->getSettingThermalLimit(&thermalLimit, &errorMessage))
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Thermal limit setting: " + std::to_string(thermalLimit) + "C.");
+					else
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get thermal limit setting: " + errorMessage);
+
+					if (assignDevice->getSettingFanLevelPercent(&fanLevel, &errorMessage))
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Fan level setting: " + std::to_string(fanLevel) + "%.");
+					else
+						onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get fan level setting: " + errorMessage);
+				}
+
 				return true;
 			}
 			catch (std::exception ex)
 			{
 				onMessage(platformName.c_str(), deviceEnum, "Error", ex.what());
-				return false;
 			}
 		}
 	}
 	onMessage(platformName.c_str(), -1, "Error", "Failed to get device " + std::to_string(deviceEnum));
+
 	return false;
 }
 
@@ -359,6 +401,127 @@ uint64_t openCLSolver::getHashRateByDevice(std::string platformName, int const d
 
 	return 0ull;
 }
+
+int openCLSolver::getDeviceSettingMaxCoreClock(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int settingMaxCoreClock{ -1 };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getSettingMaxCoreClock(&settingMaxCoreClock, &errorMessage);
+
+	return settingMaxCoreClock;
+}
+
+int openCLSolver::getDeviceSettingMaxMemoryClock(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int settingMaxMemoryClock{ -1 };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getSettingMaxMemoryClock(&settingMaxMemoryClock, &errorMessage);
+
+	return settingMaxMemoryClock;
+}
+
+int openCLSolver::getDeviceSettingPowerLimit(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int settingPowerLimit{ INT32_MIN };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getSettingPowerLimit(&settingPowerLimit, &errorMessage);
+
+	return settingPowerLimit;
+}
+
+int openCLSolver::getDeviceSettingThermalLimit(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int settingThermalLimit{ INT32_MIN };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getSettingThermalLimit(&settingThermalLimit, &errorMessage);
+
+	return settingThermalLimit;
+}
+
+int openCLSolver::getDeviceSettingFanLevelPercent(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int fanLevelPercent{ -1 };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getSettingFanLevelPercent(&fanLevelPercent, &errorMessage);
+
+	return fanLevelPercent;
+}
+
+int openCLSolver::getDeviceCurrentFanTachometerRPM(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int fanTachometerRPM{ -1 };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getCurrentFanTachometerRPM(&fanTachometerRPM, &errorMessage);
+
+	return fanTachometerRPM;
+}
+
+int openCLSolver::getDeviceCurrentTemperature(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int temperature{ -1 };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getCurrentTemperature(&temperature, &errorMessage);
+
+	return temperature;
+}
+
+int openCLSolver::getDeviceCurrentCoreClock(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int coreClock{ -1 };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getCurrentCoreClock(&coreClock, &errorMessage);
+
+	return coreClock;
+}
+
+int openCLSolver::getDeviceCurrentMemoryClock(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int memoryClock{ -1 };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getCurrentMemoryClock(&memoryClock, &errorMessage);
+
+	return memoryClock;
+}
+
+int openCLSolver::getDeviceCurrentUtilizationPercent(std::string platformName, int deviceEnum)
+{
+	std::string errorMessage;
+	int utilizationPercent{ -1 };
+
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			device->getCurrentUtilizationPercent(&utilizationPercent, &errorMessage);
+
+	return utilizationPercent;
+}
+
 
 void openCLSolver::startFinding()
 {

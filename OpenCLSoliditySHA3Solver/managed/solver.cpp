@@ -56,6 +56,11 @@ namespace OpenCLSolver
 		errorMessage = ToManagedString(errMsg);
 	}
 
+	bool Solver::foundAdlApi()
+	{
+		return openCLSolver::foundAdlApi();
+	}
+
 	System::String ^Solver::getPlatformNames()
 	{
 		std::string platformName;
@@ -73,10 +78,10 @@ namespace OpenCLSolver
 		return devCount;
 	}
 
-	System::String ^Solver::getDeviceName(System::String ^platformName, int deviceEnum, System::String ^%errorMessage)
+	System::String ^Solver::getDeviceName(System::String ^platformName, int deviceID, System::String ^%errorMessage)
 	{
 		std::string errMsg, devName;
-		devName = openCLSolver::getDeviceName(ToNativeString(platformName), deviceEnum, errMsg);
+		devName = openCLSolver::getDeviceName(ToNativeString(platformName), deviceID, errMsg);
 
 		errorMessage = ToManagedString(errMsg);
 		return ToManagedString(devName);
@@ -161,6 +166,66 @@ namespace OpenCLSolver
 	{
 		if (m_Instance == nullptr) return 0ull;
 		return m_Instance->getHashRateByDevice(ToNativeString(platformName), deviceID);
+	}
+	
+	int Solver::getDeviceSettingMaxCoreClock(System::String ^platformName, int const deviceID)
+	{
+		if (m_Instance == nullptr) return -1;
+		return m_Instance->getDeviceSettingMaxCoreClock(ToNativeString(platformName), deviceID);
+	}
+
+	int Solver::getDeviceSettingMaxMemoryClock(System::String ^platformName, int deviceID)
+	{
+		if (m_Instance == nullptr) return -1;
+		return m_Instance->getDeviceSettingMaxMemoryClock(ToNativeString(platformName), deviceID);
+	}
+
+	int Solver::getDeviceSettingPowerLimit(System::String ^platformName, int deviceID)
+	{
+		if (m_Instance == nullptr) return INT32_MIN;
+		return m_Instance->getDeviceSettingPowerLimit(ToNativeString(platformName), deviceID);
+	}
+
+	int Solver::getDeviceSettingThermalLimit(System::String ^platformName, int deviceID)
+	{
+		if (m_Instance == nullptr) return INT32_MIN;
+		return m_Instance->getDeviceSettingThermalLimit(ToNativeString(platformName), deviceID);
+	}
+
+	int Solver::getDeviceSettingFanLevelPercent(System::String ^platformName, int deviceID)
+	{
+		if (m_Instance == nullptr) return -1;
+		return m_Instance->getDeviceSettingFanLevelPercent(ToNativeString(platformName), deviceID);
+	}
+
+	int Solver::getDeviceCurrentFanTachometerRPM(System::String ^platformName, int deviceID)
+	{
+		if (m_Instance == nullptr) return -1;
+		return m_Instance->getDeviceCurrentFanTachometerRPM(ToNativeString(platformName), deviceID);
+	}
+
+	int Solver::getDeviceCurrentTemperature(System::String ^platformName, int deviceID)
+	{
+		if (m_Instance == nullptr) return INT32_MIN;
+		return m_Instance->getDeviceCurrentTemperature(ToNativeString(platformName), deviceID);
+	}
+
+	int Solver::getDeviceCurrentCoreClock(System::String ^platformName, int deviceID)
+	{
+		if (m_Instance == nullptr) return -1;
+		return m_Instance->getDeviceCurrentCoreClock(ToNativeString(platformName), deviceID);
+	}
+
+	int Solver::getDeviceCurrentMemoryClock(System::String ^platformName, int deviceID)
+	{
+		if (m_Instance == nullptr) return -1;
+		return m_Instance->getDeviceCurrentMemoryClock(ToNativeString(platformName), deviceID);
+	}
+
+	int Solver::getDeviceCurrentUtilizationPercent(System::String ^platformName, int deviceID)
+	{
+		if (m_Instance == nullptr) return -1;
+		return m_Instance->getDeviceCurrentUtilizationPercent(ToNativeString(platformName), deviceID);
 	}
 
 	void Solver::OnGetSolutionTemplate(uint8_t *%solutionTemplate)

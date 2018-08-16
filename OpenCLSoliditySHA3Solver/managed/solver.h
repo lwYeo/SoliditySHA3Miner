@@ -31,9 +31,10 @@ namespace OpenCLSolver
 
 	public:
 		static void preInitialize(bool allowIntel, System::String ^%errorMessage);
+		static bool foundAdlApi();
 		static System::String ^getPlatformNames();
 		static int getDeviceCount(System::String ^platformName, System::String ^%errorMessage);
-		static System::String ^getDeviceName(System::String ^platformName, int deviceEnum, System::String ^%errorMessage);
+		static System::String ^getDeviceName(System::String ^platformName, int deviceID, System::String ^%errorMessage);
 
 	public:
 		// require web3 contract getMethod -> _MAXIMUM_TARGET
@@ -62,7 +63,19 @@ namespace OpenCLSolver
 		// combined hashrate, in H/s
 		uint64_t getTotalHashRate();
 		// individual hashrate by deviceID, in H/s
-		uint64_t getHashRateByDevice(System::String ^platformName, int const deviceEnum);
+		uint64_t getHashRateByDevice(System::String ^platformName, int const deviceID);
+
+		int getDeviceSettingMaxCoreClock(System::String ^platformName, int const deviceID);
+		int getDeviceSettingMaxMemoryClock(System::String ^platformName, int const deviceID);
+		int getDeviceSettingPowerLimit(System::String ^platformName, int const deviceID);
+		int getDeviceSettingThermalLimit(System::String ^platformName, int const deviceID);
+		int getDeviceSettingFanLevelPercent(System::String ^platformName, int const deviceID);
+
+		int getDeviceCurrentFanTachometerRPM(System::String ^platformName, int const deviceID);
+		int getDeviceCurrentTemperature(System::String ^platformName, int const deviceID);
+		int getDeviceCurrentCoreClock(System::String ^platformName, int const deviceID);
+		int getDeviceCurrentMemoryClock(System::String ^platformName, int const deviceID);
+		int getDeviceCurrentUtilizationPercent(System::String ^platformName, int const deviceID);
 
 	private:
 		void OnGetSolutionTemplate(uint8_t *%solutionTemplate);

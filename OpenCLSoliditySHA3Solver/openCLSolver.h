@@ -54,6 +54,7 @@ public:
 	typedef struct { cl_platform_id id; std::string name; } Platform;
 
 	static void preInitialize(bool allowIntel, std::string &errorMessage);
+	static bool foundAdlApi();
 	static std::string getPlatformNames();
 	static int getDeviceCount(std::string platformName, std::string &errorMessage);
 	static std::string getDeviceName(std::string platformName, int deviceEnum, std::string &errorMessage);
@@ -118,6 +119,18 @@ public:
 
 	uint64_t getTotalHashRate();
 	uint64_t getHashRateByDevice(std::string platformName, int const deviceEnum);
+
+	int getDeviceSettingMaxCoreClock(std::string platformName, int deviceEnum);
+	int getDeviceSettingMaxMemoryClock(std::string platformName, int deviceEnum);
+	int getDeviceSettingPowerLimit(std::string platformName, int deviceEnum);
+	int getDeviceSettingThermalLimit(std::string platformName, int deviceEnum);
+	int getDeviceSettingFanLevelPercent(std::string platformName, int deviceEnum);
+
+	int getDeviceCurrentFanTachometerRPM(std::string platformName, int deviceEnum);
+	int getDeviceCurrentTemperature(std::string platformName, int deviceEnum);
+	int getDeviceCurrentCoreClock(std::string platformName, int deviceEnum);
+	int getDeviceCurrentMemoryClock(std::string platformName, int deviceEnum);
+	int getDeviceCurrentUtilizationPercent(std::string platformName, int deviceEnum);
 
 	void startFinding();
 	void stopFinding();

@@ -13,6 +13,7 @@
 #include <chrono>
 #include <fstream>
 #include <string.h>
+#include "adl_api.h"
 #include "../types.h"
 
 #pragma managed(push, off)
@@ -107,6 +108,8 @@ public:
 	uint32_t kernelWaitSleepDuration;
 
 private:
+	int pciBusID;
+	ADL_API m_api;
 	uint32_t computeCapability;
 
 public:
@@ -115,6 +118,18 @@ public:
 	bool isAPP();
 	bool isCUDA();
 	bool isINTEL();
+
+	bool getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage);
+	bool getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage);
+	bool getSettingPowerLimit(int *powerLimit, std::string *errorMessage);
+	bool getSettingThermalLimit(int *thermalLimit, std::string *errorMessage);
+	bool getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage);
+
+	bool getCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorMessage);
+	bool getCurrentTemperature(int *temperature, std::string *errorMessage);
+	bool getCurrentCoreClock(int *coreClock, std::string *errorMessage);
+	bool getCurrentMemoryClock(int *memoryClock, std::string *errorMessage);
+	bool getCurrentUtilizationPercent(int *utilization, std::string *errorMessage);
 
 	uint64_t hashRate();
 

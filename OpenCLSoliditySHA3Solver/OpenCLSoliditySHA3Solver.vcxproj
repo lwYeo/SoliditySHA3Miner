@@ -98,6 +98,10 @@ copy "sha3Kernel.cl" "$(SolutionDir)$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="device\adl_api.h" />
+    <ClInclude Include="device\adl_include\adl_defines.h" />
+    <ClInclude Include="device\adl_include\adl_sdk.h" />
+    <ClInclude Include="device\adl_include\adl_structures.h" />
     <ClInclude Include="device\device.h" />
     <ClInclude Include="managed\managedObject.h" />
     <ClInclude Include="managed\solver.h" />
@@ -115,6 +119,7 @@ copy "sha3Kernel.cl" "$(SolutionDir)$(OutDir)"</Command>
     <ClInclude Include="uint256\utilstrencodings.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="device\adl_api.cpp" />
     <ClCompile Include="device\device.cpp" />
     <ClCompile Include="managed\solver.cpp" />
     <ClCompile Include="openCLSolver.cpp" />
