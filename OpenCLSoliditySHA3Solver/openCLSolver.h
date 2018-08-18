@@ -120,6 +120,8 @@ public:
 	uint64_t getTotalHashRate();
 	uint64_t getHashRateByDevice(std::string platformName, int const deviceEnum);
 
+	std::string getDeviceName(std::string platformName, int deviceEnum);
+
 	int getDeviceSettingMaxCoreClock(std::string platformName, int deviceEnum);
 	int getDeviceSettingMaxMemoryClock(std::string platformName, int deviceEnum);
 	int getDeviceSettingPowerLimit(std::string platformName, int deviceEnum);

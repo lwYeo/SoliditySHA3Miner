@@ -119,6 +119,8 @@ public:
 	bool isCUDA();
 	bool isINTEL();
 
+	std::string getName();
+
 	bool getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage);
 	bool getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage);
 	bool getSettingPowerLimit(int *powerLimit, std::string *errorMessage);

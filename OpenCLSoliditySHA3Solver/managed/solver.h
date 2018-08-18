@@ -65,6 +65,8 @@ namespace OpenCLSolver
 		// individual hashrate by deviceID, in H/s
 		uint64_t getHashRateByDevice(System::String ^platformName, int const deviceID);
 
+		System::String ^getDeviceName(System::String ^platformName, int const deviceID);
+
 		int getDeviceSettingMaxCoreClock(System::String ^platformName, int const deviceID);
 		int getDeviceSettingMaxMemoryClock(System::String ^platformName, int const deviceID);
 		int getDeviceSettingPowerLimit(System::String ^platformName, int const deviceID);

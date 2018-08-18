@@ -74,6 +74,7 @@ public:
 	static void unload();
 
 	void assignPciBusID(int adapterBusID);
+	void getAdapterName(std::string *adapterName);
 
 	bool getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage);
 	bool getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage);

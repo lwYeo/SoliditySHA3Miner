@@ -167,6 +167,12 @@ namespace OpenCLSolver
 		if (m_Instance == nullptr) return 0ull;
 		return m_Instance->getHashRateByDevice(ToNativeString(platformName), deviceID);
 	}
+
+	System::String ^Solver::getDeviceName(System::String ^platformName, int const deviceID)
+	{
+		if (m_Instance == nullptr) return "";
+		return ToManagedString(m_Instance->getDeviceName(ToNativeString(platformName), deviceID));
+	}
 	
 	int Solver::getDeviceSettingMaxCoreClock(System::String ^platformName, int const deviceID)
 	{

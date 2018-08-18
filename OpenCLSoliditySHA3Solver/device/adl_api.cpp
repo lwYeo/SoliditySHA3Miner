@@ -8,24 +8,24 @@
 
 HINSTANCE ADL_API::hDLL{ NULL };
 
-ADL_API::ADL_MAIN_CONTROL_CREATE          ADL_API::ADL_Main_Control_Create{ NULL };
-ADL_API::ADL_MAIN_CONTROL_DESTROY         ADL_API::ADL_Main_Control_Destroy{ NULL };
-ADL_API::ADL_ADAPTER_NUMBEROFADAPTERS_GET ADL_API::ADL_Adapter_NumberOfAdapters_Get{ NULL };
-ADL_API::ADL_ADAPTER_ADAPTERINFO_GET      ADL_API::ADL_Adapter_AdapterInfo_Get{ NULL };
-ADL_API::ADL_ADAPTERX2_CAPS ADL_API::ADL_AdapterX2_Caps{ NULL };
+ADL_API::ADL_MAIN_CONTROL_CREATE				ADL_API::ADL_Main_Control_Create{ NULL };
+ADL_API::ADL_MAIN_CONTROL_DESTROY				ADL_API::ADL_Main_Control_Destroy{ NULL };
+ADL_API::ADL_ADAPTER_NUMBEROFADAPTERS_GET		ADL_API::ADL_Adapter_NumberOfAdapters_Get{ NULL };
+ADL_API::ADL_ADAPTER_ADAPTERINFO_GET			ADL_API::ADL_Adapter_AdapterInfo_Get{ NULL };
+ADL_API::ADL_ADAPTERX2_CAPS						ADL_API::ADL_AdapterX2_Caps{ NULL };
 ADL_API::ADL2_ADAPTER_ACTIVE_GET				ADL_API::ADL2_Adapter_Active_Get{ NULL };
-ADL_API::ADL2_OVERDRIVEN_CAPABILITIES_GET ADL_API::ADL2_OverdriveN_Capabilities_Get{ NULL };
-ADL_API::ADL2_OVERDRIVEN_SYSTEMCLOCKS_GET ADL_API::ADL2_OverdriveN_SystemClocks_Get{ NULL };
-ADL_API::ADL2_OVERDRIVEN_SYSTEMCLOCKS_SET ADL_API::ADL2_OverdriveN_SystemClocks_Set{ NULL };
-ADL_API::ADL2_OVERDRIVEN_PERFORMANCESTATUS_GET ADL_API::ADL2_OverdriveN_PerformanceStatus_Get{ NULL };
-ADL_API::ADL2_OVERDRIVEN_FANCONTROL_GET ADL_API::ADL2_OverdriveN_FanControl_Get{ NULL };
-ADL_API::ADL2_OVERDRIVEN_FANCONTROL_SET ADL_API::ADL2_OverdriveN_FanControl_Set{ NULL };
-ADL_API::ADL2_OVERDRIVEN_POWERLIMIT_GET ADL_API::ADL2_OverdriveN_PowerLimit_Get{ NULL };
-ADL_API::ADL2_OVERDRIVEN_POWERLIMIT_SET ADL_API::ADL2_OverdriveN_PowerLimit_Set{ NULL };
-ADL_API::ADL2_OVERDRIVEN_MEMORYCLOCKS_GET ADL_API::ADL2_OverdriveN_MemoryClocks_Get{ NULL };
-ADL_API::ADL2_OVERDRIVEN_MEMORYCLOCKS_GET ADL_API::ADL2_OverdriveN_MemoryClocks_Set{ NULL };
-ADL_API::ADL2_OVERDRIVE_CAPS ADL_API::ADL2_Overdrive_Caps{ NULL };
-ADL_API::ADL2_OVERDRIVEN_TEMPERATURE_GET ADL_API::ADL2_OverdriveN_Temperature_Get{ NULL };
+ADL_API::ADL2_OVERDRIVEN_CAPABILITIES_GET		ADL_API::ADL2_OverdriveN_Capabilities_Get{ NULL };
+ADL_API::ADL2_OVERDRIVEN_SYSTEMCLOCKS_GET		ADL_API::ADL2_OverdriveN_SystemClocks_Get{ NULL };
+ADL_API::ADL2_OVERDRIVEN_SYSTEMCLOCKS_SET		ADL_API::ADL2_OverdriveN_SystemClocks_Set{ NULL };
+ADL_API::ADL2_OVERDRIVEN_PERFORMANCESTATUS_GET	ADL_API::ADL2_OverdriveN_PerformanceStatus_Get{ NULL };
+ADL_API::ADL2_OVERDRIVEN_FANCONTROL_GET			ADL_API::ADL2_OverdriveN_FanControl_Get{ NULL };
+ADL_API::ADL2_OVERDRIVEN_FANCONTROL_SET			ADL_API::ADL2_OverdriveN_FanControl_Set{ NULL };
+ADL_API::ADL2_OVERDRIVEN_POWERLIMIT_GET			ADL_API::ADL2_OverdriveN_PowerLimit_Get{ NULL };
+ADL_API::ADL2_OVERDRIVEN_POWERLIMIT_SET			ADL_API::ADL2_OverdriveN_PowerLimit_Set{ NULL };
+ADL_API::ADL2_OVERDRIVEN_MEMORYCLOCKS_GET		ADL_API::ADL2_OverdriveN_MemoryClocks_Get{ NULL };
+ADL_API::ADL2_OVERDRIVEN_MEMORYCLOCKS_GET		ADL_API::ADL2_OverdriveN_MemoryClocks_Set{ NULL };
+ADL_API::ADL2_OVERDRIVE_CAPS					ADL_API::ADL2_Overdrive_Caps{ NULL };
+ADL_API::ADL2_OVERDRIVEN_TEMPERATURE_GET		ADL_API::ADL2_OverdriveN_Temperature_Get{ NULL };
 
 int ADL_API::numberOfAdapters{ -1 };
 LPAdapterInfo ADL_API::lpAdapterInfo{ NULL };
@@ -55,7 +55,6 @@ void ADL_API::initialize()
 
 	ADL_Adapter_NumberOfAdapters_Get = (ADL_ADAPTER_NUMBEROFADAPTERS_GET)GetProcAddress(hDLL, "ADL_Adapter_NumberOfAdapters_Get");
 	ADL_Adapter_AdapterInfo_Get = (ADL_ADAPTER_ADAPTERINFO_GET)GetProcAddress(hDLL, "ADL_Adapter_AdapterInfo_Get");
-	ADL_AdapterX2_Caps = (ADL_ADAPTERX2_CAPS)GetProcAddress(hDLL, "ADL_AdapterX2_Caps");
 	ADL2_Adapter_Active_Get = (ADL2_ADAPTER_ACTIVE_GET)GetProcAddress(hDLL, "ADL2_Adapter_Active_Get");
 	ADL2_OverdriveN_Capabilities_Get = (ADL2_OVERDRIVEN_CAPABILITIES_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_Capabilities_Get");
 	ADL2_OverdriveN_SystemClocks_Get = (ADL2_OVERDRIVEN_SYSTEMCLOCKS_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_SystemClocks_Get");
@@ -131,6 +130,11 @@ void ADL_API::assignPciBusID(int adapterBusID)
 		if (lpAdapterInfo[i].iBusNumber == adapterBusID) m_adapterInfo = lpAdapterInfo[i];
 
 	ADL2_Overdrive_Caps(m_context, m_adapterInfo.iAdapterIndex, &m_supported, &m_enabled, &m_version);
+}
+
+void ADL_API::getAdapterName(std::string *adapterName)
+{
+	*adapterName = m_adapterInfo.strAdapterName;
 }
 
 bool ADL_API::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage)

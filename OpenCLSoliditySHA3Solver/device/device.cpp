@@ -246,6 +246,10 @@ Device::Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platf
 			{
 				pciBusID = (int)topology.pcie.bus;
 				m_api.assignPciBusID(pciBusID);
+
+				std::string realName;
+				m_api.getAdapterName(&realName);
+				if (!realName.empty()) name = realName;
 			}
 	}
 
@@ -280,6 +284,11 @@ bool Device::isINTEL()
 	std::string tempPlatform{ platformName };
 	std::transform(tempPlatform.begin(), tempPlatform.end(), tempPlatform.begin(), ::toupper);
 	return tempPlatform.find("INTEL") != std::string::npos;
+}
+
+std::string Device::getName()
+{
+	return name;
 }
 
 bool Device::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage)

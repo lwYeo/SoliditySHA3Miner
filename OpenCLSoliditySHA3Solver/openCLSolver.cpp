@@ -402,6 +402,15 @@ uint64_t openCLSolver::getHashRateByDevice(std::string platformName, int const d
 	return 0ull;
 }
 
+std::string openCLSolver::getDeviceName(std::string platformName, int deviceEnum)
+{
+	for (auto& device : m_devices)
+		if (device->platformName == platformName && device->deviceEnum == deviceEnum)
+			return device->getName();
+
+	return "";
+}
+
 int openCLSolver::getDeviceSettingMaxCoreClock(std::string platformName, int deviceEnum)
 {
 	std::string errorMessage;
