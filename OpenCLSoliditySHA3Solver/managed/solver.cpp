@@ -2,8 +2,7 @@
 
 namespace OpenCLSolver
 {
-	Solver::Solver(System::String ^maxDifficulty, System::String ^kingAddress) :
-		ManagedObject(new openCLSolver(ToNativeString(maxDifficulty), ToNativeString(kingAddress)))
+	Solver::Solver(System::String ^maxDifficulty) : ManagedObject(new openCLSolver(ToNativeString(maxDifficulty)))
 	{
 		m_managedOnGetSolutionTemplate = gcnew OnGetSolutionTemplateDelegate(this, &Solver::OnGetSolutionTemplate);
 		System::IntPtr getSolutionTemplateStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetSolutionTemplate);
@@ -234,7 +233,7 @@ namespace OpenCLSolver
 		return m_Instance->getDeviceCurrentUtilizationPercent(ToNativeString(platformName), deviceID);
 	}
 
-	void Solver::OnGetSolutionTemplate(uint8_t *%solutionTemplate)
+	void Solver::OnGetSolutionTemplate(uint8_t *solutionTemplate)
 	{
 		OnGetSolutionTemplateHandler(solutionTemplate);
 	}

@@ -97,7 +97,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public HexBigInteger GetMaxDifficulity()
         {
-            Program.Print("[INFO] Getting maximum difficulity from network...");
+            Program.Print("[INFO] Checking maximum difficulity from network...");
             while (true)
             {
                 try
@@ -117,7 +117,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 if (m_cacheParameters != null) return m_cacheParameters;
                 
-                Program.Print("[INFO] Getting latest parameters from network...");
+                Program.Print("[INFO] Checking latest parameters from network...");
 
                 m_cacheParameters = MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
 
@@ -145,7 +145,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 var gasLimit = new HexBigInteger(1704624ul);
                 var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasToMine), UnitConversion.EthUnit.Gwei));
 
-                var oSolution = new BigInteger(Utils.Numerics.HexStringToByte32Array(solution));
+                var oSolution = new BigInteger(Utils.Numerics.HexStringToByte32Array(solution).ToArray());
                 // Note: do not directly use -> new HexBigInteger(solution).Value
                 //Because two's complement representation always interprets the highest-order bit of the last byte in the array
                 //(the byte at position Array.Length- 1) as the sign bit,
@@ -158,8 +158,6 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     try
                     {
-                        System.Threading.Thread.Sleep(1000);
-
                         var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
 
                         var estimatedGasLimit = m_mintMethod.EstimateGasAsync(from: fromAddress,
@@ -217,6 +215,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                         Program.Print(errorMessage);
                         if (m_submittedChallengeList.Contains(challenge) || ex.Message == "Failed to verify transaction.") return;
                     }
+
+                    System.Threading.Thread.Sleep(1000);
                 }
             }
         }
@@ -229,7 +229,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         private BigInteger GetMiningReward()
         {
             var failCount = 0;
-            Program.Print("[INFO] Getting mining reward amount from network...");
+            Program.Print("[INFO] Checking mining reward amount from network...");
             while (failCount < 10)
             {
                 try
@@ -238,7 +238,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
                 catch (Exception) { failCount++; }
             }
-            throw new Exception("Failed getting mining reward amount.");
+            throw new Exception("Failed checking mining reward amount.");
         }
 
         private void GetTransactionReciept(string transactionID, string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas)

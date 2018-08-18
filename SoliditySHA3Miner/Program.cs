@@ -520,7 +520,7 @@ namespace SoliditySHA3Miner
                 }
             }
             
-            if (string.IsNullOrWhiteSpace(minerAddress))
+            if (string.IsNullOrWhiteSpace(minerAddress) && string.IsNullOrWhiteSpace(privateKey))
             {
                 Print("[INFO] Miner address not specified, donating 100% to dev.");
                 minerAddress = DevFee.Address;
@@ -679,7 +679,8 @@ namespace SoliditySHA3Miner
             
             try
             {
-                Miner.Work.SetSolutionTemplate(Miner.CPU.GetNewSolutionTemplate(kingAddress));
+                Miner.Work.SetKingAddress(kingAddress);
+                Miner.Work.SetSolutionTemplate(Miner.CPU.GetNewSolutionTemplate(Miner.Work.GetKingAddressString()));
 
                 var web3Interface = new NetworkInterface.Web3Interface(web3api, contractAddress, minerAddress, privateKey, gasToMine, abiFile, networkUpdateInterval);
 
@@ -696,11 +697,11 @@ namespace SoliditySHA3Miner
                 }
                 else tempMaxDifficulity = web3Interface.GetMaxDifficulity();
 
-                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, kingAddress, tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
+                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
-                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), kingAddress, tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
+                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
-                m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, kingAddress, tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
+                m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
 
                 m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner };
 

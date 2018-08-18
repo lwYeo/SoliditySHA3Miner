@@ -41,7 +41,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 if (m_cacheParameters != null) return m_cacheParameters;
                 
-                Program.Print("[INFO] Getting latest parameters from pool...");
+                Program.Print("[INFO] Checking latest parameters from pool...");
 
                 var getPoolEthAddress = GetPoolParameter("getPoolEthAddress");
                 var getPoolChallengeNumber = GetPoolParameter("getChallengeNumber");
@@ -85,7 +85,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 if (!success && SecondaryPool != null && m_retryCount >= m_maxScanRetry)
                 {
                     m_runFailover = true;
-                    Program.Print("[INFO] Getting mining parameters from secondary pool...");
+                    Program.Print("[INFO] Checking mining parameters from secondary pool...");
                     return SecondaryPool.GetMiningParameters();
                 }
 

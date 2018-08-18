@@ -178,7 +178,8 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device[] devices, string kingAddress, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
+        public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device[] devices,
+            HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {
@@ -193,7 +194,7 @@ namespace SoliditySHA3Miner.Miner
 
                 unsafe
                 {
-                    Solver = new Solver(maxDifficulty.HexValue, kingAddress)
+                    Solver = new Solver(maxDifficulty.HexValue)
                     {
                         OnGetSolutionTemplateHandler = Work.GetSolutionTemplate,
                         OnGetWorkPositionHandler = Work.GetPosition,

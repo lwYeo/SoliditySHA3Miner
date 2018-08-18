@@ -133,7 +133,8 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        public CPU(NetworkInterface.INetworkInterface networkInterface, Device[] devices, string kingAddress, HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
+        public CPU(NetworkInterface.INetworkInterface networkInterface, Device[] devices,
+            HexBigInteger maxDifficulty, uint customDifficulty, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {
@@ -153,9 +154,13 @@ namespace SoliditySHA3Miner.Miner
 
                 unsafe
                 {
-                    Solver = new Solver(maxDifficulty.HexValue, devicesStr, kingAddress)
+                    Solver = new Solver(maxDifficulty.HexValue, devicesStr)
                     {
+                        OnGetKingAddressHandler = Work.GetKingAddress,
                         OnGetSolutionTemplateHandler = Work.GetSolutionTemplate,
+                        OnGetWorkPositionHandler = Work.GetPosition,
+                        OnResetWorkPositionHandler = Work.ResetPosition,
+                        OnIncrementWorkPositionHandler = Work.IncrementPosition,
                         OnMessageHandler = m_cpuSolver_OnMessage,
                         OnSolutionHandler = m_cpuSolver_OnSolution
                     };

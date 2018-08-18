@@ -75,7 +75,7 @@ void NV_API::unload()
 	isInitialized = false;
 
 	Unload();
-	free(gpuHandles);
+	if (gpuHandles != NULL) free(gpuHandles);
 }
 
 // --------------------------------------------------------------------

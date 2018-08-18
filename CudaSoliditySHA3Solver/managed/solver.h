@@ -7,7 +7,7 @@ namespace CudaSolver
 	public ref class Solver : public ManagedObject<CUDASolver>
 	{
 	public:
-		delegate void OnGetSolutionTemplateDelegate(uint8_t *%);
+		delegate void OnGetSolutionTemplateDelegate(uint8_t *);
 		delegate void OnGetWorkPositionDelegate(unsigned __int64 %);
 		delegate void OnResetWorkPositionDelegate(unsigned __int64 %);
 		delegate void OnIncrementWorkPositionDelegate(unsigned __int64 %, unsigned __int64);
@@ -36,7 +36,7 @@ namespace CudaSolver
 
 	public:
 		// require web3 contract getMethod -> _MAXIMUM_TARGET
-		Solver(System::String ^maxDifficulty, System::String ^kingAddress);
+		Solver(System::String ^maxDifficulty);
 		~Solver();
 
 		void setCustomDifficulty(uint32_t customDifficulty);
@@ -78,7 +78,7 @@ namespace CudaSolver
 		System::String ^getDeviceCurrentThrottleReasons(int deviceID);
 
 	private:
-		void OnGetSolutionTemplate(uint8_t *%solutionTemplate);
+		void OnGetSolutionTemplate(uint8_t *solutionTemplate);
 		void OnGetWorkPosition(unsigned __int64 %workPosition);
 		void OnResetWorkPosition(unsigned __int64 %lastPosition);
 		void OnIncrementWorkPosition(unsigned __int64 %lastPosition, unsigned __int64 increment);

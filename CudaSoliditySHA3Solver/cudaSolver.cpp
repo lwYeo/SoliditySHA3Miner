@@ -48,7 +48,7 @@ std::string CUDASolver::getDeviceName(int deviceID, std::string &errorMessage)
 // Public
 // --------------------------------------------------------------------
 
-CUDASolver::CUDASolver(std::string const maxDifficulty, std::string kingAddress) noexcept :
+CUDASolver::CUDASolver(std::string const maxDifficulty) noexcept :
 	s_address{ "" },
 	s_challenge{ "" },
 	s_target{ "" },
@@ -58,9 +58,7 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string kingAddress)
 	m_miningMessage{ 0 },
 	m_target{ 0 },
 	m_difficulty{ 0 },
-	m_maxDifficulty{ maxDifficulty },
-	m_solutionTemplate{ new uint8_t[UINT256_LENGTH]{ 0 } },
-	s_kingAddress{ kingAddress }
+	m_maxDifficulty{ maxDifficulty }
 {
 	try { if (NV_API::foundNvAPI64()) NV_API::initialize(); }
 	catch (std::exception ex) { onMessage(-1, "Error", ex.what()); }
@@ -71,8 +69,6 @@ CUDASolver::CUDASolver(std::string const maxDifficulty, std::string kingAddress)
 CUDASolver::~CUDASolver() noexcept
 {
 	stopFinding();
-
-	free(m_solutionTemplate);
 
 	NV_API::unload();
 }
@@ -210,8 +206,8 @@ void CUDASolver::updatePrefix(std::string const prefix)
 	std::memcpy(&m_prefix, &tempPrefix, PREFIX_LENGTH);
 	std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
 
-	getSolutionTemplate(m_solutionTemplate);
-	std::memcpy(&m_miningMessage[PREFIX_LENGTH], m_solutionTemplate, UINT256_LENGTH);
+	getSolutionTemplate(&m_solutionTemplate);
+	std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH);
 
 	state_t tempMidState{ getMidState(m_miningMessage) };
 
@@ -479,9 +475,9 @@ std::string CUDASolver::getDeviceCurrentThrottleReasons(int deviceID)
 // Private
 // --------------------------------------------------------------------
 
-void CUDASolver::getSolutionTemplate(uint8_t *&solutionTemplate)
+void CUDASolver::getSolutionTemplate(byte32_t *solutionTemplate)
 {
-	m_getSolutionTemplateCallback(solutionTemplate);
+	m_getSolutionTemplateCallback(solutionTemplate->data());
 }
 
 void CUDASolver::getWorkPosition(uint64_t &workPosition)
@@ -583,12 +579,12 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string chall
 {
 	auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
 
-	getSolutionTemplate(m_solutionTemplate);
+	getSolutionTemplate(&m_solutionTemplate);
 
 	for (uint64_t midStateSolution : solutions)
 	{
 		byte32_t solution{ 0 };
-		std::memcpy(&solution, m_solutionTemplate, UINT256_LENGTH);
+		std::memcpy(&solution, &m_solutionTemplate, UINT256_LENGTH);
 
 		if (s_kingAddress.empty())
 			std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state

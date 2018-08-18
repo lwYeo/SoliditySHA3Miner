@@ -45,7 +45,7 @@
 class openCLSolver
 {
 public:
-	typedef void(*GetSolutionTemplateCallback)(uint8_t *&);
+	typedef void(*GetSolutionTemplateCallback)(uint8_t *);
 	typedef void(*GetWorkPositionCallback)(uint64_t &);
 	typedef void(*ResetWorkPositionCallback)(uint64_t &);
 	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
@@ -82,7 +82,7 @@ private:
 	std::string s_customDifficulty;
 
 	address_t m_address;
-	uint8_t *m_solutionTemplate;
+	byte32_t m_solutionTemplate;
 	prefix_t m_prefix; // challenge32 + address20
 	message_t m_miningMessage; // challenge32 + address20 + solution32
 
@@ -96,7 +96,7 @@ private:
 
 public:
 	// require web3 contract getMethod -> _MAXIMUM_TARGET
-	openCLSolver(std::string const maxDifficulty, std::string kingAddress) noexcept;
+	openCLSolver(std::string const maxDifficulty) noexcept;
 	~openCLSolver() noexcept;
 
 	void setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback);
@@ -139,7 +139,7 @@ public:
 	void pauseFinding(bool pauseFinding);
 
 private:
-	void getSolutionTemplate(uint8_t *&solutionTemplate);
+	void getSolutionTemplate(byte32_t *solutionTemplate);
 	void getWorkPosition(uint64_t &workPosition);
 	void resetWorkPosition(uint64_t &lastPosition);
 	void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);
@@ -149,7 +149,6 @@ private:
 	const std::string keccak256(std::string const message); // for CPU verification
 
 	void findSolution(std::string platformName, int const deviceEnum);
-	void setKernelArgs(std::unique_ptr<Device> &device);
 	void checkInputs(std::unique_ptr<Device> &device, char *currentChallenge);
 	void pushTarget(std::unique_ptr<Device> &device);
 	void pushMessage(std::unique_ptr<Device> &device);

@@ -2,8 +2,7 @@
 
 namespace CudaSolver
 {
-	Solver::Solver(System::String ^maxDifficulty, System::String ^kingAddress) :
-		ManagedObject(new CUDASolver(ToNativeString(maxDifficulty), ToNativeString(kingAddress)))
+	Solver::Solver(System::String ^maxDifficulty) : ManagedObject(new CUDASolver(ToNativeString(maxDifficulty)))
 	{
 		m_managedOnGetSolutionTemplate = gcnew OnGetSolutionTemplateDelegate(this, &Solver::OnGetSolutionTemplate);
 		System::IntPtr getSolutionTemplateStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetSolutionTemplate);
@@ -212,7 +211,7 @@ namespace CudaSolver
 		return ToManagedString(m_Instance->getDeviceCurrentThrottleReasons(deviceID));
 	}
 
-	void Solver::OnGetSolutionTemplate(uint8_t *%solutionTemplate)
+	void Solver::OnGetSolutionTemplate(uint8_t *solutionTemplate)
 	{
 		OnGetSolutionTemplateHandler(solutionTemplate);
 	}

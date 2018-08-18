@@ -132,7 +132,7 @@ std::string openCLSolver::getDeviceName(std::string platformName, int deviceEnum
 // Public
 // --------------------------------------------------------------------
 
-openCLSolver::openCLSolver(std::string const maxDifficulty, std::string kingAddress) noexcept :
+openCLSolver::openCLSolver(std::string const maxDifficulty) noexcept :
 	s_address{ "" },
 	s_challenge{ "" },
 	s_target{ "" },
@@ -142,9 +142,7 @@ openCLSolver::openCLSolver(std::string const maxDifficulty, std::string kingAddr
 	m_miningMessage{ 0 },
 	m_target{ 0 },
 	m_difficulty{ 0 },
-	m_maxDifficulty{ maxDifficulty },
-	m_solutionTemplate{ new uint8_t[UINT256_LENGTH]{ 0 } },
-	s_kingAddress{ kingAddress }
+	m_maxDifficulty{ maxDifficulty }
 {
 	try { if (ADL_API::foundAdlApi()) ADL_API::initialize(); }
 	catch (std::exception ex) { onMessage("", -1, "Error", ex.what()); }
@@ -155,8 +153,6 @@ openCLSolver::openCLSolver(std::string const maxDifficulty, std::string kingAddr
 openCLSolver::~openCLSolver() noexcept
 {
 	stopFinding();
-
-	free(m_solutionTemplate);
 }
 
 void openCLSolver::setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback)
@@ -319,8 +315,8 @@ void openCLSolver::updatePrefix(std::string const prefix)
 	std::memcpy(&m_prefix, &tempPrefix, PREFIX_LENGTH);
 	std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
 
-	getSolutionTemplate(m_solutionTemplate);
-	std::memcpy(&m_miningMessage[PREFIX_LENGTH], m_solutionTemplate, UINT256_LENGTH);
+	getSolutionTemplate(&m_solutionTemplate);
+	std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH);
 
 	state_t tempMidState{ getMidState(m_miningMessage) };
 
@@ -573,9 +569,9 @@ void openCLSolver::pauseFinding(bool pauseFinding)
 // Private
 // --------------------------------------------------------------------
 
-void openCLSolver::getSolutionTemplate(uint8_t *&solutionTemplate)
+void openCLSolver::getSolutionTemplate(byte32_t *solutionTemplate)
 {
-	m_getSolutionTemplateCallback(solutionTemplate);
+	m_getSolutionTemplateCallback(solutionTemplate->data());
 }
 
 void openCLSolver::getWorkPosition(uint64_t &workPosition)
@@ -675,12 +671,12 @@ void openCLSolver::submitSolutions(std::set<uint64_t> solutions, std::string cha
 		return device->platformName == platformName && device->deviceEnum == deviceEnum;
 	});
 
-	getSolutionTemplate(m_solutionTemplate);
+	getSolutionTemplate(&m_solutionTemplate);
 
 	for (uint64_t midStateSolution : solutions)
 	{
 		byte32_t solution{ 0 };
-		std::memcpy(&solution, m_solutionTemplate, UINT256_LENGTH);
+		std::memcpy(&solution, &m_solutionTemplate, UINT256_LENGTH);
 
 		if (s_kingAddress.empty())
 			std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
