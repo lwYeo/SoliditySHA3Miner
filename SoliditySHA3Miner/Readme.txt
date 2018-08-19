@@ -1,7 +1,7 @@
 ﻿SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
-Current latest public release version: 1.1.1.0
+Current latest public release version: 1.2.0.0
 
 Built with C#.NET 4.7.1, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL) (Windows 10 64-bits)
 .NET 4.7.1 can be downloaded from https://microsoft.com/en-us/download/details.aspx?id=56116

@@ -109,6 +109,9 @@
     <None Include="0xCATE.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="0xGOLD.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="0xLTC.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
