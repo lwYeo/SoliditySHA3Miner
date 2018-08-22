@@ -72,6 +72,25 @@ __constant static const uchar pi[24] =
 	20, 14, 22, 9, 6, 1
 };
 
+#if PLATFORM == OPENCL_PLATFORM_AMD
+
+static inline ulong rol(const ulong x, const uint s)
+{
+	uint2 x2 = as_uint2(x);
+	uint2 ouput;
+
+	ouput.s0 = (s < 32u) ? amd_bitalign(x2.s0, x2.s1, 32u - s) : amd_bitalign(x2.s1, x2.s0, 64u - s);
+	ouput.s1 = (s < 32u) ? amd_bitalign(x2.s1, x2.s0, 32u - s) : amd_bitalign(x2.s0, x2.s1, 64u - s);
+
+	return as_ulong(ouput);
+}
+
+#else
+
+#	define rol(x, s)								(((x) << s) | ((x) >> (64 - s)))
+
+#endif
+
 /*** Helper macros to unroll the permutation. ***/
 #define delim										0x01
 #define rate										SPONGE_LENGTH - (256 / 4)
@@ -80,22 +99,16 @@ __constant static const uchar pi[24] =
 #define REPEAT5(e)									e e e e e
 #define FOR5(v, s, e)								v = 0; REPEAT5(e; v += s;)
 
-#if PLATFORM == OPENCL_PLATFORM_AMD
-#	define rol(a, offset)							as_ulong(amd_bitalign(as_uint2(a).yx, as_uint2(a).xy, 64u - offset));
-#else
-#	define rol(x, s)								(((x) << s) | ((x) >> (64 - s)))
-#endif
-
 /*** Keccak-f[1600] ***/
 static inline void keccakf(void *state)
 {
 	ulong *a = (ulong *)state;
 	ulong b[5] = { 0, 0, 0, 0, 0 };
 	ulong t = 0;
-	uchar x, y;
+	uint x, y;
 
 #	pragma unroll 8
-	for (uchar i = 0; i < 24u; ++i)
+	for (uint i = 0; i < 24u; ++i)
 	{
 		// Theta
 		FOR5(x, 1,
@@ -159,9 +172,9 @@ mkapply_sd(setout, dst[i] = src[i])					// setout
 
 static inline void keccak256(uchar *digest, uchar const *message)
 {
-	ulong messageLength = MESSAGE_LENGTH;
-	ulong digestLength = UINT256_LENGTH;
 	uchar sponge[SPONGE_LENGTH];
+	uint messageLength = MESSAGE_LENGTH;
+	uint digestLength = UINT256_LENGTH;
 
 	for (uchar i = 0; i < SPONGE_LENGTH; ++i)
 		sponge[i] = 0;

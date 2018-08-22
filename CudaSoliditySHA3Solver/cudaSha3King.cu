@@ -126,8 +126,8 @@ mkapply_sd(setout, dst[i] = src[i])					// setout
 __device__ __forceinline__ static inline void keccak256(uint8_t *digest, uint8_t const *message)
 {
 	uint8_t sponge[SPONGE_LENGTH]{ 0 };
-	uint64_t messageLength{ MESSAGE_LENGTH };
-	uint64_t digestLength{ UINT256_LENGTH };
+	uint32_t messageLength{ MESSAGE_LENGTH };
+	uint32_t digestLength{ UINT256_LENGTH };
 
 	// Absorb input.
 	foldP(message, messageLength, xorin);
