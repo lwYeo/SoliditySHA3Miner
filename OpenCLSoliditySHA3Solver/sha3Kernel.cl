@@ -3,15 +3,15 @@
 #define OPENCL_PLATFORM_AMD		2
 
 #ifndef PLATFORM
-#define PLATFORM				OPENCL_PLATFORM_UNKNOWN
+#	define PLATFORM				OPENCL_PLATFORM_UNKNOWN
 #endif
 
 #if PLATFORM == OPENCL_PLATFORM_AMD
-#pragma OPENCL EXTENSION		cl_amd_media_ops : enable
+#	pragma OPENCL EXTENSION		cl_amd_media_ops : enable
 #endif
 
 #ifndef COMPUTE
-#define COMPUTE					0
+#	define COMPUTE				0
 #endif
 
 #define MAX_SOLUTION_COUNT		32u

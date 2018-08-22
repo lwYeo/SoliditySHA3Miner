@@ -123,7 +123,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 Task.Factory.StartNew(() =>
                 {
-                    Task.Delay(m_updateInterval / 3);
+                    Task.Delay(m_updateInterval / 2);
                     m_cacheParameters = null;
                 });
 

@@ -73,13 +73,18 @@ __constant static const uchar pi[24] =
 };
 
 /*** Helper macros to unroll the permutation. ***/
-#define delim							0x01
-#define rate							SPONGE_LENGTH - (256 / 4)
-#define rol(x, s)						(((x) << s) | ((x) >> (64 - s)))
-#define REPEAT6(e)						e e e e e e
-#define REPEAT24(e)						REPEAT6(e e e e)
-#define REPEAT5(e)						e e e e e
-#define FOR5(v, s, e)					v = 0; REPEAT5(e; v += s;)
+#define delim										0x01
+#define rate										SPONGE_LENGTH - (256 / 4)
+#define REPEAT6(e)									e e e e e e
+#define REPEAT24(e)									REPEAT6(e e e e)
+#define REPEAT5(e)									e e e e e
+#define FOR5(v, s, e)								v = 0; REPEAT5(e; v += s;)
+
+#if PLATFORM == OPENCL_PLATFORM_AMD
+#	define rol(a, offset)							as_ulong(amd_bitalign(as_uint2(a).yx, as_uint2(a).xy, 64u - offset));
+#else
+#	define rol(x, s)								(((x) << s) | ((x) >> (64 - s)))
+#endif
 
 /*** Keccak-f[1600] ***/
 static inline void keccakf(void *state)
