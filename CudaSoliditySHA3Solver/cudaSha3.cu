@@ -21,7 +21,7 @@ typedef union
 {
 	uint2		uint2;
 	uint64_t	uint64;
-	uint8_t		uint8[8];
+	uint8_t		uint8[UINT64_LENGTH];
 } nonce_t;
 
 __constant__ uint_fast8_t const MOD5[24] =

@@ -6,7 +6,7 @@ typedef union
 {
 	uint2		uint2;
 	uint64_t	uint64;
-	uint8_t		uint8[8];
+	uint8_t		uint8[UINT64_LENGTH];
 } nonce_t;
 
 __constant__ uint8_t d_message[MESSAGE_LENGTH];
@@ -55,7 +55,7 @@ __constant__ static const uint8_t pi[24] =
 /*** Keccak-f[1600] ***/
 __device__ __forceinline__ static inline void keccakf(void *state)
 {
-	uint64_t* a{ (uint64_t *)state };
+	uint64_t *a{ (uint64_t *)state };
 	uint64_t b[5]{ 0 };
 	uint64_t t{ 0 };
 	uint8_t x, y;
@@ -113,7 +113,7 @@ mkapply_ds(xorin, dst[i] ^= src[i])					// xorin
 
 mkapply_sd(setout, dst[i] = src[i])					// setout
 
-													// Fold keccakf * F over the full blocks of an input
+// Fold keccakf * F over the full blocks of an input
 #define foldP(I, L, F)																					\
 	while (L >= rate)																					\
 	{																									\
@@ -146,10 +146,9 @@ __device__ __forceinline__ static inline void keccak256(uint8_t *digest, uint8_t
 	foldP(digest, digestLength, setout);
 
 	setout(sponge, digest, digestLength);
-	memset(sponge, 0, SPONGE_LENGTH);
 }
 
-__device__ __forceinline__ bool islessThan(uint8_t *left, uint8_t *right)
+__device__ __forceinline__ static inline bool islessThan(uint8_t *left, uint8_t *right)
 {
 	for (uint32_t i{ 0 }; i < UINT256_LENGTH; ++i)
 	{
@@ -159,15 +158,14 @@ __device__ __forceinline__ bool islessThan(uint8_t *left, uint8_t *right)
 	return false;
 }
 
-__global__ void hashState(uint64_t *__restrict__ solutions, uint32_t *__restrict__ solutionCount, uint64_t const startPosition)
+__global__ void hashMessage(uint64_t *__restrict__ solutions, uint32_t *__restrict__ solutionCount, uint64_t const startPosition)
 {
-	nonce_t nonce;
-	nonce.uint64 = startPosition + (blockDim.x * blockIdx.x + threadIdx.x);
-
 	uint8_t digest[UINT256_LENGTH];
 	uint8_t message[MESSAGE_LENGTH];
 	memcpy(message, d_message, MESSAGE_LENGTH);
 
+	nonce_t nonce;
+	nonce.uint64 = startPosition + (blockDim.x * blockIdx.x + threadIdx.x);
 	memcpy(&message[NONCE_POSITION], &nonce, UINT64_LENGTH);
 
 	keccak256(digest, message);
@@ -218,7 +216,7 @@ void CUDASolver::findSolutionKing(int const deviceID)
 
 		checkInputs(device, c_currentChallenge);
 
-		hashState<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
+		hashMessage<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
 
 		CudaCheckError();
 

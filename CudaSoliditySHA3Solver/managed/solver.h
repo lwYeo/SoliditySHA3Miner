@@ -24,7 +24,7 @@ namespace CudaSolver
 		OnSolutionDelegate ^OnSolutionHandler;
 
 	private:
-		OnGetKingAddressDelegate ^ m_managedOnGetKingAddress;
+		OnGetKingAddressDelegate ^m_managedOnGetKingAddress;
 		OnGetSolutionTemplateDelegate ^m_managedOnGetSolutionTemplate;
 		OnGetWorkPositionDelegate ^m_managedOnGetWorkPosition;
 		OnResetWorkPositionDelegate ^m_managedOnResetWorkPosition;

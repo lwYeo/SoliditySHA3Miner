@@ -239,6 +239,9 @@ void CUDASolver::updatePrefix(std::string const prefix)
 
 	if (m_miningMessage.byteArray == newMessage.byteArray) return;
 
+	s_challenge = challengeStr;
+	s_address = addressStr;
+
 	m_miningMessage = newMessage;
 	sponge_ut midState{ getMidState(m_miningMessage) };
 
@@ -779,7 +782,7 @@ void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChall
 			if (m_isKingMaking)
 				pushTargetKing(device);
 			else
-			pushTarget(device);
+				pushTarget(device);
 		}
 
 		if (device->isNewMessage)
@@ -787,7 +790,8 @@ void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChall
 			if (m_isKingMaking)
 				pushMessageKing(device);
 			else
-			pushMessage(device);
+				pushMessage(device);
+
 			strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
 		}
 	}

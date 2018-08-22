@@ -35,7 +35,7 @@
 #define NONCE_POSITION						UINT256_LENGTH + ADDRESS_LENGTH + ADDRESS_LENGTH
 #define KING_STRIDE							8
 
-__constant__ uint64_t const Keccak_f1600_RC[24] =
+__constant__ static uint64_t const Keccak_f1600_RC[24] =
 {
 	0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
 	0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
@@ -74,7 +74,6 @@ private:
 	static bool m_isSubmitting;
 	static bool m_isKingMaking;
 
-	std::string s_kingAddress;
 	std::string s_address;
 	std::string s_challenge;
 	std::string s_target;
