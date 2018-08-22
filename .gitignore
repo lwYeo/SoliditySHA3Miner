@@ -145,3 +145,5 @@ x64/Release/CPUSoliditySHA3Solver.dll
 OpenCLSoliditySHA3Solver/x64/Debug/Resource.res
 CPUSoliditySHA3Solver/x64/Debug/Resource.res
 CPUSoliditySHA3Solver/x64/Release/Resource.res
+x64/Debug/0xGOLD.abi
+x64/Release/0xGOLD.abi

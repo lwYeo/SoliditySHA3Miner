@@ -97,6 +97,7 @@ public:
 	void pauseFinding(bool pauseFinding);
 
 private:
+	bool islessThan(byte32_t &left, byte32_t &right);
 	bool isAddressEmpty(address_t kingAddress);
 	void getKingAddress(address_t *kingAddress);
 	void getSolutionTemplate(byte32_t *solutionTemplate);

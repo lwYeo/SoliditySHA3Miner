@@ -232,9 +232,9 @@ uint64_t cpuSolver::getHashRateByThreadID(uint32_t const threadID)
 	else return 0ull;
 }
 
-bool islessThan(byte32_t const& left, byte32_t const& right)
+bool cpuSolver::islessThan(byte32_t &left, byte32_t &right)
 {
-	for (unsigned i{ 0 }; i < left.size(); ++i)
+	for (uint32_t i{ 0 }; i < UINT256_LENGTH; ++i)
 	{
 		if (left[i] < right[i]) return true;
 		else if (left[i] > right[i]) return false;
@@ -380,15 +380,15 @@ void cpuSolver::findSolution(uint32_t const threadID, uint32_t const affinityMas
 			getKingAddress(&m_kingAddress);
 			getSolutionTemplate(&currentSolution);
 
-			uint64_t hashValue;
-			incrementWorkPosition(hashValue, 1ull);
+			uint64_t nonce;
+			incrementWorkPosition(nonce, 1ull);
 			m_threadHashes[threadID]++;
 
 			if (isAddressEmpty(m_kingAddress))
-				std::memcpy(&currentSolution[12], &hashValue, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
+				std::memcpy(&currentSolution[12], &nonce, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
 			else
-				std::memcpy(&currentSolution[ADDRESS_LENGTH], &hashValue, UINT64_LENGTH); // Shifted for King address
-																						  // no need to memcpy m_kingAddress as m_solutionTemplate already contains King address as prefix
+				std::memcpy(&currentSolution[ADDRESS_LENGTH], &nonce, UINT64_LENGTH); // Shifted for King address
+			// no need to memcpy m_kingAddress as m_solutionTemplate already contains King address as prefix
 
 			message_t miningMessage; // challenge32 + address20 + solution32
 			std::memcpy(&miningMessage, &m_prefix, PREFIX_LENGTH); // challenge32 + address20
@@ -400,7 +400,7 @@ void cpuSolver::findSolution(uint32_t const threadID, uint32_t const affinityMas
 			if (islessThan(digest, b_target))
 				onSolution(currentSolution, digest, currentChallenge);
 
-			if (hashValue > INT64_MAX) resetWorkPosition(hashValue);
+			if (nonce > INT64_MAX) resetWorkPosition(nonce);
 
 			if (m_threadHashes[threadID] > INT32_MAX)
 			{
