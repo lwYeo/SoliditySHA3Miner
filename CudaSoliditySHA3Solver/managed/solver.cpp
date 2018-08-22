@@ -4,6 +4,12 @@ namespace CudaSolver
 {
 	Solver::Solver(System::String ^maxDifficulty) : ManagedObject(new CUDASolver(ToNativeString(maxDifficulty)))
 	{
+		m_managedOnGetKingAddress = gcnew OnGetKingAddressDelegate(this, &Solver::OnGetKingAddress);
+		System::IntPtr getKingAddressStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetKingAddress);
+		CUDASolver::GetKingAddressCallback getKingAddressFnPtr = static_cast<CUDASolver::GetKingAddressCallback>(getKingAddressStubPtr.ToPointer());
+		m_Instance->setGetKingAddressCallback(getKingAddressFnPtr);
+		System::GC::KeepAlive(m_managedOnGetKingAddress);
+
 		m_managedOnGetSolutionTemplate = gcnew OnGetSolutionTemplateDelegate(this, &Solver::OnGetSolutionTemplate);
 		System::IntPtr getSolutionTemplateStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetSolutionTemplate);
 		CUDASolver::GetSolutionTemplateCallback getSolutionTemplateFnPtr = static_cast<CUDASolver::GetSolutionTemplateCallback>(getSolutionTemplateStubPtr.ToPointer());
@@ -45,6 +51,11 @@ namespace CudaSolver
 	{
 		try { m_Instance->~CUDASolver(); }
 		catch(...) {}
+	}
+
+	void Solver::OnGetKingAddress(uint8_t *kingAddress)
+	{
+		OnGetKingAddressHandler(kingAddress);
 	}
 
 	bool Solver::foundNvAPI64()

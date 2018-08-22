@@ -48,7 +48,9 @@ public:
 	bool isNewTarget;
 	bool isNewMessage;
 
-	state_t currentMidState;
+	message_ut currentMessage;
+	sponge_ut currentMidstate;
+	byte32_t currentTarget;
 	uint64_t currentHigh64Target;
 
 private:

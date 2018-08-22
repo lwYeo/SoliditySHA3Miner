@@ -18,8 +18,7 @@
     <ClInclude Include="managed\managedObject.h" />
     <ClInclude Include="device\nv_apiEnum.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="sph\sph_keccak.h" />
-    <ClInclude Include="sph\sph_types.h" />
+    <ClInclude Include="sha3.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="uint256\arith_uint256.h" />
     <ClInclude Include="uint256\compat_byteswap.h" />
@@ -31,6 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cudaSha3.cu" />
+    <CudaCompile Include="cudaSha3King.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cudaErrorCheck.cu" />
@@ -38,7 +38,7 @@
     <ClCompile Include="device\device.cpp" />
     <ClCompile Include="device\nv_api.cpp" />
     <ClCompile Include="managed\solver.cpp" />
-    <ClCompile Include="sph\keccak.cpp" />
+    <ClCompile Include="sha3.cpp" />
     <ClCompile Include="uint256\arith_uint256.cpp" />
     <ClCompile Include="uint256\uint256.cpp" />
     <ClCompile Include="uint256\utilstrencodings.cpp" />

@@ -184,6 +184,7 @@ namespace SoliditySHA3Miner.Miner
                 {
                     Solver = new Solver(maxDifficulty.HexValue)
                     {
+                        OnGetKingAddressHandler = Work.GetKingAddress,
                         OnGetSolutionTemplateHandler = Work.GetSolutionTemplate,
                         OnGetWorkPositionHandler = Work.GetPosition,
                         OnResetWorkPositionHandler = Work.ResetPosition,

@@ -5,11 +5,9 @@
 #include <memory>
 #include <random>
 #include <set>
+#include "sha3.h"
 #include "device\device.h"
 #include "uint256/arith_uint256.h"
-
-#define SPH_KECCAK_64 1
-#include "sph\sph_keccak.h"
 
 #pragma managed(push, off)
 
@@ -23,15 +21,36 @@
 
 #pragma managed(pop)
 
+// --------------------------------------------------------------------
+// CUDA common constants
+// --------------------------------------------------------------------
+
 #ifdef __INTELLISENSE__
-// reduce vstudio warnings (__byteperm, blockIdx...)
-#include <device_functions.h>
-#include <device_launch_parameters.h>
+//	reduce vstudio warnings (__byteperm, blockIdx...)
+#	include <device_functions.h>
+#	include <device_launch_parameters.h>
 #endif //__INTELLISENSE__
+
+#define MAX_SOLUTION_COUNT_DEVICE			32
+#define NONCE_POSITION						UINT256_LENGTH + ADDRESS_LENGTH + ADDRESS_LENGTH
+#define KING_STRIDE							8
+
+__constant__ uint64_t const Keccak_f1600_RC[24] =
+{
+	0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
+	0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
+	0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
+	0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
+	0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
+	0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
+	0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
+	0x8000000000008080, 0x0000000080000001, 0x8000000080008008
+};
 
 class CUDASolver
 {
 public:
+	typedef void(*GetKingAddressCallback)(uint8_t *);
 	typedef void(*GetSolutionTemplateCallback)(uint8_t *);
 	typedef void(*GetWorkPositionCallback)(uint64_t &);
 	typedef void(*ResetWorkPositionCallback)(uint64_t &);
@@ -42,6 +61,7 @@ public:
 	bool isSubmitStale;
 
 private:
+	GetKingAddressCallback m_getKingAddressCallback;
 	GetSolutionTemplateCallback m_getSolutionTemplateCallback;
 	GetWorkPositionCallback m_getWorkPositionCallback;
 	ResetWorkPositionCallback m_resetWorkPositionCallback;
@@ -51,6 +71,8 @@ private:
 	std::vector<std::unique_ptr<Device>> m_devices;
 
 	static bool m_pause;
+	static bool m_isSubmitting;
+	static bool m_isKingMaking;
 
 	std::string s_kingAddress;
 	std::string s_address;
@@ -60,9 +82,9 @@ private:
 	std::string s_customDifficulty;
 	
 	address_t m_address;
+	address_t m_kingAddress;
 	byte32_t m_solutionTemplate;
-	prefix_t m_prefix; // challenge32 + address20
-	message_t m_miningMessage; // challenge32 + address20 + solution32
+	message_ut m_miningMessage;
 
 	arith_uint256 m_target;
 	arith_uint256 m_difficulty;
@@ -83,6 +105,7 @@ public:
 	CUDASolver(std::string const maxDifficulty) noexcept;
 	~CUDASolver() noexcept;
 
+	void setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback);
 	void setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback);
 	void setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback);
 	void setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback);
@@ -124,6 +147,8 @@ public:
 
 private:
 	void initializeDevice(std::unique_ptr<Device> &device);
+	bool isAddressEmpty(address_t &address);
+	void getKingAddress(address_t *kingAddress);
 	void getSolutionTemplate(byte32_t *solutionTemplate);
 	void getWorkPosition(uint64_t &workPosition);
 	void resetWorkPosition(uint64_t &lastPosition);
@@ -131,16 +156,17 @@ private:
 	void onMessage(int deviceID, const char *type, const char *message);
 	void onMessage(int deviceID, std::string type, std::string message);
 	
-	// for CPU verification
-	const std::string keccak256(std::string const message);
 	void onSolution(byte32_t const solution, std::string challenge, std::unique_ptr<Device> &device);
 
 	void findSolution(int const deviceID);
+	void findSolutionKing(int const deviceID);
 	void checkInputs(std::unique_ptr<Device> &device, char *currentChallenge);
 	void pushTarget(std::unique_ptr<Device> &device);
+	void pushTargetKing(std::unique_ptr<Device> &device);
 	void pushMessage(std::unique_ptr<Device> &device);
+	void pushMessageKing(std::unique_ptr<Device> &device);
 	void submitSolutions(std::set<uint64_t> solutions, std::string challenge, int const deviceID);
 
 	uint64_t getNextWorkPosition(std::unique_ptr<Device>& device);
-	state_t const getMidState(message_t &newMessage);
+	sponge_ut const getMidState(message_ut &newMessage);
 };

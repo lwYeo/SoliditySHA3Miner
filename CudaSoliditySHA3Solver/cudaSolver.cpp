@@ -1,3 +1,4 @@
+#include "cudaErrorCheck.cu"
 #include "cudasolver.h"
 #pragma unmanaged
 
@@ -9,6 +10,8 @@
 // --------------------------------------------------------------------
 
 bool CUDASolver::m_pause{ false };
+bool CUDASolver::m_isSubmitting{ false };
+bool CUDASolver::m_isKingMaking{ false };
 
 bool CUDASolver::foundNvAPI64()
 {
@@ -54,7 +57,7 @@ CUDASolver::CUDASolver(std::string const maxDifficulty) noexcept :
 	s_target{ "" },
 	s_difficulty{ "" },
 	m_address{ 0 },
-	m_prefix{ 0 },
+	m_kingAddress{ 0 },
 	m_miningMessage{ 0 },
 	m_target{ 0 },
 	m_difficulty{ 0 },
@@ -71,6 +74,11 @@ CUDASolver::~CUDASolver() noexcept
 	stopFinding();
 
 	NV_API::unload();
+}
+
+void CUDASolver::setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback)
+{
+	m_getKingAddressCallback = kingAddressCallback;
 }
 
 void CUDASolver::setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback)
@@ -107,6 +115,9 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 {
 	onMessage(deviceID, "Info", "Assigning device...");
 
+	getKingAddress(&m_kingAddress);
+	m_isKingMaking = (!isAddressEmpty(m_kingAddress));
+
 	struct cudaDeviceProp deviceProp;
 	cudaError_t response = cudaGetDeviceProperties(&deviceProp, deviceID);
 	if (response != cudaSuccess)
@@ -128,18 +139,42 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 	{
 		float defaultIntensity{ DEFALUT_INTENSITY };
 
-		if (deviceName.find("2080") != std::string::npos || deviceName.find("2070") != std::string::npos || deviceName.find("1080") != std::string::npos
-			|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
-			defaultIntensity = 29.01f;
+		if (m_isKingMaking)
+		{
+			if (deviceName.find("2080") != std::string::npos || deviceName.find("2070") != std::string::npos
+				|| deviceName.find("1080 TI") != std::string::npos || deviceName.find("1080TI") != std::string::npos
+				|| deviceName.find("1080") != std::string::npos)
+				defaultIntensity = 27.54f;
 
-		else if (deviceName.find("2060") != std::string::npos || deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
-			defaultIntensity = 28.0f;
+			else if (deviceName.find("2060") != std::string::npos
+				|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
+				defaultIntensity = 27.46f;
 
-		else if (deviceName.find("2050") != std::string::npos || deviceName.find("1060") != std::string::npos || deviceName.find("970") != std::string::npos)
-			defaultIntensity = 27.0f;
+			else if (deviceName.find("2050") != std::string::npos
+				|| deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
+				defaultIntensity = 27.01f;
 
-		else if (deviceName.find("1050") != std::string::npos || deviceName.find("960") != std::string::npos)
-			defaultIntensity = 26.0f;
+			else if (deviceName.find("1060") != std::string::npos || deviceName.find("970") != std::string::npos)
+				defaultIntensity = 26.01f;
+
+			else if (deviceName.find("1050") != std::string::npos || deviceName.find("960") != std::string::npos)
+				defaultIntensity = 25.01f;
+		}
+		else
+		{
+			if (deviceName.find("2080") != std::string::npos || deviceName.find("2070") != std::string::npos || deviceName.find("1080") != std::string::npos
+				|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
+				defaultIntensity = 29.01f;
+
+			else if (deviceName.find("2060") != std::string::npos || deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
+				defaultIntensity = 28.0f;
+
+			else if (deviceName.find("2050") != std::string::npos || deviceName.find("1060") != std::string::npos || deviceName.find("970") != std::string::npos)
+				defaultIntensity = 27.0f;
+
+			else if (deviceName.find("1050") != std::string::npos || deviceName.find("960") != std::string::npos)
+				defaultIntensity = 26.0f;
+		}
 
 		assignDevice->intensity = (intensity < 1.000f) ? defaultIntensity : intensity;
 	}
@@ -190,32 +225,29 @@ bool CUDASolver::isPaused()
 
 void CUDASolver::updatePrefix(std::string const prefix)
 {
-	assert(prefix.length() == (PREFIX_LENGTH * 2 + 2));
+	assert(prefix.length() == ((UINT256_LENGTH + ADDRESS_LENGTH) * 2 + 2));
 
-	prefix_t tempPrefix;
-	hexStringToBytes(prefix, tempPrefix);
-
-	if (tempPrefix == m_prefix) return;
-
-	s_challenge = prefix.substr(0, 2 + UINT256_LENGTH * 2);
-	s_address = "0x" + prefix.substr(2 + UINT256_LENGTH * 2, ADDRESS_LENGTH * 2);
-
-	byte32_t oldChallenge;
-	std::memcpy(&oldChallenge, &m_prefix, UINT256_LENGTH);
-	
-	std::memcpy(&m_prefix, &tempPrefix, PREFIX_LENGTH);
-	std::memcpy(&m_miningMessage, &m_prefix, PREFIX_LENGTH);
+	auto challengeStr = prefix.substr(0, 2 + UINT256_LENGTH * 2);
+	auto addressStr = "0x" + prefix.substr(2 + UINT256_LENGTH * 2, ADDRESS_LENGTH * 2);
 
 	getSolutionTemplate(&m_solutionTemplate);
-	std::memcpy(&m_miningMessage[PREFIX_LENGTH], &m_solutionTemplate, UINT256_LENGTH);
 
-	state_t tempMidState{ getMidState(m_miningMessage) };
+	message_ut newMessage;
+	hexStringToBytes(challengeStr, newMessage.structure.challenge);
+	hexStringToBytes(addressStr, newMessage.structure.address);
+	newMessage.structure.solution = m_solutionTemplate;
+
+	if (m_miningMessage.byteArray == newMessage.byteArray) return;
+
+	m_miningMessage = newMessage;
+	sponge_ut midState{ getMidState(m_miningMessage) };
 
 	for (auto& device : m_devices)
 	{
 		if (device->deviceID < 0) continue;
 
-		device->currentMidState = tempMidState;
+		device->currentMessage = newMessage;
+		device->currentMidstate = midState;
 		device->isNewMessage = true;
 	}
 
@@ -232,12 +264,16 @@ void CUDASolver::updateTarget(std::string const target)
 	s_target = (target.substr(0, 2) == "0x") ? target : "0x" + target;
 	m_target = tempTarget;
 
+	byte32_t bTarget;
+	hexStringToBytes(s_target, bTarget);
+
 	uint64_t tempHigh64Target{ std::stoull(s_target.substr(2).substr(0, UINT64_LENGTH * 2), nullptr, 16) };
 
 	for (auto& device : m_devices)
 	{
 		if (device->deviceID < 0) continue;
 
+		device->currentTarget = bTarget;
 		device->currentHigh64Target = tempHigh64Target;
 		device->isNewTarget = true;
 	}
@@ -279,7 +315,10 @@ void CUDASolver::startFinding()
 
 	for (auto& device : m_devices)
 	{
-		device->miningThread = std::thread(&CUDASolver::findSolution, this, device->deviceID);
+		if (m_isKingMaking)
+			device->miningThread = std::thread(&CUDASolver::findSolutionKing, this, device->deviceID);
+		else
+			device->miningThread = std::thread(&CUDASolver::findSolution, this, device->deviceID);
 		device->miningThread.detach();
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
@@ -475,6 +514,19 @@ std::string CUDASolver::getDeviceCurrentThrottleReasons(int deviceID)
 // Private
 // --------------------------------------------------------------------
 
+bool CUDASolver::isAddressEmpty(address_t &address)
+{
+	for (uint32_t i{ 0 }; i < ADDRESS_LENGTH; ++i)
+		if (address[i] > 0u) return false;
+
+	return true;
+}
+
+void CUDASolver::getKingAddress(address_t *kingAddress)
+{
+	m_getKingAddressCallback(kingAddress->data());
+}
+
 void CUDASolver::getSolutionTemplate(byte32_t *solutionTemplate)
 {
 	m_getSolutionTemplateCallback(solutionTemplate->data());
@@ -505,21 +557,6 @@ void CUDASolver::onMessage(int deviceID, std::string type, std::string message)
 	onMessage(deviceID, type.c_str(), message.c_str());
 }
 
-const std::string CUDASolver::keccak256(std::string const message)
-{
-	message_t data;
-	hexStringToBytes(message, data);
-
-	sph_keccak256_context ctx;
-	sph_keccak256_init(&ctx);
-	sph_keccak256(&ctx, data.data(), data.size());
-
-	byte32_t out;
-	sph_keccak256_close(&ctx, out.data());
-
-	return bytesToHexString(out);
-}
-
 void CUDASolver::onSolution(byte32_t const solution, std::string challenge, std::unique_ptr<Device> &device)
 {
 	if (!isSubmitStale && challenge != s_challenge)
@@ -528,9 +565,6 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge, std:
 		onMessage(device->deviceID, "Warn", "GPU found stale solution, verifying...");
 	else
 		onMessage(device->deviceID, "Info", "GPU found solution, verifying...");
-
-	prefix_t prefix;
-	std::memcpy(&prefix, &m_miningMessage, PREFIX_LENGTH);
 
 	byte32_t emptySolution;
 	std::memset(&emptySolution, 0u, UINT256_LENGTH);
@@ -543,11 +577,18 @@ void CUDASolver::onSolution(byte32_t const solution, std::string challenge, std:
 		return;
 	}
 
-	std::string prefixStr{ bytesToHexString(prefix) };
+	message_ut newMessage = m_miningMessage;
+	newMessage.structure.solution = solution;
+
+	std::string newMessageStr{ bytesToHexString(newMessage.byteArray) };
 	std::string solutionStr{ bytesToHexString(solution) };
 
-	std::string digestStr = keccak256(prefixStr + solutionStr);
+	byte32_t bDigest;
+	keccak_256(&bDigest[0], UINT256_LENGTH, &newMessage.byteArray[0], MESSAGE_LENGTH);
+
+	std::string digestStr = bytesToHexString(bDigest);
 	arith_uint256 digest = arith_uint256(digestStr);
+
 	onMessage(device->deviceID, "Debug", "Digest: 0x" + digestStr);
 
 	if (digest >= m_target)
@@ -579,6 +620,11 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string chall
 {
 	auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
 
+	while (m_isSubmitting)
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+	m_isSubmitting = true;
+
 	getSolutionTemplate(&m_solutionTemplate);
 
 	for (uint64_t midStateSolution : solutions)
@@ -586,13 +632,14 @@ void CUDASolver::submitSolutions(std::set<uint64_t> solutions, std::string chall
 		byte32_t solution{ 0 };
 		std::memcpy(&solution, &m_solutionTemplate, UINT256_LENGTH);
 
-		if (s_kingAddress.empty())
-			std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
-		else
+		if (m_isKingMaking)
 			std::memcpy(&solution[ADDRESS_LENGTH], &midStateSolution, UINT64_LENGTH); // Shifted for King address
+		else
+			std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
 
 		onSolution(solution, challenge, device);
 	}
+	m_isSubmitting = false;
 }
 
 uint64_t CUDASolver::getNextWorkPosition(std::unique_ptr<Device> &device)
@@ -604,12 +651,14 @@ uint64_t CUDASolver::getNextWorkPosition(std::unique_ptr<Device> &device)
 	return lastPosition;
 }
 
-state_t const CUDASolver::getMidState(message_t &newMessage)
+sponge_ut const CUDASolver::getMidState(message_ut &newMessage)
 {
+	sponge_ut midstate;
+	uint64_t C[5], D[5];
 	uint64_t message[11]{ 0 };
+
 	std::memcpy(&message, &newMessage, MESSAGE_LENGTH);
 
-	uint64_t C[5], D[5], mid[MIDSTATE_LENGTH];
 	C[0] = message[0] ^ message[5] ^ message[10] ^ 0x100000000ull;
 	C[1] = message[1] ^ message[6] ^ 0x8000000000000000ull;
 	C[2] = message[2] ^ message[7];
@@ -622,33 +671,124 @@ state_t const CUDASolver::getMidState(message_t &newMessage)
 	D[3] = ROTL64(C[4], 1) ^ C[2];
 	D[4] = ROTL64(C[0], 1) ^ C[3];
 
-	mid[0] = message[0] ^ D[0];
-	mid[1] = ROTL64(message[6] ^ D[1], 44);
-	mid[2] = ROTL64(D[2], 43);
-	mid[3] = ROTL64(D[3], 21);
-	mid[4] = ROTL64(D[4], 14);
-	mid[5] = ROTL64(message[3] ^ D[3], 28);
-	mid[6] = ROTL64(message[9] ^ D[4], 20);
-	mid[7] = ROTL64(message[10] ^ D[0] ^ 0x100000000ull, 3);
-	mid[8] = ROTL64(0x8000000000000000ull ^ D[1], 45);
-	mid[9] = ROTL64(D[2], 61);
-	mid[10] = ROTL64(message[1] ^ D[1], 1);
-	mid[11] = ROTL64(message[7] ^ D[2], 6);
-	mid[12] = ROTL64(D[3], 25);
-	mid[13] = ROTL64(D[4], 8);
-	mid[14] = ROTL64(D[0], 18);
-	mid[15] = ROTL64(message[4] ^ D[4], 27);
-	mid[16] = ROTL64(message[5] ^ D[0], 36);
-	mid[17] = ROTL64(D[1], 10);
-	mid[18] = ROTL64(D[2], 15);
-	mid[19] = ROTL64(D[3], 56);
-	mid[20] = ROTL64(message[2] ^ D[2], 62);
-	mid[21] = ROTL64(message[8] ^ D[3], 55);
-	mid[22] = ROTL64(D[4], 39);
-	mid[23] = ROTL64(D[0], 41);
-	mid[24] = ROTL64(D[1], 2);
+	midstate.uint64Array[0] = message[0] ^ D[0];
+	midstate.uint64Array[1] = ROTL64(message[6] ^ D[1], 44);
+	midstate.uint64Array[2] = ROTL64(D[2], 43);
+	midstate.uint64Array[3] = ROTL64(D[3], 21);
+	midstate.uint64Array[4] = ROTL64(D[4], 14);
+	midstate.uint64Array[5] = ROTL64(message[3] ^ D[3], 28);
+	midstate.uint64Array[6] = ROTL64(message[9] ^ D[4], 20);
+	midstate.uint64Array[7] = ROTL64(message[10] ^ D[0] ^ 0x100000000ull, 3);
+	midstate.uint64Array[8] = ROTL64(0x8000000000000000ull ^ D[1], 45);
+	midstate.uint64Array[9] = ROTL64(D[2], 61);
+	midstate.uint64Array[10] = ROTL64(message[1] ^ D[1], 1);
+	midstate.uint64Array[11] = ROTL64(message[7] ^ D[2], 6);
+	midstate.uint64Array[12] = ROTL64(D[3], 25);
+	midstate.uint64Array[13] = ROTL64(D[4], 8);
+	midstate.uint64Array[14] = ROTL64(D[0], 18);
+	midstate.uint64Array[15] = ROTL64(message[4] ^ D[4], 27);
+	midstate.uint64Array[16] = ROTL64(message[5] ^ D[0], 36);
+	midstate.uint64Array[17] = ROTL64(D[1], 10);
+	midstate.uint64Array[18] = ROTL64(D[2], 15);
+	midstate.uint64Array[19] = ROTL64(D[3], 56);
+	midstate.uint64Array[20] = ROTL64(message[2] ^ D[2], 62);
+	midstate.uint64Array[21] = ROTL64(message[8] ^ D[3], 55);
+	midstate.uint64Array[22] = ROTL64(D[4], 39);
+	midstate.uint64Array[23] = ROTL64(D[0], 41);
+	midstate.uint64Array[24] = ROTL64(D[1], 2);
 
-	state_t midState;
-	std::memcpy(&midState, &mid, STATE_LENGTH);
-	return midState;
+	return midstate;
+}
+
+void CUDASolver::initializeDevice(std::unique_ptr<Device> &device)
+{
+	auto deviceID = device->deviceID;
+
+	if (!device->initialized)
+	{
+		onMessage(deviceID, "Info", "Initializing device...");
+		CudaSafeCall(cudaSetDevice(deviceID));
+
+		device->h_Solutions = reinterpret_cast<uint64_t *>(malloc(MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH));
+		device->h_SolutionCount = reinterpret_cast<uint32_t *>(malloc(UINT32_LENGTH));
+		std::memset(device->h_Solutions, 0u, MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH);
+		std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
+
+		CudaSafeCall(cudaDeviceReset());
+		CudaSafeCall(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync | cudaDeviceMapHost));
+
+		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&device->h_SolutionCount), UINT32_LENGTH, cudaHostAllocMapped));
+		CudaSafeCall(cudaHostAlloc(reinterpret_cast<void **>(&device->h_Solutions), MAX_SOLUTION_COUNT_DEVICE * UINT64_LENGTH, cudaHostAllocMapped));
+
+		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&device->d_SolutionCount), reinterpret_cast<void *>(device->h_SolutionCount), 0));
+		CudaSafeCall(cudaHostGetDevicePointer(reinterpret_cast<void **>(&device->d_Solutions), reinterpret_cast<void *>(device->h_Solutions), 0));
+
+		device->initialized = true;
+
+		if (NV_API::foundNvAPI64())
+		{
+			std::string errorMessage;
+			int maxCoreClock, maxMemoryClock, powerLimit, thermalLimit, fanLevel;
+
+			if (device->getSettingMaxCoreClock(&maxCoreClock, &errorMessage))
+				onMessage(device->deviceID, "Info", "Max core clock setting: " + std::to_string(maxCoreClock) + "MHz.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get max core clock setting: " + errorMessage);
+
+			if (device->getSettingMaxMemoryClock(&maxMemoryClock, &errorMessage))
+				onMessage(device->deviceID, "Info", "Max memory clock setting: " + std::to_string(maxMemoryClock) + "MHz.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get max memory clock setting: " + errorMessage);
+
+			if (device->getSettingPowerLimit(&powerLimit, &errorMessage))
+				onMessage(device->deviceID, "Info", "Power limit setting: " + std::to_string(powerLimit) + "%.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get power limit setting: " + errorMessage);
+
+			if (device->getSettingThermalLimit(&thermalLimit, &errorMessage))
+				onMessage(device->deviceID, "Info", "Thermal limit setting: " + std::to_string(thermalLimit) + "C.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get thermal limit setting: " + errorMessage);
+
+			if (device->getSettingFanLevelPercent(&fanLevel, &errorMessage))
+				onMessage(device->deviceID, "Info", "Fan level setting: " + std::to_string(fanLevel) + "%.");
+			else
+				onMessage(device->deviceID, "Error", "Failed to get fan level setting: " + errorMessage);
+		}
+	}
+}
+
+void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChallenge)
+{
+	if (device->isNewMessage || device->isNewTarget)
+	{
+		for (auto& device : m_devices)
+		{
+			if (device->hashCount.load() > INT64_MAX)
+			{
+				device->hashCount.store(0ull);
+				device->hashStartTime.store(std::chrono::steady_clock::now());
+			}
+		}
+		uint64_t lastPosition;
+		resetWorkPosition(lastPosition);
+		m_solutionHashStartTime.store(std::chrono::steady_clock::now());
+
+		if (device->isNewTarget)
+		{
+			if (m_isKingMaking)
+				pushTargetKing(device);
+			else
+			pushTarget(device);
+		}
+
+		if (device->isNewMessage)
+		{
+			if (m_isKingMaking)
+				pushMessageKing(device);
+			else
+			pushMessage(device);
+			strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+		}
+	}
 }

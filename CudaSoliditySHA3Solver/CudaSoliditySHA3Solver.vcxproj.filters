@@ -15,15 +15,13 @@
       <Filter>managed</Filter>
     </ClCompile>
     <ClCompile Include="cudaErrorCheck.cu" />
-    <ClCompile Include="sph\keccak.cpp">
-      <Filter>sph</Filter>
-    </ClCompile>
     <ClCompile Include="device\device.cpp">
       <Filter>device</Filter>
     </ClCompile>
     <ClCompile Include="device\nv_api.cpp">
       <Filter>device</Filter>
     </ClCompile>
+    <ClCompile Include="sha3.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cudaSolver.h" />
@@ -53,12 +51,6 @@
       <Filter>managed</Filter>
     </ClInclude>
     <ClInclude Include="resource.h" />
-    <ClInclude Include="sph\sph_keccak.h">
-      <Filter>sph</Filter>
-    </ClInclude>
-    <ClInclude Include="sph\sph_types.h">
-      <Filter>sph</Filter>
-    </ClInclude>
     <ClInclude Include="device\device.h">
       <Filter>device</Filter>
     </ClInclude>
@@ -71,6 +63,7 @@
     <ClInclude Include="device\nv_apiEnum.h">
       <Filter>device</Filter>
     </ClInclude>
+    <ClInclude Include="sha3.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="uint256">
@@ -79,15 +72,13 @@
     <Filter Include="managed">
       <UniqueIdentifier>{9d7ddaf4-43cd-4e1b-a47d-544a502c4931}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sph">
-      <UniqueIdentifier>{1cf4fdd3-4db2-4be5-988c-7d6766f8918b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="device">
       <UniqueIdentifier>{96171b9a-3e05-4dcb-8583-ab73ddcc0e8d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cudaSha3.cu" />
+    <CudaCompile Include="cudaSha3King.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />
