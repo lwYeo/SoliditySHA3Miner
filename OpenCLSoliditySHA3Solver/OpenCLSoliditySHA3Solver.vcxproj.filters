@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="sph\keccak.cpp">
-      <Filter>sph</Filter>
-    </ClCompile>
     <ClCompile Include="uint256\arith_uint256.cpp">
       <Filter>uint256</Filter>
     </ClCompile>
@@ -23,14 +20,9 @@
     <ClCompile Include="device\adl_api.cpp">
       <Filter>device</Filter>
     </ClCompile>
+    <ClCompile Include="sha3.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="sph\sph_keccak.h">
-      <Filter>sph</Filter>
-    </ClInclude>
-    <ClInclude Include="sph\sph_types.h">
-      <Filter>sph</Filter>
-    </ClInclude>
     <ClInclude Include="uint256\arith_uint256.h">
       <Filter>uint256</Filter>
     </ClInclude>
@@ -76,11 +68,9 @@
     <ClInclude Include="device\adl_api.h">
       <Filter>device</Filter>
     </ClInclude>
+    <ClInclude Include="sha3.h" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="sph">
-      <UniqueIdentifier>{df1f8e1e-64e3-4ca7-9449-65f0d8fcdd70}</UniqueIdentifier>
-    </Filter>
     <Filter Include="uint256">
       <UniqueIdentifier>{9e554012-3d3d-4ac3-bf66-c67ac50e4870}</UniqueIdentifier>
     </Filter>
@@ -96,6 +86,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="sha3Kernel.cl" />
+    <None Include="sha3kingKernel.cl" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />

@@ -3,18 +3,16 @@
 #define ROTL64(x, y) (((x) << (y)) ^ ((x) >> (64 - (y))))
 #define ROTR64(x, y) (((x) >> (y)) ^ ((x) << (64 - (y))))
 
-#define MAX_WORK_POSITION_STORE 4
+#define MAX_WORK_POSITION_STORE 2
 
 #include <algorithm>
 #include <chrono>
 #include <memory>
 #include <random>
 #include <set>
+#include "sha3.h"
 #include "device/device.h"
 #include "uint256/arith_uint256.h"
-
-#define SPH_KECCAK_64 1
-#include "sph/sph_keccak.h"
 
 #pragma managed(push, off)
 
@@ -45,6 +43,7 @@
 class openCLSolver
 {
 public:
+	typedef void(*GetKingAddressCallback)(uint8_t *);
 	typedef void(*GetSolutionTemplateCallback)(uint8_t *);
 	typedef void(*GetWorkPositionCallback)(uint64_t &);
 	typedef void(*ResetWorkPositionCallback)(uint64_t &);
@@ -64,6 +63,7 @@ public:
 private:
 	static std::vector<Platform> platforms;
 
+	GetKingAddressCallback m_getKingAddressCallback;
 	GetSolutionTemplateCallback m_getSolutionTemplateCallback;
 	GetWorkPositionCallback m_getWorkPositionCallback;
 	ResetWorkPositionCallback m_resetWorkPositionCallback;
@@ -73,8 +73,9 @@ private:
 	std::vector<std::unique_ptr<Device>> m_devices;
 
 	static bool m_pause;
+	static bool m_isSubmitting;
+	static bool m_isKingMaking;
 
-	std::string s_kingAddress;
 	std::string s_address;
 	std::string s_challenge;
 	std::string s_target;
@@ -82,9 +83,9 @@ private:
 	std::string s_customDifficulty;
 
 	address_t m_address;
+	address_t m_kingAddress;
 	byte32_t m_solutionTemplate;
-	prefix_t m_prefix; // challenge32 + address20
-	message_t m_miningMessage; // challenge32 + address20 + solution32
+	message_ut m_miningMessage; // challenge32 + address20 + solution32
 
 	arith_uint256 m_target;
 	arith_uint256 m_difficulty;
@@ -99,6 +100,7 @@ public:
 	openCLSolver(std::string const maxDifficulty) noexcept;
 	~openCLSolver() noexcept;
 
+	void setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback);
 	void setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback);
 	void setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback);
 	void setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback);
@@ -139,6 +141,8 @@ public:
 	void pauseFinding(bool pauseFinding);
 
 private:
+	bool isAddressEmpty(address_t &address);
+	void getKingAddress(address_t *kingAddress);
 	void getSolutionTemplate(byte32_t *solutionTemplate);
 	void getWorkPosition(uint64_t &workPosition);
 	void resetWorkPosition(uint64_t &lastPosition);
@@ -146,14 +150,14 @@ private:
 	void onMessage(std::string platformName, int deviceEnum, std::string type, std::string message);
 	void onSolution(byte32_t const solution, std::string challenge, std::unique_ptr<Device> &device);
 
-	const std::string keccak256(std::string const message); // for CPU verification
-
 	void findSolution(std::string platformName, int const deviceEnum);
 	void checkInputs(std::unique_ptr<Device> &device, char *currentChallenge);
 	void pushTarget(std::unique_ptr<Device> &device);
+	void pushTargetKing(std::unique_ptr<Device> &device);
 	void pushMessage(std::unique_ptr<Device> &device);
+	void pushMessageKing(std::unique_ptr<Device> &device);
 	void submitSolutions(std::set<uint64_t> solutions, std::string challenge, std::string platformName, int const deviceEnum);
 
 	uint64_t const getNextWorkPosition(std::unique_ptr<Device> &device);
-	state_t const getMidState(message_t &newMessage);
+	sponge_ut const getMidState(message_ut &newMessage);
 };

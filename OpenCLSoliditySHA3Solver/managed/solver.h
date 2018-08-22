@@ -7,6 +7,7 @@ namespace OpenCLSolver
 	public ref class Solver : public ManagedObject<openCLSolver>
 	{
 	public:
+		delegate void OnGetKingAddressDelegate(uint8_t *);
 		delegate void OnGetSolutionTemplateDelegate(uint8_t *);
 		delegate void OnGetWorkPositionDelegate(unsigned __int64 %);
 		delegate void OnResetWorkPositionDelegate(unsigned __int64 %);
@@ -14,6 +15,7 @@ namespace OpenCLSolver
 		delegate void OnMessageDelegate(System::String ^, int, System::String ^, System::String ^);
 		delegate void OnSolutionDelegate(System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, bool);
 
+		OnGetKingAddressDelegate ^OnGetKingAddressHandler;
 		OnGetSolutionTemplateDelegate ^OnGetSolutionTemplateHandler;
 		OnGetWorkPositionDelegate ^OnGetWorkPositionHandler;
 		OnResetWorkPositionDelegate ^OnResetWorkPositionHandler;
@@ -22,7 +24,8 @@ namespace OpenCLSolver
 		OnSolutionDelegate ^OnSolutionHandler;
 
 	private:
-		OnGetSolutionTemplateDelegate ^ m_managedOnGetSolutionTemplate;
+		OnGetKingAddressDelegate ^m_managedOnGetKingAddress;
+		OnGetSolutionTemplateDelegate ^m_managedOnGetSolutionTemplate;
 		OnGetWorkPositionDelegate ^m_managedOnGetWorkPosition;
 		OnResetWorkPositionDelegate ^m_managedOnResetWorkPosition;
 		OnIncrementWorkPositionDelegate ^m_managedOnIncrementWorkPosition;
@@ -80,6 +83,7 @@ namespace OpenCLSolver
 		int getDeviceCurrentUtilizationPercent(System::String ^platformName, int const deviceID);
 
 	private:
+		void OnGetKingAddress(uint8_t *kingAddress);
 		void OnGetSolutionTemplate(uint8_t *solutionTemplate);
 		void OnGetWorkPosition(unsigned __int64 %workPosition);
 		void OnResetWorkPosition(unsigned __int64 %lastPosition);

@@ -13,7 +13,7 @@ SoliditySHA3Miner is licensed under the MIT license.
 Include CUDA kernel from Mikers, Azlehria and LtTofu (Mag517)
 Libraries are included in the Software under the following license terms:
 - Satoshi Nakamoto and The Bitcoin Core developers (uint256) https://github.com/bitcoin/bitcoin/blob/master/COPYING
-- Projet RNRT SAPHIR (sphlib) http://www.saphir2.com/sphlib/
+- libkeccak-tiny https://github.com/coruus/keccak-tiny
 - Nethereum https://github.com/Nethereum/Nethereum/blob/master/LICENSE.md
 - Json.NET https://github.com/JamesNK/Newtonsoft.Json/blob/master/LICENSE.md
 - Common Infrastructure Libraries for .NET http://netcommon.sourceforge.net/license.html
@@ -35,7 +35,7 @@ Options:
   intelIntensity          GPU (Intel OpenCL) intensity (default: 20.5, decimals allowed)
   listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)
   amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
-  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.223, decimals allowed)
+  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.5, decimals allowed)
   listCudaDevices         List of all CUDA devices in this system (device ID: GPU name)
   cudaDevice              Comma separated list of CUDA devices to use (default: all devices)
   cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)

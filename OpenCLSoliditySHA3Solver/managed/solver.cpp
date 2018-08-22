@@ -4,6 +4,12 @@ namespace OpenCLSolver
 {
 	Solver::Solver(System::String ^maxDifficulty) : ManagedObject(new openCLSolver(ToNativeString(maxDifficulty)))
 	{
+		m_managedOnGetKingAddress = gcnew OnGetKingAddressDelegate(this, &Solver::OnGetKingAddress);
+		System::IntPtr getKingAddressStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetKingAddress);
+		openCLSolver::GetKingAddressCallback getKingAddressFnPtr = static_cast<openCLSolver::GetKingAddressCallback>(getKingAddressStubPtr.ToPointer());
+		m_Instance->setGetKingAddressCallback(getKingAddressFnPtr);
+		System::GC::KeepAlive(m_managedOnGetKingAddress);
+
 		m_managedOnGetSolutionTemplate = gcnew OnGetSolutionTemplateDelegate(this, &Solver::OnGetSolutionTemplate);
 		System::IntPtr getSolutionTemplateStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetSolutionTemplate);
 		openCLSolver::GetSolutionTemplateCallback getSolutionTemplateFnPtr = static_cast<openCLSolver::GetSolutionTemplateCallback>(getSolutionTemplateStubPtr.ToPointer());
@@ -45,6 +51,11 @@ namespace OpenCLSolver
 	{
 		try { m_Instance->~openCLSolver(); }
 		catch(...) {}
+	}
+
+	void Solver::OnGetKingAddress(uint8_t *kingAddress)
+	{
+		OnGetKingAddressHandler(kingAddress);
 	}
 
 	void Solver::preInitialize(bool allowIntel, System::String ^%errorMessage)

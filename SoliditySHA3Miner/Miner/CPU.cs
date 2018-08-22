@@ -171,7 +171,7 @@ namespace SoliditySHA3Miner.Miner
 
                 if (string.IsNullOrWhiteSpace(devicesStr))
                 {
-                    Program.Print("[WARN] No CPU assigned.");
+                    Program.Print("[INFO] No CPU assigned.");
                     return;
                 }
             }

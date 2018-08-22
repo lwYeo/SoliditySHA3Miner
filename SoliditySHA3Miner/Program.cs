@@ -111,8 +111,6 @@ namespace SoliditySHA3Miner
                 message = message.Replace("Accelerated Parallel Processing", "APP").Replace("\n", Environment.NewLine);
                 if (!excludePrefix) message = string.Format("[{0}] {1}", GetCurrentTimestamp(), message);
 
-                Console.WriteLine(message);
-
                 if (IsLogFile)
                 {
                     var logFilePath = Path.Combine(AppDirPath, "Log", LogFileFormat);
@@ -135,6 +133,8 @@ namespace SoliditySHA3Miner
                         }
                     }
                 }
+
+                Console.WriteLine(message);
 
                 if (message.Contains("Mining stopped")) m_manualResetEvent.Set();
             });
@@ -520,6 +520,11 @@ namespace SoliditySHA3Miner
                 }
             }
             
+            if (string.IsNullOrEmpty(kingAddress))
+                Print("[INFO] King making disabled.");
+            else
+                Print("[INFO] King making enabled, address: " + kingAddress);
+
             if (string.IsNullOrWhiteSpace(minerAddress) && string.IsNullOrWhiteSpace(privateKey))
             {
                 Print("[INFO] Miner address not specified, donating 100% to dev.");
@@ -560,13 +565,6 @@ namespace SoliditySHA3Miner
             }
             else
             {
-                if (!string.IsNullOrEmpty(kingAddress))
-                {
-                    Print("[Error] King mining is only supported for CPU mining in this release. Exiting application...");
-                    m_manualResetEvent.Set();
-                    Environment.Exit(1);
-                }
-
                 if (allowCUDA && (cudaDevices == null || !cudaDevices.Any()) && args.All(a => !a.StartsWith("cudaDevice")))
                 {
                     Print("[INFO] CUDA device not specified, default assign all CUDA devices.");

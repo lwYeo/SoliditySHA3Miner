@@ -10,10 +10,6 @@
 #pragma OPENCL EXTENSION		cl_amd_media_ops : enable
 #endif
 
-#if PLATFORM != OPENCL_PLATFORM_UNKNOWN
-//#pragma OPENCL EXTENSION		cl_khr_int64_base_atomics : enable
-#endif
-
 #ifndef COMPUTE
 #define COMPUTE					0
 #endif
@@ -21,13 +17,13 @@
 #define MAX_SOLUTION_COUNT		32u
 #define STATE_LENGTH			200u
 
-typedef union
+typedef union _nonce_t
 {
 	uint2		uint2_s;
 	ulong		ulong_s;
 } nonce_t;
 
-typedef union
+typedef union _state_t
 {
 	uint2		uint2_s[STATE_LENGTH / sizeof(uint2)];
 	ulong		ulong_s[STATE_LENGTH / sizeof(ulong)];
@@ -207,7 +203,7 @@ static void keccak_skip_first_round(uint2* state)
 	uint2 C[5], D[5];
 
 #	pragma unroll 8
-	for (uint i = 1u; i < 24u; ++i)
+	for (uchar i = 1u; i < 24u; ++i)
 	{
 		C[0] = state[0] ^ state[5] ^ state[10] ^ state[15] ^ state[20];
 		C[1] = state[1] ^ state[6] ^ state[11] ^ state[16] ^ state[21];

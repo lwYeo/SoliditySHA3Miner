@@ -5,8 +5,10 @@
 // --------------------------------------------------------------------
 
 std::vector<std::unique_ptr<Device>> Device::devices;
-const char *Device::kernelSource;;
+const char *Device::kernelSource;
+const char *Device::kernelSourceKing;
 size_t Device::kernelSourceSize;
+size_t Device::kernelSourceKingSize;
 
 template<typename T>
 const char* Device::getOpenCLErrorCodeStr(T &input)
@@ -163,6 +165,33 @@ bool Device::preInitialize(std::string& errorMessage)
 
 	kernelSource = (const char *)str;
 	kernelSourceSize = fileSize;
+
+	std::fstream kingf(KING_KERNEL_FILE, (std::fstream::in | std::fstream::binary));
+
+	if (!kingf.is_open())
+	{
+		errorMessage = "Failed to open " + std::string{ KING_KERNEL_FILE };
+		return false;
+	}
+
+	kingf.seekg(0, std::fstream::end);
+	fileSize = (size_t)kingf.tellg();
+	kingf.seekg(0, std::fstream::beg);
+
+	str = new char[fileSize + 1];
+	if (!str)
+	{
+		kingf.close();
+		errorMessage = std::string{ KING_KERNEL_FILE } +" is empty.";
+		return false;
+	}
+
+	kingf.read(str, fileSize);
+	kingf.close();
+	str[fileSize] = '\0';
+
+	kernelSourceKing = (const char *)str;
+	kernelSourceKingSize = fileSize;
 
 	return true;
 }
@@ -347,15 +376,27 @@ uint64_t Device::hashRate()
 	return (uint64_t)((long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime.load()).count()));
 }
 
-bool Device::setKernelArgs(std::string& errorMessage)
+bool Device::setKernelArgs(std::string& errorMessage, bool const isKingMaking)
 {
 	errorMessage = "";
 
-	status = clSetKernelArg(kernel, 0u, sizeof(cl_mem), &midstateBuffer);
-	if (status != CL_SUCCESS)
+	if (isKingMaking)
 	{
-		errorMessage = std::string{ "Error setting midsate buffer to kernel (" } + Device::getOpenCLErrorCodeStr(status) + ")...";
-		return false;
+		status = clSetKernelArg(kernel, 0u, sizeof(cl_mem), &messageBuffer);
+		if (status != CL_SUCCESS)
+		{
+			errorMessage = std::string{ "Error setting message buffer to kernel (" } + Device::getOpenCLErrorCodeStr(status) + ")...";
+			return false;
+		}
+	}
+	else
+	{
+		status = clSetKernelArg(kernel, 0u, sizeof(cl_mem), &midstateBuffer);
+		if (status != CL_SUCCESS)
+		{
+			errorMessage = std::string{ "Error setting midsate buffer to kernel (" } + Device::getOpenCLErrorCodeStr(status) + ")...";
+			return false;
+		}
 	}
 
 	status = clSetKernelArg(kernel, 1u, sizeof(cl_mem), &targetBuffer);
@@ -382,7 +423,7 @@ bool Device::setKernelArgs(std::string& errorMessage)
 	return true;
 }
 
-void Device::initialize(std::string& errorMessage)
+void Device::initialize(std::string& errorMessage, bool const isKingMaking)
 {
 	errorMessage = "";
 	cl_context_properties contextProp[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)platformID, NULL };
@@ -421,21 +462,47 @@ void Device::initialize(std::string& errorMessage)
 		return;
 	}
 
-	midstateBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, STATE_LENGTH, NULL, &status);
-	if (status != CL_SUCCESS)
-	{
-		errorMessage = std::string{ "Failed to allocate midstate buffer (" } + getOpenCLErrorCodeStr(status) + ')';
-		return;
-	}
+	std::string newSource;
+	std::string kernelEntryName;
 
-	targetBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, UINT64_LENGTH, NULL, &status);
-	if (status != CL_SUCCESS)
+	if (isKingMaking)
 	{
-		errorMessage = std::string{ "Failed to allocate target buffer (" } + getOpenCLErrorCodeStr(status) + ')';
-		return;
-	}
+		newSource = kernelSourceKing;
+		kernelEntryName = "hashMessage";
 
-	std::string newSource{ kernelSource };
+		messageBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, MESSAGE_LENGTH, NULL, &status);
+		if (status != CL_SUCCESS)
+		{
+			errorMessage = std::string{ "Failed to allocate message buffer (" } + Device::getOpenCLErrorCodeStr(status) + ')';
+			return;
+		}
+
+		targetBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, UINT256_LENGTH, NULL, &status);
+		if (status != CL_SUCCESS)
+		{
+			errorMessage = std::string{ "Failed to allocate target buffer (" } + Device::getOpenCLErrorCodeStr(status) + ')';
+			return;
+		}
+	}
+	else
+	{
+		newSource = kernelSource;
+		kernelEntryName = "hashMidstate";
+
+		midstateBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, SPONGE_LENGTH, NULL, &status);
+		if (status != CL_SUCCESS)
+		{
+			errorMessage = std::string{ "Failed to allocate midstate buffer (" } + Device::getOpenCLErrorCodeStr(status) + ')';
+			return;
+		}
+
+		targetBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, UINT64_LENGTH, NULL, &status);
+		if (status != CL_SUCCESS)
+		{
+			errorMessage = std::string{ "Failed to allocate target buffer (" } + Device::getOpenCLErrorCodeStr(status) + ')';
+			return;
+		}
+	}
 
 	if (isAPP())
 	{
@@ -470,14 +537,14 @@ void Device::initialize(std::string& errorMessage)
 		return;
 	}
 
-	kernel = clCreateKernel(program, "hashMidstate", &status);
+	kernel = clCreateKernel(program, kernelEntryName.c_str(), &status);
 	if (status != CL_SUCCESS)
 	{
 		errorMessage = std::string{ "Failed to create kernel from program (" } + getOpenCLErrorCodeStr(status) + ')';
 		return;
 	}
 
-	if (!setKernelArgs(errorMessage)) return;;
+	if (!setKernelArgs(errorMessage, isKingMaking)) return;;
 
 	initialized = true;
 }

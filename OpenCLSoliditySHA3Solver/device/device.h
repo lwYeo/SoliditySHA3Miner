@@ -1,10 +1,11 @@
 #pragma once
 
-#define DEFAULT_INTENSITY 24.223f
+#define DEFAULT_INTENSITY 24.5f
 #define DEFAULT_LOCAL_WORK_SIZE 128u
 #define MAX_SOLUTION_COUNT_DEVICE 32u
 
 #define KERNEL_FILE "sha3Kernel.cl"
+#define KING_KERNEL_FILE "sha3kingKernel.cl"
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 
@@ -47,7 +48,9 @@ class Device
 public:
 	static std::vector<std::unique_ptr<Device>> devices;
 	static const char *kernelSource;
+	static const char *kernelSourceKing;
 	static size_t kernelSourceSize;
+	static size_t kernelSourceKingSize;
 
 	template<typename T>
 	static const char* getOpenCLErrorCodeStr(T &input);
@@ -79,7 +82,9 @@ public:
 	bool isNewTarget;
 	bool isNewMessage;
 
-	state_t currentMidState;
+	message_ut currentMessage;
+	sponge_ut currentMidstate;
+	byte32_t currentTarget;
 	uint64_t currentHigh64Target[1];
 
 	std::vector<size_t> maxWorkItemSizes;
@@ -94,6 +99,7 @@ public:
 	uint32_t *h_solutionCount;
 	uint64_t *h_solutions;
 
+	cl_mem messageBuffer;
 	cl_mem solutionCountBuffer;
 	cl_mem solutionsBuffer;
 	cl_mem midstateBuffer;
@@ -135,9 +141,9 @@ public:
 
 	uint64_t hashRate();
 
-	void initialize(std::string& errorMessage);
+	void initialize(std::string& errorMessage, bool const isKingMaking);
 	void setIntensity(float const intensity);
 
 private:
-	bool setKernelArgs(std::string& errorMessage);
+	bool setKernelArgs(std::string& errorMessage, bool const isKingMaking);
 };
