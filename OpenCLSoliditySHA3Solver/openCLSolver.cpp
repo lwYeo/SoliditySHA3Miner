@@ -226,6 +226,9 @@ bool openCLSolver::isPaused()
 
 bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float const intensity)
 {
+	getKingAddress(&m_kingAddress);
+	m_isKingMaking = (!isAddressEmpty(m_kingAddress));
+
 	cl_int status{ CL_SUCCESS };
 
 	for (auto& platform : platforms)
@@ -253,7 +256,7 @@ bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float 
 			onMessage(platformName.c_str(), deviceEnum, "Info", "Assigning OpenCL device...");
 			try
 			{
-				m_devices.emplace_back(new Device(deviceEnum, deviceIDs[deviceEnum], CL_DEVICE_TYPE_GPU, platform.id, intensity, 0));
+				m_devices.emplace_back(new Device(deviceEnum, deviceIDs[deviceEnum], CL_DEVICE_TYPE_GPU, platform.id, m_isKingMaking, intensity, 0));
 
 				auto &assignDevice = m_devices.back();
 
@@ -540,9 +543,6 @@ int openCLSolver::getDeviceCurrentUtilizationPercent(std::string platformName, i
 
 void openCLSolver::startFinding()
 {
-	getKingAddress(&m_kingAddress);
-	m_isKingMaking = (!isAddressEmpty(m_kingAddress));
-
 	uint64_t lastPosition;
 	resetWorkPosition(lastPosition);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());

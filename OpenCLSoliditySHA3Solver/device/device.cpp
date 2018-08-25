@@ -200,7 +200,8 @@ bool Device::preInitialize(std::string& errorMessage)
 // Public
 // --------------------------------------------------------------------
 
-Device::Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platform_id devPlatformID, float const userDefIntensity, uint32_t userLocalWorkSize) :
+Device::Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platform_id devPlatformID, bool isKingMaking,
+	float const userDefIntensity, uint32_t userLocalWorkSize) :
 	status{ CL_SUCCESS },
 	computeCapability{ 0 },
 	deviceEnum{ devEnum },
@@ -291,7 +292,7 @@ Device::Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platf
 
 	else localWorkSize = DEFAULT_LOCAL_WORK_SIZE;
 
-	setIntensity(userDefinedIntensity);
+	setIntensity(userDefinedIntensity, isKingMaking);
 }
 
 bool Device::isAPP()
@@ -549,10 +550,10 @@ void Device::initialize(std::string& errorMessage, bool const isKingMaking)
 	initialized = true;
 }
 
-void Device::setIntensity(float const intensity)
+void Device::setIntensity(float const intensity, bool isKingMaking)
 {
 	if (isINTEL()) userDefinedIntensity = (intensity > 1.0f) ? intensity : 20.5f; // iGPU
-	else userDefinedIntensity = (intensity > 1.0f) ? intensity : DEFAULT_INTENSITY;
+	else userDefinedIntensity = (intensity > 1.0f) ? intensity : (isKingMaking ? DEFAULT_INTENSITY_KING : DEFAULT_INTENSITY);
 
 	auto userTotalWorkSize = (uint32_t)std::pow(2, userDefinedIntensity);
 	globalWorkSize = (uint32_t)(userTotalWorkSize / localWorkSize) * localWorkSize; // in multiples of localWorkSize

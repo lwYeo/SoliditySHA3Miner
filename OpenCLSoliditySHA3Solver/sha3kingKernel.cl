@@ -43,6 +43,36 @@ typedef union _nonce_t
 
 /******** The Keccak-f[1600] permutation ********/
 
+static inline ulong rol(const ulong x, const uint s)
+{
+#if PLATFORM == OPENCL_PLATFORM_AMD
+
+	uint2 output;
+	uint2 x2 = as_uint2(x);
+
+	output = (s > 32u) ? amd_bitalign((x2).yx, (x2).xy, 64u - s) : amd_bitalign((x2).xy, (x2).yx, 32u - s);
+	return as_ulong(output);
+
+
+#elif PLATFORM == OPENCL_PLATFORM_NVIDIA && COMPUTE >= 35
+
+	uint2 output;
+	uint2 x2 = as_uint2(x);
+
+	asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(output.x) : "r"(x2.x), "r"(x2.y), "r"(s));
+	asm("shf.l.wrap.b32 %0, %1, %2, %3;" : "=r"(output.y) : "r"(x2.y), "r"(x2.x), "r"(s));
+	return as_ulong(output);
+
+#else
+
+	return (((x) << s) | ((x) >> (64u - s)));
+
+#endif
+}
+
+#define delim										0x01
+#define rate										SPONGE_LENGTH - (256 / 4)
+
 /*** Constants. ***/
 __constant static ulong const Keccak_f1600_RC[24] =
 {
@@ -72,103 +102,231 @@ __constant static const uchar pi[24] =
 	20, 14, 22, 9, 6, 1
 };
 
-#if PLATFORM == OPENCL_PLATFORM_AMD
-
-static inline ulong rol(const ulong x, const uint s)
+__constant static const uchar mod5[24] =
 {
-	uint2 x2 = as_uint2(x);
-	uint2 ouput;
+	0u, 1u, 2u, 3u, 4u,
+	0u, 1u, 2u, 3u, 4u,
+	0u, 1u, 2u, 3u, 4u,
+	0u, 1u, 2u, 3u, 4u,
+	0u, 1u, 2u, 3u
+};
 
-	ouput.s0 = (s < 32u) ? amd_bitalign(x2.s0, x2.s1, 32u - s) : amd_bitalign(x2.s1, x2.s0, 64u - s);
-	ouput.s1 = (s < 32u) ? amd_bitalign(x2.s1, x2.s0, 32u - s) : amd_bitalign(x2.s0, x2.s1, 64u - s);
-
-	return as_ulong(ouput);
+static inline void setout(const uchar* src, uchar* dst, size_t len)
+{
+	for (size_t i = 0; i < len; i += 1)
+		dst[i] = src[i];
 }
 
-#else
+static inline void xorin(uchar* dst, const uchar* src, size_t len)
+{
+	for (size_t i = 0; i < len; i += 1)
+		dst[i] ^= src[i];
+}
 
-#	define rol(x, s)								(((x) << s) | ((x) >> (64 - s)))
-
-#endif
-
-/*** Helper macros to unroll the permutation. ***/
-#define delim										0x01
-#define rate										SPONGE_LENGTH - (256 / 4)
-#define REPEAT6(e)									e e e e e e
-#define REPEAT24(e)									REPEAT6(e e e e)
-#define REPEAT5(e)									e e e e e
-#define FOR5(v, s, e)								v = 0; REPEAT5(e; v += s;)
-
-/*** Keccak-f[1600] ***/
+/*** This is the unrolled version of the original macro ***/
 static inline void keccakf(void *state)
 {
 	ulong *a = (ulong *)state;
 	ulong b[5] = { 0, 0, 0, 0, 0 };
-	ulong t = 0;
-	uint x, y;
+	ulong t;
 
-#	pragma unroll 8
+#	pragma unroll
 	for (uint i = 0; i < 24u; ++i)
 	{
 		// Theta
-		FOR5(x, 1,
-			b[x] = 0;
-		FOR5(y, 5,
-			b[x] ^= a[x + y]; ))
-			FOR5(x, 1,
-				FOR5(y, 5,
-					a[y + x] ^= b[(x + 4) % 5] ^ rol(b[(x + 1) % 5], 1); ))
-			// Rho and pi
-			t = a[1];
-		x = 0;
-		REPEAT24(b[0] = a[pi[x]];
-		a[pi[x]] = rol(t, rho[x]);
+		b[0] = a[0] ^ a[5] ^ a[10] ^ a[15] ^ a[20];
+		b[1] = a[1] ^ a[6] ^ a[11] ^ a[16] ^ a[21];
+		b[2] = a[2] ^ a[7] ^ a[12] ^ a[17] ^ a[22];
+		b[3] = a[3] ^ a[8] ^ a[13] ^ a[18] ^ a[23];
+		b[4] = a[4] ^ a[9] ^ a[14] ^ a[19] ^ a[24];
+
+		a[0] ^= b[mod5[4]] ^ rol(b[mod5[1]], 1);
+		a[5] ^= b[mod5[4]] ^ rol(b[mod5[1]], 1);
+		a[10] ^= b[mod5[4]] ^ rol(b[mod5[1]], 1);
+		a[15] ^= b[mod5[4]] ^ rol(b[mod5[1]], 1);
+		a[20] ^= b[mod5[4]] ^ rol(b[mod5[1]], 1);
+
+		a[1] ^= b[mod5[5]] ^ rol(b[mod5[2]], 1);
+		a[6] ^= b[mod5[5]] ^ rol(b[mod5[2]], 1);
+		a[11] ^= b[mod5[5]] ^ rol(b[mod5[2]], 1);
+		a[16] ^= b[mod5[5]] ^ rol(b[mod5[2]], 1);
+		a[21] ^= b[mod5[5]] ^ rol(b[mod5[2]], 1);
+
+		a[2] ^= b[mod5[6]] ^ rol(b[mod5[3]], 1);
+		a[7] ^= b[mod5[6]] ^ rol(b[mod5[3]], 1);
+		a[12] ^= b[mod5[6]] ^ rol(b[mod5[3]], 1);
+		a[17] ^= b[mod5[6]] ^ rol(b[mod5[3]], 1);
+		a[22] ^= b[mod5[6]] ^ rol(b[mod5[3]], 1);
+
+		a[3] ^= b[mod5[7]] ^ rol(b[mod5[4]], 1);
+		a[8] ^= b[mod5[7]] ^ rol(b[mod5[4]], 1);
+		a[13] ^= b[mod5[7]] ^ rol(b[mod5[4]], 1);
+		a[18] ^= b[mod5[7]] ^ rol(b[mod5[4]], 1);
+		a[23] ^= b[mod5[7]] ^ rol(b[mod5[4]], 1);
+
+		a[4] ^= b[mod5[8]] ^ rol(b[mod5[5]], 1);
+		a[9] ^= b[mod5[8]] ^ rol(b[mod5[5]], 1);
+		a[14] ^= b[mod5[8]] ^ rol(b[mod5[5]], 1);
+		a[19] ^= b[mod5[8]] ^ rol(b[mod5[5]], 1);
+		a[24] ^= b[mod5[8]] ^ rol(b[mod5[5]], 1);
+
+		// Rho Pi
+		t = a[1];
+		b[0] = a[pi[0]];
+		a[pi[0]] = rol(t, rho[0]);
+
 		t = b[0];
-		x++; )
-			// Chi
-			FOR5(y, 5,
-				FOR5(x, 1,
-					b[x] = a[y + x];)
-				FOR5(x, 1,
-					a[y + x] = b[x] ^ ((~b[(x + 1) % 5]) & b[(x + 2) % 5]); ))
-			// Iota
-			a[0] ^= Keccak_f1600_RC[i];
+		b[0] = a[pi[1]];
+		a[pi[1]] = rol(t, rho[1]);
+
+		t = b[0];
+		b[0] = a[pi[2]];
+		a[pi[2]] = rol(t, rho[2]);
+
+		t = b[0];
+		b[0] = a[pi[3]];
+		a[pi[3]] = rol(t, rho[3]);
+
+		t = b[0];
+		b[0] = a[pi[4]];
+		a[pi[4]] = rol(t, rho[4]);
+
+		t = b[0];
+		b[0] = a[pi[5]];
+		a[pi[5]] = rol(t, rho[5]);
+
+		t = b[0];
+		b[0] = a[pi[6]];
+		a[pi[6]] = rol(t, rho[6]);
+
+		t = b[0];
+		b[0] = a[pi[7]];
+		a[pi[7]] = rol(t, rho[7]);
+
+		t = b[0];
+		b[0] = a[pi[8]];
+		a[pi[8]] = rol(t, rho[8]);
+
+		t = b[0];
+		b[0] = a[pi[9]];
+		a[pi[9]] = rol(t, rho[9]);
+
+		t = b[0];
+		b[0] = a[pi[10]];
+		a[pi[10]] = rol(t, rho[10]);
+
+		t = b[0];
+		b[0] = a[pi[11]];
+		a[pi[11]] = rol(t, rho[11]);
+
+		t = b[0];
+		b[0] = a[pi[12]];
+		a[pi[12]] = rol(t, rho[12]);
+
+		t = b[0];
+		b[0] = a[pi[13]];
+		a[pi[13]] = rol(t, rho[13]);
+
+		t = b[0];
+		b[0] = a[pi[14]];
+		a[pi[14]] = rol(t, rho[14]);
+
+		t = b[0];
+		b[0] = a[pi[15]];
+		a[pi[15]] = rol(t, rho[15]);
+
+		t = b[0];
+		b[0] = a[pi[16]];
+		a[pi[16]] = rol(t, rho[16]);
+
+		t = b[0];
+		b[0] = a[pi[17]];
+		a[pi[17]] = rol(t, rho[17]);
+
+		t = b[0];
+		b[0] = a[pi[18]];
+		a[pi[18]] = rol(t, rho[18]);
+
+		t = b[0];
+		b[0] = a[pi[19]];
+		a[pi[19]] = rol(t, rho[19]);
+
+		t = b[0];
+		b[0] = a[pi[20]];
+		a[pi[20]] = rol(t, rho[20]);
+
+		t = b[0];
+		b[0] = a[pi[21]];
+		a[pi[21]] = rol(t, rho[21]);
+
+		t = b[0];
+		b[0] = a[pi[22]];
+		a[pi[22]] = rol(t, rho[22]);
+
+		t = b[0];
+		b[0] = a[pi[23]];
+		a[pi[23]] = rol(t, rho[23]);
+
+		// Chi
+		b[0] = a[0];
+		b[1] = a[1];
+		b[2] = a[2];
+		b[3] = a[3];
+		b[4] = a[4];
+		a[0] = b[0] ^ ((~b[mod5[1]]) & b[mod5[2]]);
+		a[1] = b[1] ^ ((~b[mod5[2]]) & b[mod5[3]]);
+		a[2] = b[2] ^ ((~b[mod5[3]]) & b[mod5[4]]);
+		a[3] = b[3] ^ ((~b[mod5[4]]) & b[mod5[5]]);
+		a[4] = b[4] ^ ((~b[mod5[5]]) & b[mod5[6]]);
+
+		b[0] = a[5];
+		b[1] = a[6];
+		b[2] = a[7];
+		b[3] = a[8];
+		b[4] = a[9];
+		a[5] = b[0] ^ ((~b[mod5[1]]) & b[mod5[2]]);
+		a[6] = b[1] ^ ((~b[mod5[2]]) & b[mod5[3]]);
+		a[7] = b[2] ^ ((~b[mod5[3]]) & b[mod5[4]]);
+		a[8] = b[3] ^ ((~b[mod5[4]]) & b[mod5[5]]);
+		a[9] = b[4] ^ ((~b[mod5[5]]) & b[mod5[6]]);
+
+		b[0] = a[10];
+		b[1] = a[11];
+		b[2] = a[12];
+		b[3] = a[13];
+		b[4] = a[14];
+		a[10] = b[0] ^ ((~b[mod5[1]]) & b[mod5[2]]);
+		a[11] = b[1] ^ ((~b[mod5[2]]) & b[mod5[3]]);
+		a[12] = b[2] ^ ((~b[mod5[3]]) & b[mod5[4]]);
+		a[13] = b[3] ^ ((~b[mod5[4]]) & b[mod5[5]]);
+		a[14] = b[4] ^ ((~b[mod5[5]]) & b[mod5[6]]);
+
+		b[0] = a[15];
+		b[1] = a[16];
+		b[2] = a[17];
+		b[3] = a[18];
+		b[4] = a[19];
+		a[15] = b[0] ^ ((~b[mod5[1]]) & b[mod5[2]]);
+		a[16] = b[1] ^ ((~b[mod5[2]]) & b[mod5[3]]);
+		a[17] = b[2] ^ ((~b[mod5[3]]) & b[mod5[4]]);
+		a[18] = b[3] ^ ((~b[mod5[4]]) & b[mod5[5]]);
+		a[19] = b[4] ^ ((~b[mod5[5]]) & b[mod5[6]]);
+
+		b[0] = a[20];
+		b[1] = a[21];
+		b[2] = a[22];
+		b[3] = a[23];
+		b[4] = a[24];
+		a[20] = b[0] ^ ((~b[mod5[1]]) & b[mod5[2]]);
+		a[21] = b[1] ^ ((~b[mod5[2]]) & b[mod5[3]]);
+		a[22] = b[2] ^ ((~b[mod5[3]]) & b[mod5[4]]);
+		a[23] = b[3] ^ ((~b[mod5[4]]) & b[mod5[5]]);
+		a[24] = b[4] ^ ((~b[mod5[5]]) & b[mod5[6]]);
+
+		// Iota
+		a[0] ^= Keccak_f1600_RC[i];
 	}
 }
-
-/******** The FIPS202-defined functions. ********/
-
-/*** Some helper macros. ***/
-
-//#define P keccakf
-#define _(S)							do { S } while (0)
-#define FOR(i, ST, L, S)				_(for (size_t i = 0; i < L; i += ST) { S; })
-
-#define mkapply_ds(NAME, S)																				\
-	static inline void NAME(uchar* dst, const uchar* src, size_t len)									\
-		{																								\
-			FOR(i, 1, len, S);																			\
-		}
-
-mkapply_ds(xorin, dst[i] ^= src[i])					// xorin
-
-#define mkapply_sd(NAME, S)																				\
-	static inline void NAME(const uchar* src, uchar* dst, size_t len)									\
-	{																									\
-		FOR(i, 1, len, S);																				\
-	}
-
-mkapply_sd(setout, dst[i] = src[i])					// setout
-
-// Fold keccakf * F over the full blocks of an input
-#define foldP(I, L, F)																					\
-	while (L >= rate)																					\
-	{																									\
-		F(sponge, I, rate);																				\
-		keccakf(sponge);																				\
-		I += rate;																						\
-		L -= rate;																						\
-	}
 
 static inline void keccak256(uchar *digest, uchar const *message)
 {
@@ -179,21 +337,33 @@ static inline void keccak256(uchar *digest, uchar const *message)
 	for (uchar i = 0; i < SPONGE_LENGTH; ++i)
 		sponge[i] = 0;
 
-	// Absorb input.
-	foldP(message, messageLength, xorin);
+	// Absorb input
+	while (messageLength >= (SPONGE_LENGTH - 64u))
+	{
+		xorin(sponge, message, SPONGE_LENGTH - 64u);
+		keccakf(sponge);
+		message += (SPONGE_LENGTH - 64u);
+		messageLength -= (SPONGE_LENGTH - 64u);
+	}
 
-	// Xor in the DS and pad frame.
-	sponge[messageLength] ^= delim;
-	sponge[rate - 1] ^= 0x80;
+	// Xor in the DS and pad frame
+	sponge[messageLength] ^= 0x01u;
+	sponge[SPONGE_LENGTH - 65u] ^= 0x80u;
 
-	// Xor in the last block.
+	// Xor in the last block
 	xorin(sponge, message, messageLength);
 
 	// Apply keccakf
 	keccakf(sponge);
 
-	// Squeeze output.
-	foldP(digest, digestLength, setout);
+	// Squeeze output
+	while (digestLength >= (SPONGE_LENGTH - 64u))
+	{
+		setout(sponge, digest, SPONGE_LENGTH - 64u);
+		keccakf(sponge);
+		digest += (SPONGE_LENGTH - 64u);
+		digestLength -= (SPONGE_LENGTH - 64u);
+	};
 
 	setout(sponge, digest, digestLength);
 }

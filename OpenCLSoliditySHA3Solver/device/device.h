@@ -1,6 +1,7 @@
 #pragma once
 
-#define DEFAULT_INTENSITY 24.5f
+#define DEFAULT_INTENSITY 24.223f
+#define DEFAULT_INTENSITY_KING 24.12f
 #define DEFAULT_LOCAL_WORK_SIZE 128u
 #define MAX_SOLUTION_COUNT_DEVICE 32u
 
@@ -119,7 +120,8 @@ private:
 	uint32_t computeCapability;
 
 public:
-	Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platform_id devPlatformID, float const userDefIntensity = 0, uint32_t userLocalWorkSize = 0);
+	Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platform_id devPlatformID, bool isKingMaking,
+		float const userDefIntensity = 0, uint32_t userLocalWorkSize = 0);
 
 	bool isAPP();
 	bool isCUDA();
@@ -142,7 +144,7 @@ public:
 	uint64_t hashRate();
 
 	void initialize(std::string& errorMessage, bool const isKingMaking);
-	void setIntensity(float const intensity);
+	void setIntensity(float const intensity, bool isKingMaking);
 
 private:
 	bool setKernelArgs(std::string& errorMessage, bool const isKingMaking);
