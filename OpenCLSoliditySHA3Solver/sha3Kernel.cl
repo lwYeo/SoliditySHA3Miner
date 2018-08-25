@@ -202,7 +202,7 @@ static void keccak_skip_first_round(uint2* state)
 {
 	uint2 C[5], D[5];
 
-#	pragma unroll 8
+#	pragma unroll
 	for (uchar i = 1u; i < 24u; ++i)
 	{
 		C[0] = state[0] ^ state[5] ^ state[10] ^ state[15] ^ state[20];
