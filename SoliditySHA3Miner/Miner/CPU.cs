@@ -190,7 +190,14 @@ namespace SoliditySHA3Miner.Miner
                     try
                     {
                         var miningParameters = NetworkInterface.GetMiningParameters();
-                        if (miningParameters == null) return;
+                        if (miningParameters == null)
+                        {
+                            m_failedScanCount += 1;
+                            if (m_failedScanCount > m_pauseOnFailedScan && solver.isMining())
+                                solver.pauseFinding(true);
+
+                            return;
+                        }
 
                         lastMiningParameters = miningParameters;
 
@@ -218,7 +225,8 @@ namespace SoliditySHA3Miner.Miner
                             Program.Print(string.Format("[ERROR] {0}", ex.Message));
 
                             m_failedScanCount += 1;
-                            if (m_failedScanCount > m_pauseOnFailedScan && solver.isMining()) solver.pauseFinding(true);
+                            if (m_failedScanCount > m_pauseOnFailedScan && solver.isMining())
+                                solver.pauseFinding(true);
                         }
                         catch (Exception) { }
                     }
