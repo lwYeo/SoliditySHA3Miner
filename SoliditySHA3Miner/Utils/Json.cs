@@ -12,7 +12,7 @@ namespace SoliditySHA3Miner.Utils
 {
     static class Json
     {
-        private const int MAX_TIMEOUT = 10;
+        private const int MAX_TIMEOUT = 5;
         private static object _Object1 = new object();
         private static object _Object2 = new object();
         private static object _Object3 = new object();
@@ -96,6 +96,7 @@ namespace SoliditySHA3Miner.Utils
                 var serializedJSON = SerializeFromObject(obj, settings);
 
                 var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+                httpRequest.Timeout = MAX_TIMEOUT * 1000;
                 httpRequest.ReadWriteTimeout = MAX_TIMEOUT * 1000;
                 httpRequest.ContentLength = serializedJSON.Length;
                 httpRequest.ContentType = "application/json-rpc";

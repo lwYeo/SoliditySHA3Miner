@@ -122,7 +122,17 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
                 catch (AggregateException ex)
                 {
-                    Program.Print("[ERROR] " + ex.InnerExceptions[0].Message);
+                    var errorMessage = ex.Message;
+                    var currentEx = ex.InnerExceptions[0] ?? ex.InnerException;
+
+                    while (currentEx != null)
+                    {
+                        errorMessage += "\n " + currentEx.Message;
+                        currentEx = currentEx.InnerException;
+                    }
+                    Program.Print("[ERROR] " + errorMessage);
+
+                    System.Threading.Thread.Sleep(1000);
                 }
             }
         }
