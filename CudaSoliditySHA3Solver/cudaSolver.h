@@ -56,7 +56,7 @@ public:
 	typedef void(*ResetWorkPositionCallback)(uint64_t &);
 	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
 	typedef void(*MessageCallback)(int, const char *, const char *);
-	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *, const char *, bool);
+	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *);
 
 	bool isSubmitStale;
 
@@ -77,18 +77,12 @@ private:
 	std::string s_address;
 	std::string s_challenge;
 	std::string s_target;
-	std::string s_difficulty;
-	std::string s_customDifficulty;
 	
 	address_t m_address;
 	address_t m_kingAddress;
 	byte32_t m_solutionTemplate;
 	message_ut m_miningMessage;
-
 	arith_uint256 m_target;
-	arith_uint256 m_difficulty;
-	arith_uint256 m_maxDifficulty;
-	arith_uint256 m_customDifficulty;
 
 	std::atomic<std::chrono::steady_clock::time_point> m_solutionHashStartTime;
 	std::thread m_runThread;
@@ -101,7 +95,7 @@ public:
 	static std::string getDeviceName(int deviceID, std::string &errorMessage);
 	
 	// require web3 contract getMethod -> _MAXIMUM_TARGET
-	CUDASolver(std::string const maxDifficulty) noexcept;
+	CUDASolver() noexcept;
 	~CUDASolver() noexcept;
 
 	void setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback);
@@ -120,8 +114,6 @@ public:
 
 	void updatePrefix(std::string const prefix);
 	void updateTarget(std::string const target);
-	void updateDifficulty(std::string const difficulty);
-	void setCustomDifficulty(uint32_t const customDifficulty);
 
 	void startFinding();
 	void stopFinding();

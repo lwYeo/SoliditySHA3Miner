@@ -13,7 +13,7 @@ namespace CPUSolver
 		delegate void OnIncrementWorkPositionDelegate(unsigned __int64 %, unsigned __int64);
 		delegate void OnGetSolutionTemplateDelegate(uint8_t *);
 		delegate void OnMessageDelegate(int, System::String ^, System::String ^);
-		delegate void OnSolutionDelegate(System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, System::String ^, bool);
+		delegate void OnSolutionDelegate(System::String ^, System::String ^, System::String ^, System::String ^, System::String ^);
 
 		OnGetKingAddressDelegate ^OnGetKingAddressHandler;
 		OnGetWorkPositionDelegate ^OnGetWorkPositionHandler;
@@ -38,10 +38,9 @@ namespace CPUSolver
 
 	public:
 		// require web3 contract getMethod -> _MAXIMUM_TARGET
-		Solver(System::String ^maxDifficulty, System::String ^threads);
+		Solver(System::String ^threads);
 		~Solver();
 
-		void setCustomDifficulty(uint32_t customDifficulty);
 		void setSubmitStale(bool submitStale);
 		bool isMining();
 		bool isPaused();
@@ -50,8 +49,6 @@ namespace CPUSolver
 		void updatePrefix(System::String^ prefix);
 		// must be in byte32 hexadecimal format with "0x" prefix
 		void updateTarget(System::String^ target);
-		// can be in either numeric or hexadecimal format
-		void updateDifficulty(System::String^ difficulty);
 
 		void startFinding();
 		void stopFinding();
@@ -69,6 +66,6 @@ namespace CPUSolver
 		void OnIncrementWorkPosition(unsigned __int64 %lastPosition, unsigned __int64 increment);
 		void OnGetSolutionTemplate(uint8_t *solutionTemplate);
 		void OnMessage(int threadID, System::String^ type, System::String^ message);
-		void OnSolution(System::String^ digest, System::String^ address, System::String^ challenge, System::String^ difficulty, System::String^ target, System::String^ solution, bool isCustomDifficulty);
+		void OnSolution(System::String^ digest, System::String^ address, System::String^ challenge, System::String^ target, System::String^ solution);
 	};
 }

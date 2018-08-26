@@ -27,7 +27,7 @@ public:
 	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
 	typedef void(*GetSolutionTemplateCallback)(uint8_t *);
 	typedef void(*MessageCallback)(int, const char *, const char *);
-	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *, const char *, bool);
+	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *);
 
 	bool m_SubmitStale;
 
@@ -44,15 +44,10 @@ private:
 
 	byte32_t b_target;
 	arith_uint256 m_target;
-	arith_uint256 m_difficulty;
-	arith_uint256 m_maxDifficulty;
-	arith_uint256 m_customDifficulty;
 
 	std::string s_address;
 	std::string s_challenge;
 	std::string s_target;
-	std::string s_difficulty;
-	std::string s_customDifficulty;
 
 	address_t m_address;
 	address_t m_kingAddress;
@@ -70,7 +65,7 @@ public:
 	static uint32_t getLogicalProcessorsCount();
 	static std::string getNewSolutionTemplate(std::string kingAddress = "");
 
-	cpuSolver(std::string const maxDifficulty, std::string const threads) noexcept;
+	cpuSolver(std::string const threads) noexcept;
 	~cpuSolver() noexcept;
 
 	void setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback);
@@ -86,8 +81,6 @@ public:
 
 	void updatePrefix(std::string const prefix);
 	void updateTarget(std::string const target);
-	void updateDifficulty(std::string const difficulty);
-	void setCustomDifficulty(uint32_t const customDifficulty);
 
 	uint64_t getTotalHashRate();
 	uint64_t getHashRateByThreadID(uint32_t const threadID);

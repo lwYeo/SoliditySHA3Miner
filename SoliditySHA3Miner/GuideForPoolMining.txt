@@ -26,7 +26,7 @@
 
   * If the token is not in the list above, I suggest that you might want to ask from the owner/moderator from their relavant Discord/Telegram/forums.
 
-3c) overrideMaxDiff=
+3c) overrideMaxTarget=
   * This is for advanced users who want to skip the web3 API parameter query.
   * The value provided in the bat file is meant for 0xBitcoin, it may work with other tokens.
   * If Pool-side mining hashrate is constantly lower than miner's hashrate, or if you are getting >50% invalid submits, do delete this entire parameter or, 

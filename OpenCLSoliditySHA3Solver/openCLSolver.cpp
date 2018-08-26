@@ -1,6 +1,9 @@
 #include "openCLSolver.h"
 #pragma unmanaged
 
+#define ROTL64(x, y) (((x) << (y)) ^ ((x) >> (64u - (y))))
+#define ROTR64(x, y) (((x) >> (y)) ^ ((x) << (64u - (y))))
+
 // --------------------------------------------------------------------
 // Static
 // --------------------------------------------------------------------
@@ -134,22 +137,18 @@ std::string openCLSolver::getDeviceName(std::string platformName, int deviceEnum
 // Public
 // --------------------------------------------------------------------
 
-openCLSolver::openCLSolver(std::string const maxDifficulty) noexcept :
+openCLSolver::openCLSolver() noexcept :
 	s_address{ "" },
 	s_challenge{ "" },
 	s_target{ "" },
-	s_difficulty{ "" },
 	m_address{ 0 },
 	m_kingAddress{ 0 },
 	m_miningMessage{ 0 },
 	m_target{ 0 },
-	m_difficulty{ 0 },
-	m_maxDifficulty{ maxDifficulty }
+	m_solutionHashStartTime{ std::chrono::steady_clock::now() }
 {
 	try { if (ADL_API::foundAdlApi()) ADL_API::initialize(); }
 	catch (std::exception ex) { onMessage("", -1, "Error", ex.what()); }
-
-	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 }
 
 openCLSolver::~openCLSolver() noexcept
@@ -311,40 +310,29 @@ void openCLSolver::updatePrefix(std::string const prefix)
 {
 	assert(prefix.length() == ((UINT256_LENGTH + ADDRESS_LENGTH) * 2 + 2));
 
-	auto challengeStr = prefix.substr(0, 2 + UINT256_LENGTH * 2);
-	auto addressStr = "0x" + prefix.substr(2 + UINT256_LENGTH * 2, ADDRESS_LENGTH * 2);
+	s_challenge = prefix.substr(0, 2 + UINT256_LENGTH * 2);
+	s_address = "0x" + prefix.substr(2 + UINT256_LENGTH * 2, ADDRESS_LENGTH * 2);
 
 	getSolutionTemplate(&m_solutionTemplate);
 
-	message_ut newMessage;
-	hexStringToBytes(challengeStr, newMessage.structure.challenge);
-	hexStringToBytes(addressStr, newMessage.structure.address);
-	newMessage.structure.solution = m_solutionTemplate;
+	hexStringToBytes(s_challenge, m_miningMessage.structure.challenge);
+	hexStringToBytes(s_address, m_miningMessage.structure.address);
+	m_miningMessage.structure.solution = m_solutionTemplate;
 
-	if (m_miningMessage.byteArray == newMessage.byteArray) return;
-
-	s_challenge = challengeStr;
-	s_address = addressStr;
-
-	m_miningMessage = newMessage;
 	sponge_ut midState{ getMidState(m_miningMessage) };
 
 	for (auto& device : m_devices)
 	{
 		if (device->deviceID < 0) continue;
 		
-		device->currentMessage = newMessage;
+		device->currentMessage = m_miningMessage;
 		device->currentMidstate = midState;
 		device->isNewMessage = true;
 	}
-
-	onMessage("", -1, "Info", "New challenge detected " + s_challenge.substr(0, 18) + "...");
 }
 
 void openCLSolver::updateTarget(std::string const target)
 {
-	if (m_customDifficulty > 0u && !(target == (m_maxDifficulty / m_customDifficulty).GetHex())) return;
-
 	arith_uint256 tempTarget = arith_uint256(target);
 	if (tempTarget == m_target) return;
 
@@ -364,34 +352,6 @@ void openCLSolver::updateTarget(std::string const target)
 		device->currentHigh64Target[0] = tempHigh64Target;
 		device->isNewTarget = true;
 	}
-
-	onMessage("", -1, "Info", "New target detected " + s_target.substr(0, 18) + "...");
-}
-
-void openCLSolver::updateDifficulty(std::string const difficulty)
-{
-	if (m_customDifficulty > 0u) return;
-
-	arith_uint256 oldDifficulity{ m_difficulty };
-	s_difficulty = difficulty;
-	m_difficulty = arith_uint256(difficulty);
-
-	if ((m_maxDifficulty != 0ull) && (m_difficulty != oldDifficulity))
-	{
-		onMessage("", -1, "Info", "New difficulity detected (" + std::to_string(m_difficulty.GetLow64()) + ")...");
-		updateTarget((m_maxDifficulty / m_difficulty).GetHex());
-	}
-}
-
-void openCLSolver::setCustomDifficulty(uint32_t customDifficulty)
-{
-	if (customDifficulty == 0u) return;
-
-	s_customDifficulty = std::to_string(customDifficulty);
-	m_customDifficulty = arith_uint256{ customDifficulty };
-
-	onMessage("", -1, "Info", "Custom difficulty (" + s_customDifficulty + ") detected...");
-	updateTarget((m_maxDifficulty / m_customDifficulty).GetHex());
 }
 
 uint64_t openCLSolver::getTotalHashRate()
@@ -544,7 +504,8 @@ int openCLSolver::getDeviceCurrentUtilizationPercent(std::string platformName, i
 void openCLSolver::startFinding()
 {
 	uint64_t lastPosition;
-	resetWorkPosition(lastPosition);
+	getWorkPosition(lastPosition);
+	if (lastPosition > INT64_MAX) resetWorkPosition(lastPosition);
 	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
 
 	for (auto& device : m_devices)
@@ -675,7 +636,13 @@ void openCLSolver::onSolution(byte32_t const solution, std::string challenge, st
 	else
 	{
 		onMessage(device->platformName, device->deviceEnum, "Info", "Solution verified by CPU, submitting nonce 0x" + solutionStr + "...");
-		m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_difficulty.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str(), m_customDifficulty > 0u);
+		onMessage(device->platformName, device->deviceEnum, "Debug", std::string{ "Solution details..." }
+			+ "\nChallenge: " + challenge
+			+ "\nAddress: " + s_address
+			+ "\nSolution: 0x" + solutionStr
+			+ "\nDigest: 0x" + digestStr
+			+ "\nTarget: " + s_target);
+		m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str());
 	}
 }
 
@@ -800,6 +767,9 @@ void openCLSolver::pushMessageKing(std::unique_ptr<Device> &device)
 
 void openCLSolver::checkInputs(std::unique_ptr<Device> &device, char *currentChallenge)
 {
+	uint64_t lastPosition;
+	getWorkPosition(lastPosition);
+
 	if (device->isNewMessage || device->isNewTarget)
 	{
 		for (auto& device : m_devices)
@@ -810,9 +780,9 @@ void openCLSolver::checkInputs(std::unique_ptr<Device> &device, char *currentCha
 				device->hashStartTime.store(std::chrono::steady_clock::now());
 			}
 		}
-		uint64_t lastPosition;
-		resetWorkPosition(lastPosition);
 		m_solutionHashStartTime.store(std::chrono::steady_clock::now());
+
+		if (lastPosition > INT64_MAX) resetWorkPosition(lastPosition);
 
 		if (device->isNewTarget)
 		{

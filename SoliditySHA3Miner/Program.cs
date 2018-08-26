@@ -181,7 +181,7 @@ namespace SoliditySHA3Miner
                 "  cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)\n" +
                 "  minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: " + Defaults.JsonAPIPath + "), 0 disabled\n" +
                 "  minerCcminerAPI         'IP:port' for the ccminer-style API (default: " + Defaults.CcminerAPIPath + "), 0 disabled\n" +
-                "  overrideMaxDiff         (Pool only) Use maximum difficulty and skips query from web3\n" +
+                "  overrideMaxTarget       (Pool only) Use maximum target and skips query from web3\n" +
                 "  customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)\n" +
                 "  maxScanRetry            Number of retries to scan for new work (default: " + Defaults.MaxScanRetry + ")\n" +
                 "  pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)\n" +
@@ -390,7 +390,7 @@ namespace SoliditySHA3Miner
             Miner.Device[] cudaDevices = new Miner.Device[] { };
             var minerJsonAPI = string.Empty;
             var minerCcminerAPI = string.Empty;
-            var overrideMaxDiff = new HexBigInteger(BigInteger.Zero);
+            var overrideMaxTarget = new HexBigInteger(BigInteger.Zero);
             var customDifficulty = 0u;
             var maxScanRetry = Defaults.MaxScanRetry;
             var pauseOnFailedScans = Defaults.PauseOnFailedScan;
@@ -459,8 +459,8 @@ namespace SoliditySHA3Miner
                         case "minerCcminerAPI":
                             minerCcminerAPI = arg.Split('=')[1];
                             break;
-                        case "overrideMaxDiff":
-                            overrideMaxDiff = new HexBigInteger(BigInteger.Parse((arg.Split('=')[1])));
+                        case "overrideMaxTarget":
+                            overrideMaxTarget = new HexBigInteger(BigInteger.Parse((arg.Split('=')[1])));
                             break;
                         case "customDifficulty":
                             customDifficulty = uint.Parse(arg.Split('=')[1]);
@@ -519,7 +519,9 @@ namespace SoliditySHA3Miner
                     Environment.Exit(1);
                 }
             }
-            
+            if (networkUpdateInterval < 1000) networkUpdateInterval = 1000;
+            if (hashrateUpdateInterval < 1000) hashrateUpdateInterval = 1000;
+
             if (string.IsNullOrEmpty(kingAddress))
                 Print("[INFO] King making disabled.");
             else
@@ -680,26 +682,37 @@ namespace SoliditySHA3Miner
                 Miner.Work.SetKingAddress(kingAddress);
                 Miner.Work.SetSolutionTemplate(Miner.CPU.GetNewSolutionTemplate(Miner.Work.GetKingAddressString()));
 
-                var web3Interface = new NetworkInterface.Web3Interface(web3api, contractAddress, minerAddress, privateKey, gasToMine, abiFile, networkUpdateInterval);
+                var web3Interface = new NetworkInterface.Web3Interface(web3api, contractAddress, minerAddress, privateKey, gasToMine,
+                                                                       abiFile, networkUpdateInterval);
 
-                var secondaryPoolInterface = string.IsNullOrWhiteSpace(secondaryPool) ? null : new NetworkInterface.PoolInterface(minerAddress, secondaryPool, maxScanRetry, networkUpdateInterval);
-                var primaryPoolInterface = new NetworkInterface.PoolInterface(minerAddress, primaryPool, maxScanRetry, networkUpdateInterval, secondaryPoolInterface);
-
-                var mainNetworkInterface = (string.IsNullOrWhiteSpace(privateKey)) ? primaryPoolInterface : (NetworkInterface.INetworkInterface)web3Interface;
-
-                HexBigInteger tempMaxDifficulity = null;
-                if (overrideMaxDiff.Value > 0u)
+                HexBigInteger tempMaxTarget = null;
+                if (overrideMaxTarget.Value > 0u)
                 {
-                    Print("[INFO] Override maximum difficulty: " + overrideMaxDiff.Value);
-                    tempMaxDifficulity = overrideMaxDiff;
+                    Print("[INFO] Override maximum difficulty: " + overrideMaxTarget.Value);
+                    tempMaxTarget = overrideMaxTarget;
                 }
-                else tempMaxDifficulity = web3Interface.GetMaxDifficulity();
+                else tempMaxTarget = web3Interface.GetMaxTarget();
 
-                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
+                if (customDifficulty > 0)
+                    Print("[INFO] Custom difficulity: " + customDifficulty.ToString());
 
-                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
+                var secondaryPoolInterface = string.IsNullOrWhiteSpace(secondaryPool)
+                                           ? null
+                                           : new NetworkInterface.PoolInterface(minerAddress, secondaryPool, maxScanRetry, -1,
+                                                                                customDifficulty, tempMaxTarget);
 
-                m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, tempMaxDifficulity, customDifficulty, submitStale, pauseOnFailedScans);
+                var primaryPoolInterface = new NetworkInterface.PoolInterface(minerAddress, primaryPool, maxScanRetry, networkUpdateInterval,
+                                                                              customDifficulty, tempMaxTarget, secondaryPoolInterface);
+
+                var mainNetworkInterface = (string.IsNullOrWhiteSpace(privateKey))
+                                           ? primaryPoolInterface
+                                           : (NetworkInterface.INetworkInterface)web3Interface;
+
+                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, submitStale, pauseOnFailedScans);
+
+                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), submitStale, pauseOnFailedScans);
+
+                m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, submitStale, pauseOnFailedScans);
 
                 m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner };
 

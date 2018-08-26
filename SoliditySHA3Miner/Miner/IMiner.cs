@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 
@@ -20,7 +21,6 @@ namespace SoliditySHA3Miner.Miner
 
         ulong GetTotalHashrate();
         ulong GetHashrateByDevice(string platformName, int deviceID);
-        long GetDifficulty();
     }
 
     public static class Work
@@ -40,6 +40,7 @@ namespace SoliditySHA3Miner.Miner
             return HexByteConvertorExtensions.ToHex(KingAddress.ToArray(), prefix: true);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void GetKingAddress(byte* kingAddress)
         {
             if (KingAddress != null)
@@ -62,6 +63,7 @@ namespace SoliditySHA3Miner.Miner
                 KingAddress = new HexBigInteger(kingAddress).ToHexByteArray().ToArray();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void GetSolutionTemplate(byte* solutionTemplate)
         {
             if (SolutionTemplate == null) return;
@@ -74,11 +76,13 @@ namespace SoliditySHA3Miner.Miner
 
         public static void SetSolutionTemplate(string solutionTemplate) => SolutionTemplate = new HexBigInteger(solutionTemplate).ToHexByteArray();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void GetPosition(ref ulong workPosition)
         {
             lock (m_positionLock) { workPosition = m_Position; }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ResetPosition(ref ulong lastPosition)
         {
             lock (m_positionLock)
@@ -88,6 +92,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void IncrementPosition(ref ulong lastPosition, ulong increment)
         {
             lock (m_positionLock)

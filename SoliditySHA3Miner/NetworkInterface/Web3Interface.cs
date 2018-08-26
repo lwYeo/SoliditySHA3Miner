@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using System.Timers;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
@@ -28,13 +29,20 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly Function m_transferMethod;
         private readonly List<string> m_submittedChallengeList;
         private readonly int m_updateInterval;
-
-        private readonly object m_cacheParamLock = new object();
+        private Timer m_updateMinerTimer;
+        private MiningParameters m_lastParameters;
         private MiningParameters m_cacheParameters;
+        private HexBigInteger m_maxTarget;
+
+        public event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
+        public event NewMessagePrefixEvent OnNewMessagePrefixEvent;
+        public event NewTargetEvent OnNewTargetEvent;
 
         public bool IsPool => false;
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
+        public ulong Difficulty { get; private set; }
+        public string DifficultyHex { get; private set; }
 
         public bool IsChallengedSubmitted(string challenge) => m_submittedChallengeList.Contains(challenge);
 
@@ -92,17 +100,25 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_transferMethod = m_contract.GetFunction("transfer");
 
                 m_gasToMine = gasToMine;
+                Program.Print(string.Format("[INFO] Gas to mine:", m_gasToMine));
             }
         }
 
-        public HexBigInteger GetMaxDifficulity()
+        public void Dispose()
+        {
+            m_submittedChallengeList.Clear();
+            m_submittedChallengeList.TrimExcess();
+        }
+
+        public HexBigInteger GetMaxTarget()
         {
             Program.Print("[INFO] Checking maximum difficulity from network...");
             while (true)
             {
                 try
                 {
-                    return new HexBigInteger(m_contract.GetFunction("_MAXIMUM_TARGET").CallAsync<BigInteger>().Result);
+                    m_maxTarget = new HexBigInteger(m_contract.GetFunction("_MAXIMUM_TARGET").CallAsync<BigInteger>().Result);
+                    return m_maxTarget;
                 }
                 catch (AggregateException ex)
                 {
@@ -113,25 +129,70 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public MiningParameters GetMiningParameters()
         {
-            lock (m_cacheParamLock)
+            Program.Print("[INFO] Checking latest parameters from network...");
+
+            m_cacheParameters = MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
+            
+            return m_cacheParameters;
+        }
+
+        private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            var miningParameters = GetMiningParameters();
+            if (miningParameters == null)
             {
-                if (m_cacheParameters != null) return m_cacheParameters;
-                
-                Program.Print("[INFO] Checking latest parameters from network...");
+                OnGetMiningParameterStatusEvent(this, false, null);
+                return;
+            }
 
-                m_cacheParameters = MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
+            var address = miningParameters.EthAddress;
+            var challenge = miningParameters.ChallengeNumberByte32String;
+            var target = miningParameters.MiningTargetByte32String;
+            DifficultyHex = miningParameters.MiningDifficulty.HexValue;
 
-                Task.Factory.StartNew(() =>
+            if (m_lastParameters == null || miningParameters.ChallengeNumber.Value != m_lastParameters.ChallengeNumber.Value)
+            {
+                Program.Print(string.Format("[INFO] New challenge detected {0}...", challenge));
+                OnNewMessagePrefixEvent(this, challenge + address.Replace("0x", string.Empty));
+            }
+
+            if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
+            {
+                Program.Print(string.Format("[INFO] New target detected {0}...", target));
+                OnNewTargetEvent(this, target);
+            }
+
+            if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
+            {
+                Program.Print(string.Format("[INFO] New difficulity detected ({0})...", miningParameters.MiningDifficulty.Value));
+                Difficulty = Convert.ToUInt64(miningParameters.MiningDifficulty.Value.ToString());
+
+                var calculatedTarget = m_maxTarget.Value / Difficulty;
+                if (calculatedTarget != miningParameters.MiningTarget.Value)
                 {
-                    Task.Delay(m_updateInterval / 2);
-                    m_cacheParameters = null;
-                });
+                    var newTarget = calculatedTarget.ToString();
+                    Program.Print(string.Format("[INFO] Update target {0}...", newTarget));
+                    OnNewTargetEvent(this, newTarget);
+                }
+            }
 
-                return m_cacheParameters;
+            m_lastParameters = miningParameters;
+            OnGetMiningParameterStatusEvent(this, true, miningParameters);
+        }
+
+        public void UpdateMiningParameters()
+        {
+            m_updateMinerTimer_Elapsed(this, null);
+
+            if (m_updateMinerTimer == null && m_updateInterval > 0)
+            {
+                m_updateMinerTimer = new Timer(m_updateInterval);
+                m_updateMinerTimer.Elapsed += m_updateMinerTimer_Elapsed;
+                m_updateMinerTimer.Start();
             }
         }
 
-        void INetworkInterface.SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, bool isCustomDifficulty)
+        public void SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, Miner.IMiner sender)
         {
             lock (this)
             {
@@ -153,7 +214,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                 //to disambiguate positive values that could otherwise be interpreted as having their sign bits set.
 
                 var dataInput = new object[] { oSolution, HexByteConvertorExtensions.HexToByteArray(digest) };
-                
+
+                var retryCount = 0u;
                 while (string.IsNullOrWhiteSpace(transactionID))
                 {
                     try
@@ -217,28 +279,15 @@ namespace SoliditySHA3Miner.NetworkInterface
                     }
 
                     System.Threading.Thread.Sleep(1000);
+                    if (string.IsNullOrWhiteSpace(transactionID)) retryCount++;
+
+                    if (retryCount > 10)
+                    {
+                        Program.Print("[ERROR] Failed to submit solution for more than 10 times, please check settings.");
+                        sender.StopMining();
+                    }
                 }
             }
-        }
-
-        public void Dispose()
-        {
-
-        }
-
-        private BigInteger GetMiningReward()
-        {
-            var failCount = 0;
-            Program.Print("[INFO] Checking mining reward amount from network...");
-            while (failCount < 10)
-            {
-                try
-                {
-                    return m_contract.GetFunction("getMiningReward").CallAsync<BigInteger>().Result; // including decimals
-                }
-                catch (Exception) { failCount++; }
-            }
-            throw new Exception("Failed checking mining reward amount.");
         }
 
         private void GetTransactionReciept(string transactionID, string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas)
@@ -313,6 +362,21 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 Program.Print(errorMessage);
             }
+        }
+
+        private BigInteger GetMiningReward()
+        {
+            var failCount = 0;
+            Program.Print("[INFO] Checking mining reward amount from network...");
+            while (failCount < 10)
+            {
+                try
+                {
+                    return m_contract.GetFunction("getMiningReward").CallAsync<BigInteger>().Result; // including decimals
+                }
+                catch (Exception) { failCount++; }
+            }
+            throw new Exception("Failed checking mining reward amount.");
         }
 
         private void SubmitDevFee(string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas, ulong shareNo)

@@ -2,8 +2,7 @@
 
 namespace CPUSolver
 {
-	Solver::Solver(System::String ^maxDifficulty, System::String ^threads) :
-		ManagedObject(new cpuSolver(ToNativeString(maxDifficulty), ToNativeString(threads)))
+	Solver::Solver(System::String ^threads) : ManagedObject(new cpuSolver(ToNativeString(threads)))
 	{
 		m_managedOnGetKingAddress = gcnew OnGetKingAddressDelegate(this, &Solver::OnGetKingAddress);
 		System::IntPtr getKingAddressStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetKingAddress);
@@ -89,11 +88,6 @@ namespace CPUSolver
 		return ToManagedString(cpuSolver::getNewSolutionTemplate(ToNativeString(kingAddress)));
 	}
 
-	void Solver::setCustomDifficulty(uint32_t customDifficulty)
-	{
-		m_Instance->setCustomDifficulty(customDifficulty);
-	}
-
 	void Solver::setSubmitStale(bool submitStale)
 	{
 		m_Instance->m_SubmitStale = submitStale;
@@ -119,11 +113,6 @@ namespace CPUSolver
 	void Solver::updateTarget(System::String^ target)
 	{
 		m_Instance->updateTarget(ToNativeString(target));
-	}
-
-	void Solver::updateDifficulty(System::String^ difficulty)
-	{
-		m_Instance->updateDifficulty(ToNativeString(difficulty));
 	}
 
 	void Solver::startFinding()
@@ -158,8 +147,8 @@ namespace CPUSolver
 		OnMessageHandler(threadID, type, message);
 	}
 
-	void Solver::OnSolution(System::String^ digest, System::String^ address, System::String^ challenge, System::String^ difficulty, System::String^ target, System::String^ solution, bool isCustomDifficulty)
+	void Solver::OnSolution(System::String^ digest, System::String^ address, System::String^ challenge, System::String^ target, System::String^ solution)
 	{
-		OnSolutionHandler(digest, address, challenge, difficulty, target, solution, isCustomDifficulty);
+		OnSolutionHandler(digest, address, challenge, target, solution);
 	}
 }

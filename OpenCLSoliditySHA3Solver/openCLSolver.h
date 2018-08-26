@@ -1,8 +1,5 @@
 #pragma once
 
-#define ROTL64(x, y) (((x) << (y)) ^ ((x) >> (64 - (y))))
-#define ROTR64(x, y) (((x) >> (y)) ^ ((x) << (64 - (y))))
-
 #define MAX_WORK_POSITION_STORE 2
 
 #include <algorithm>
@@ -49,7 +46,7 @@ public:
 	typedef void(*ResetWorkPositionCallback)(uint64_t &);
 	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
 	typedef void(*MessageCallback)(const char *, int, const char *, const char *);
-	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *, const char *, bool);
+	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *);
 	typedef struct { cl_platform_id id; std::string name; } Platform;
 
 	static void preInitialize(bool allowIntel, std::string &errorMessage);
@@ -79,25 +76,19 @@ private:
 	std::string s_address;
 	std::string s_challenge;
 	std::string s_target;
-	std::string s_difficulty;
-	std::string s_customDifficulty;
 
 	address_t m_address;
 	address_t m_kingAddress;
 	byte32_t m_solutionTemplate;
 	message_ut m_miningMessage; // challenge32 + address20 + solution32
-
 	arith_uint256 m_target;
-	arith_uint256 m_difficulty;
-	arith_uint256 m_maxDifficulty;
-	arith_uint256 m_customDifficulty;
 
 	std::atomic<std::chrono::steady_clock::time_point> m_solutionHashStartTime;
 	std::thread m_runThread;
 
 public:
 	// require web3 contract getMethod -> _MAXIMUM_TARGET
-	openCLSolver(std::string const maxDifficulty) noexcept;
+	openCLSolver() noexcept;
 	~openCLSolver() noexcept;
 
 	void setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback);
@@ -116,8 +107,6 @@ public:
 
 	void updatePrefix(std::string const prefix);
 	void updateTarget(std::string const target);
-	void updateDifficulty(std::string const difficulty);
-	void setCustomDifficulty(uint32_t customDifficulty);
 
 	uint64_t getTotalHashRate();
 	uint64_t getHashRateByDevice(std::string platformName, int const deviceEnum);

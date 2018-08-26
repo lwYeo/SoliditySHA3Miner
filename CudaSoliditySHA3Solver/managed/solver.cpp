@@ -2,7 +2,7 @@
 
 namespace CudaSolver
 {
-	Solver::Solver(System::String ^maxDifficulty) : ManagedObject(new CUDASolver(ToNativeString(maxDifficulty)))
+	Solver::Solver() : ManagedObject(new CUDASolver())
 	{
 		m_managedOnGetKingAddress = gcnew OnGetKingAddressDelegate(this, &Solver::OnGetKingAddress);
 		System::IntPtr getKingAddressStubPtr = System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate(m_managedOnGetKingAddress);
@@ -81,11 +81,6 @@ namespace CudaSolver
 		return ToManagedString(devName);
 	}
 
-	void Solver::setCustomDifficulty(uint32_t customDifficulty)
-	{
-		m_Instance->setCustomDifficulty(customDifficulty);
-	}
-
 	void Solver::setSubmitStale(bool submitStale)
 	{
 		m_Instance->isSubmitStale = submitStale;
@@ -128,11 +123,6 @@ namespace CudaSolver
 	void Solver::updateTarget(System::String ^target)
 	{
 		m_Instance->updateTarget(ToNativeString(target));
-	}
-
-	void Solver::updateDifficulty(System::String ^difficulty)
-	{
-		m_Instance->updateDifficulty(ToNativeString(difficulty));
 	}
 
 	void Solver::startFinding()
@@ -247,8 +237,8 @@ namespace CudaSolver
 		OnMessageHandler(deviceID, type, message);
 	}
 
-	void Solver::OnSolution(System::String ^digest, System::String ^address, System::String ^challenge, System::String ^difficulty, System::String ^target, System::String ^solution, bool isCustomDifficulty)
+	void Solver::OnSolution(System::String ^digest, System::String ^address, System::String ^challenge, System::String ^target, System::String ^solution)
 	{
-		OnSolutionHandler(digest, address, challenge, difficulty, target, solution, isCustomDifficulty);
+		OnSolutionHandler(digest, address, challenge, target, solution);
 	}
 }

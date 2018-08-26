@@ -13,7 +13,7 @@ SoliditySHA3Miner is licensed under the MIT license.
 Include CUDA kernel from Mikers, Azlehria and LtTofu (Mag517)
 Libraries are included in the Software under the following license terms:
 - Satoshi Nakamoto and The Bitcoin Core developers (uint256) https://github.com/bitcoin/bitcoin/blob/master/COPYING
-- libkeccak-tiny https://github.com/coruus/keccak-tiny
+- libkeccak-tiny https://github.com/coruus/keccak-tiny/
 - Nethereum https://github.com/Nethereum/Nethereum/blob/master/LICENSE.md
 - Json.NET https://github.com/JamesNK/Newtonsoft.Json/blob/master/LICENSE.md
 - Common Infrastructure Libraries for .NET http://netcommon.sourceforge.net/license.html
@@ -35,13 +35,13 @@ Options:
   intelIntensity          GPU (Intel OpenCL) intensity (default: 20.5, decimals allowed)
   listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)
   amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
-  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.5, decimals allowed)
+  amdIntensity            GPU (AMD OpenCL) intensity (default: auto, decimals allowed)
   listCudaDevices         List of all CUDA devices in this system (device ID: GPU name)
   cudaDevice              Comma separated list of CUDA devices to use (default: all devices)
   cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)
   minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: http://127.0.0.1:4078), 0 disabled
   minerCcminerAPI         'IP:port' for the ccminer-style API (default: 127.0.0.1:4068), 0 disabled
-  overrideMaxDiff         (Pool only) Use maximum difficulty and skips query from web3
+  overrideMaxTarget       (Pool only) Use maximum target and skips query from web3
   customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)
   maxScanRetry            Number of retries to scan for new work (default: 5)
   pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)

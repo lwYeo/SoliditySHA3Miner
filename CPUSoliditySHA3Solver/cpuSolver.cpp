@@ -41,19 +41,16 @@ std::string cpuSolver::getNewSolutionTemplate(std::string kingAddress)
 // Public
 // --------------------------------------------------------------------
 
-cpuSolver::cpuSolver(std::string const maxDifficulty, std::string const threads) noexcept :
+cpuSolver::cpuSolver(std::string const threads) noexcept :
 	m_miningThreadCount{ 0u },
 	m_hashStartTime{ std::chrono::steady_clock::now() },
 	s_address{ "" },
 	s_challenge{ "" },
 	s_target{ "" },
-	s_difficulty{ "" },
 	m_address{ 0 },
 	m_prefix{ 0 },
 	b_target{ 0 },
 	m_target{ 0 },
-	m_difficulty{ 0 },
-	m_maxDifficulty{ maxDifficulty },
 	m_solutionHashStartTime{ std::chrono::steady_clock::now() }
 {
 	const char *delim = (const char *)",";
@@ -155,7 +152,7 @@ void cpuSolver::updatePrefix(std::string const prefix)
 {
 	assert(prefix.length() == (PREFIX_LENGTH * 2 + 2));
 
-	prefix_t tempPrefix;
+	prefix_t tempPrefix{ 0 };
 	hexStringToBytes(prefix, tempPrefix);
 
 	if (tempPrefix == m_prefix) return;
@@ -167,49 +164,19 @@ void cpuSolver::updatePrefix(std::string const prefix)
 	std::memcpy(&oldChallenge, &m_prefix, UINT256_LENGTH);
 
 	std::memcpy(&m_prefix, &tempPrefix, PREFIX_LENGTH);
-
-	onMessage(-1, "Info", "New challenge detected " + s_challenge.substr(0, 18) + "...");
 }
 
 void cpuSolver::updateTarget(std::string const target)
 {
-	if (m_customDifficulty > 0u && !(target == (m_maxDifficulty / m_customDifficulty).GetHex())) return;
-
 	arith_uint256 tempTarget = arith_uint256(target);
 	if (tempTarget == m_target) return;
 
 	m_target = tempTarget;
 	s_target = (target.substr(0, 2) == "0x") ? target : "0x" + target;
 
-	hexStringToBytes(s_target, b_target);
-
-	onMessage(-1, "Info", "New target detected " + s_target.substr(0, 18) + "...");
-}
-
-void cpuSolver::updateDifficulty(std::string const difficulty)
-{
-	if (m_customDifficulty > 0u) return;
-
-	arith_uint256 oldDifficulity{ m_difficulty };
-	s_difficulty = difficulty;
-	m_difficulty = arith_uint256(difficulty);
-
-	if ((m_maxDifficulty != 0ull) && (m_difficulty != oldDifficulity))
-	{
-		onMessage(-1, "Info", "New difficulity detected (" + std::to_string(m_difficulty.GetLow64()) + ")...");
-		updateTarget((m_maxDifficulty / m_difficulty).GetHex());
-	}
-}
-
-void cpuSolver::setCustomDifficulty(uint32_t const customDifficulty)
-{
-	if (customDifficulty == 0u) return;
-
-	s_customDifficulty = std::to_string(customDifficulty);
-	m_customDifficulty = arith_uint256{ customDifficulty };
-
-	onMessage(-1, "Info", "Custom difficulty (" + s_customDifficulty + ") detected...");
-	updateTarget((m_maxDifficulty / m_customDifficulty).GetHex());
+	byte32_t bTarget;
+	hexStringToBytes(s_target, bTarget);
+	b_target = bTarget;
 }
 
 uint64_t cpuSolver::getTotalHashRate()
@@ -344,7 +311,7 @@ void cpuSolver::onSolution(byte32_t const solution, byte32_t const digest, std::
 	else
 	{
 		onMessage(-1, "Info", "Solution verified, submitting nonce 0x" + solutionStr + "...");
-		m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_difficulty.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str(), m_customDifficulty > 0u);
+		m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str());
 	}
 }
 
