@@ -191,7 +191,7 @@ namespace SoliditySHA3Miner.Miner
 
                 for (int i = 0; i < Devices.Length; i++)
                     if (Devices[i].DeviceID > -1)
-                        Solver.assignDevice(Devices[i].DeviceID, Devices[i].Intensity);
+                        Solver.assignDevice(Devices[i].DeviceID, ref Devices[i].Intensity);
             }
             catch (Exception ex)
             {

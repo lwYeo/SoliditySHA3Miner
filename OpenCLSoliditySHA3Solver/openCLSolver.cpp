@@ -222,7 +222,7 @@ bool openCLSolver::isPaused()
 	return m_pause;
 }
 
-bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float const intensity)
+bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float &intensity)
 {
 	getKingAddress(&m_kingAddress);
 	m_isKingMaking = (!isAddressEmpty(m_kingAddress));
@@ -257,6 +257,7 @@ bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float 
 				m_devices.emplace_back(new Device(deviceEnum, deviceIDs[deviceEnum], CL_DEVICE_TYPE_GPU, platform.id, m_isKingMaking, intensity, 0));
 
 				auto &assignDevice = m_devices.back();
+				intensity = assignDevice->userDefinedIntensity;
 
 				onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device (" + assignDevice->name + ")...");
 				onMessage(platformName.c_str(), deviceEnum, "Info", "Intensity: " + std::to_string(assignDevice->userDefinedIntensity));

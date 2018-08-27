@@ -101,7 +101,7 @@ public:
 	bool isAnyInitialised();
 	bool isMining();
 	bool isPaused();
-	bool assignDevice(std::string platformName, int deviceEnum, float const intensity);
+	bool assignDevice(std::string platformName, int deviceEnum, float &intensity);
 
 	void updatePrefix(std::string const prefix);
 	void updateTarget(std::string const target);

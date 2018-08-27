@@ -104,7 +104,7 @@ public:
 	void setMessageCallback(MessageCallback messageCallback);
 	void setSolutionCallback(SolutionCallback solutionCallback);
 
-	bool assignDevice(int const deviceID, float const intensity);
+	bool assignDevice(int const deviceID, float &intensity);
 	bool isAssigned();
 	bool isAnyInitialised();
 	bool isMining();
@@ -156,6 +156,6 @@ private:
 	void pushMessageKing(std::unique_ptr<Device> &device);
 	void submitSolutions(std::set<uint64_t> solutions, std::string challenge, int const deviceID);
 
-	uint64_t getNextWorkPosition(std::unique_ptr<Device>& device);
+	uint64_t getNextWorkPosition(std::unique_ptr<Device> &device);
 	sponge_ut const getMidState(message_ut &newMessage);
 };

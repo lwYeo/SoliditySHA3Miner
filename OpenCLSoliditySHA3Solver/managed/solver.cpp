@@ -102,9 +102,12 @@ namespace OpenCLSolver
 		m_Instance->isSubmitStale = submitStale;
 	}
 
-	bool Solver::assignDevice(System::String ^platformName, int const deviceID, float const intensity)
+	bool Solver::assignDevice(System::String ^platformName, int const deviceID, float %intensity)
 	{
-		return m_Instance->assignDevice(ToNativeString(platformName), deviceID, intensity);
+		float tempIntensity = intensity;
+		bool success = m_Instance->assignDevice(ToNativeString(platformName), deviceID, tempIntensity);
+		intensity = tempIntensity;
+		return success;
 	}
 
 	bool Solver::isAssigned()

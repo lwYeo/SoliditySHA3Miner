@@ -86,9 +86,12 @@ namespace CudaSolver
 		m_Instance->isSubmitStale = submitStale;
 	}
 
-	bool Solver::assignDevice(int const deviceID, float const intensity)
+	bool Solver::assignDevice(int const deviceID, float %intensity)
 	{
-		return m_Instance->assignDevice(deviceID, intensity);
+		float tempIntensity = intensity;
+		bool success = m_Instance->assignDevice(deviceID, tempIntensity);
+		intensity = tempIntensity;
+		return success;
 	}
 
 	bool Solver::isAssigned()

@@ -161,6 +161,7 @@ namespace SoliditySHA3Miner.API
                                             HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
                                             HasMonitoringAPI = miner.HasMonitoringAPI,
 
+                                            SettingIntensity = device.Intensity,
                                             SettingMaxCoreClockMHz = solver.getDeviceSettingMaxCoreClock(device.DeviceID),
                                             SettingMaxMemoryClockMHz = solver.getDeviceSettingMaxMemoryClock(device.DeviceID),
                                             SettingPowerLimitPercent = solver.getDeviceSettingPowerLimit(device.DeviceID),
@@ -182,7 +183,7 @@ namespace SoliditySHA3Miner.API
                                     {
                                         var solver = ((Miner.OpenCL)miner).Solver;
 
-                                        newMiner = new JsonAPI.OpenCLMiner()
+                                        newMiner = new JsonAPI.AMD_Miner()
                                         {
                                             Type = device.Type,
                                             DeviceID = device.DeviceID,
@@ -191,6 +192,7 @@ namespace SoliditySHA3Miner.API
                                             HasMonitoringAPI = miner.HasMonitoringAPI,
 
                                             Platform = device.Platform,
+                                            SettingIntensity = device.Intensity,
 
                                             SettingMaxCoreClockMHz = solver.getDeviceSettingMaxCoreClock(device.Platform, device.DeviceID),
                                             SettingMaxMemoryClockMHz = solver.getDeviceSettingMaxMemoryClock(device.Platform, device.DeviceID),
@@ -210,16 +212,34 @@ namespace SoliditySHA3Miner.API
                         }
                         else
                         {
-                            newMiner = new JsonAPI.Miner()
+                            switch (device.Type)
                             {
-                                Type = device.Type,
-                                DeviceID = device.DeviceID,
-                                ModelName = device.Name,
-                                HashRate = miner.GetHashrateByDevice(device.Platform, (device.Type == "CPU")
-                                                                                      ? Array.IndexOf(miner.Devices, device)
-                                                                                      : device.DeviceID) / divisor,
-                                HasMonitoringAPI = miner.HasMonitoringAPI
-                            };
+                                case "OpenCL":
+                                    newMiner = new JsonAPI.OpenCLMiner()
+                                    {
+                                        Type = device.Type,
+                                        DeviceID = device.DeviceID,
+                                        ModelName = device.Name,
+                                        HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                                        HasMonitoringAPI = miner.HasMonitoringAPI,
+
+                                        Platform = device.Platform,
+                                        SettingIntensity = device.Intensity
+                                    };
+                                    break;
+                                default:
+                                    newMiner = new JsonAPI.Miner()
+                                    {
+                                        Type = device.Type,
+                                        DeviceID = device.DeviceID,
+                                        ModelName = device.Name,
+                                        HashRate = miner.GetHashrateByDevice(device.Platform, (device.Type == "CPU")
+                                                                                     ? Array.IndexOf(miner.Devices, device)
+                                                                                     : device.DeviceID) / divisor,
+                                        HasMonitoringAPI = miner.HasMonitoringAPI
+                                    };
+                                    break;
+                            }
                         }
                         
                         if (newMiner != null) api.Miners.Add(newMiner);
@@ -262,6 +282,7 @@ namespace SoliditySHA3Miner.API
 
             public class CudaMiner : Miner
             {
+                public float SettingIntensity { get; set; }
                 public int SettingMaxCoreClockMHz { get; set; }
                 public int SettingMaxMemoryClockMHz { get; set; }
                 public int SettingPowerLimitPercent { get; set; }
@@ -280,7 +301,11 @@ namespace SoliditySHA3Miner.API
             public class OpenCLMiner : Miner
             {
                 public string Platform { get; set; }
+                public float SettingIntensity { get; set; }
+            }
 
+            public class AMD_Miner : OpenCLMiner
+            {
                 public int SettingMaxCoreClockMHz { get; set; }
                 public int SettingMaxMemoryClockMHz { get; set; }
                 public int SettingPowerLimitPercent { get; set; }

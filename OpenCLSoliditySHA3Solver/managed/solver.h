@@ -45,7 +45,7 @@ namespace OpenCLSolver
 		~Solver();
 
 		void setSubmitStale(bool submitStale);
-		bool assignDevice(System::String ^platformName, int const deviceID, float const intensity);
+		bool assignDevice(System::String ^platformName, int const deviceID, float %intensity);
 		bool isAssigned();
 		bool isAnyInitialised();
 		bool isMining();

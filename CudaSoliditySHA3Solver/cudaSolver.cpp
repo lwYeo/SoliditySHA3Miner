@@ -107,7 +107,7 @@ void CUDASolver::setSolutionCallback(SolutionCallback solutionCallback)
 	m_solutionCallback = solutionCallback;
 }
 
-bool CUDASolver::assignDevice(int const deviceID, float const intensity)
+bool CUDASolver::assignDevice(int const deviceID, float &intensity)
 {
 	onMessage(deviceID, "Info", "Assigning device...");
 
@@ -175,6 +175,8 @@ bool CUDASolver::assignDevice(int const deviceID, float const intensity)
 		assignDevice->intensity = (intensity < 1.000f) ? defaultIntensity : intensity;
 	}
 	else assignDevice->intensity = (intensity < 1.000f) ? 24.0f : intensity; // For older GPUs
+
+	intensity = assignDevice->intensity;
 
 	onMessage(assignDevice->deviceID, "Info", "Assigned CUDA device (" + assignDevice->name + ")...");
 

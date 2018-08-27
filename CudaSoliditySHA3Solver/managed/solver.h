@@ -43,7 +43,7 @@ namespace CudaSolver
 		~Solver();
 
 		void setSubmitStale(bool submitStale);
-		bool assignDevice(int const deviceID, float const intensity);
+		bool assignDevice(int const deviceID, float %intensity);
 		bool isAssigned();
 		bool isAnyInitialised();
 		bool isMining();
