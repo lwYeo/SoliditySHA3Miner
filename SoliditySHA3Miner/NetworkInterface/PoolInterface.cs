@@ -78,6 +78,8 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public MiningParameters GetMiningParameters()
         {
+            Program.Print("[INFO] Checking latest parameters from pool...");
+
             var getPoolEthAddress = GetPoolParameter("getPoolEthAddress");
             var getPoolChallengeNumber = GetPoolParameter("getChallengeNumber");
             var getPoolMinimumShareDifficulty = GetPoolParameter("getMinimumShareDifficulty", s_MinerAddress);
@@ -123,59 +125,65 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Program.Print("[INFO] Checking latest parameters from pool...");
-            var miningParameters = GetMiningParameters();
-            if (miningParameters == null)
+            try
             {
-                OnGetMiningParameterStatusEvent(this, false, null);
-                return;
-            }
-
-            var address = miningParameters.EthAddress;
-            var challenge = miningParameters.ChallengeNumberByte32String;
-            var target = miningParameters.MiningTargetByte32String;
-
-            if (m_lastParameters == null || miningParameters.ChallengeNumber.Value != m_lastParameters.ChallengeNumber.Value)
-            {
-                Program.Print(string.Format("[INFO] New challenge detected {0}...", challenge));
-                OnNewMessagePrefixEvent(this, challenge + address.Replace("0x", string.Empty));
-            }
-
-            if (m_customDifficulity == 0)
-            {
-                DifficultyHex = miningParameters.MiningDifficulty.HexValue;
-
-                if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
+                var miningParameters = GetMiningParameters();
+                if (miningParameters == null)
                 {
-                    Program.Print(string.Format("[INFO] New target detected {0}...", target));
-                    OnNewTargetEvent(this, target);
+                    OnGetMiningParameterStatusEvent(this, false, null);
+                    return;
                 }
 
-                if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
-                {
-                    Program.Print(string.Format("[INFO] New difficulity detected ({0})...", miningParameters.MiningDifficulty.Value));
-                    Difficulty = Convert.ToUInt64(miningParameters.MiningDifficulty.Value.ToString());
+                var address = miningParameters.EthAddress;
+                var challenge = miningParameters.ChallengeNumberByte32String;
+                var target = miningParameters.MiningTargetByte32String;
 
-                    var calculatedTarget = m_maxTarget.Value / Difficulty;
-                    if (calculatedTarget != miningParameters.MiningTarget.Value)
+                if (m_lastParameters == null || miningParameters.ChallengeNumber.Value != m_lastParameters.ChallengeNumber.Value)
+                {
+                    Program.Print(string.Format("[INFO] New challenge detected {0}...", challenge));
+                    OnNewMessagePrefixEvent(this, challenge + address.Replace("0x", string.Empty));
+                }
+
+                if (m_customDifficulity == 0)
+                {
+                    DifficultyHex = miningParameters.MiningDifficulty.HexValue;
+
+                    if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
                     {
-                        var newTarget = calculatedTarget.ToString();
-                        Program.Print(string.Format("[INFO] Update target {0}...", newTarget));
-                        OnNewTargetEvent(this, newTarget);
+                        Program.Print(string.Format("[INFO] New target detected {0}...", target));
+                        OnNewTargetEvent(this, target);
+                    }
+
+                    if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
+                    {
+                        Program.Print(string.Format("[INFO] New difficulity detected ({0})...", miningParameters.MiningDifficulty.Value));
+                        Difficulty = Convert.ToUInt64(miningParameters.MiningDifficulty.Value.ToString());
+
+                        var calculatedTarget = m_maxTarget.Value / Difficulty;
+                        if (calculatedTarget != miningParameters.MiningTarget.Value)
+                        {
+                            var newTarget = calculatedTarget.ToString();
+                            Program.Print(string.Format("[INFO] Update target {0}...", newTarget));
+                            OnNewTargetEvent(this, newTarget);
+                        }
                     }
                 }
+                else
+                {
+                    Difficulty = m_customDifficulity;
+                    var calculatedTarget = m_maxTarget.Value / m_customDifficulity;
+                    var newTarget = new HexBigInteger(new BigInteger(m_customDifficulity)).HexValue;
+
+                    OnNewTargetEvent(this, newTarget);
+                }
+
+                m_lastParameters = miningParameters;
+                OnGetMiningParameterStatusEvent(this, true, miningParameters);
             }
-            else
+            catch (Exception ex)
             {
-                Difficulty = m_customDifficulity;
-                var calculatedTarget = m_maxTarget.Value / m_customDifficulity;
-                var newTarget = new HexBigInteger(new BigInteger(m_customDifficulity)).HexValue;
-
-                OnNewTargetEvent(this, newTarget);
+                Program.Print(string.Format("[ERROR] {0}", ex.Message));
             }
-
-            m_lastParameters = miningParameters;
-            OnGetMiningParameterStatusEvent(this, true, miningParameters);
         }
 
         public void UpdateMiningParameters()

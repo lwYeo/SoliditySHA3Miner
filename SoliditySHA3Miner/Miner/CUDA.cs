@@ -159,10 +159,6 @@ namespace SoliditySHA3Miner.Miner
                 m_pauseOnFailedScan = pauseOnFailedScans;
                 m_failedScanCount = 0;
 
-                NetworkInterface.OnGetMiningParameterStatusEvent += NetworkInterface_OnGetMiningParameterStatusEvent;
-                NetworkInterface.OnNewMessagePrefixEvent += NetworkInterface_OnNewMessagePrefixEvent;
-                NetworkInterface.OnNewTargetEvent += NetworkInterface_OnNewTargetEvent;
-
                 HasMonitoringAPI = Solver.foundNvAPI64();
 
                 if (!HasMonitoringAPI) Program.Print("[WARN] NvAPI64 library not found.");
@@ -180,7 +176,11 @@ namespace SoliditySHA3Miner.Miner
                         OnSolutionHandler = m_cudaSolver_OnSolution
                     };
                 }
-                
+
+                NetworkInterface.OnGetMiningParameterStatusEvent += NetworkInterface_OnGetMiningParameterStatusEvent;
+                NetworkInterface.OnNewMessagePrefixEvent += NetworkInterface_OnNewMessagePrefixEvent;
+                NetworkInterface.OnNewTargetEvent += NetworkInterface_OnNewTargetEvent;
+
                 Solver.setSubmitStale(isSubmitStale);
 
                 if (cudaDevices.All(d => d.DeviceID == -1))
@@ -277,41 +277,67 @@ namespace SoliditySHA3Miner.Miner
 
         private void NetworkInterface_OnNewMessagePrefixEvent(NetworkInterface.INetworkInterface sender, string messagePrefix)
         {
-            Solver.updatePrefix(messagePrefix);
+            try
+            {
+                if (Solver != null)
+                    Solver.updatePrefix(messagePrefix);
+            }
+            catch (Exception ex)
+            {
+                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+            }
         }
 
         private void NetworkInterface_OnNewTargetEvent(NetworkInterface.INetworkInterface sender, string target)
         {
-            Solver.updateTarget(target);
+            try
+            {
+                if (Solver != null)
+                    Solver.updateTarget(target);
+            }
+            catch (Exception ex)
+            {
+                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+            }
         }
 
         private void NetworkInterface_OnGetMiningParameterStatusEvent(NetworkInterface.INetworkInterface sender,
                                                                       bool success, NetworkInterface.MiningParameters miningParameters)
         {
-            if (success)
+            try
             {
-                var isPause = Solver.isPaused();
-
-                if (!NetworkInterface.IsPool &&
-                        ((NetworkInterface.Web3Interface)NetworkInterface).IsChallengedSubmitted(miningParameters.ChallengeNumberByte32String))
+                if (Solver != null)
                 {
-                    isPause = true;
-                }
-                else if (isPause)
-                {
-                    if (m_failedScanCount > m_pauseOnFailedScan)
-                        m_failedScanCount = 0;
+                    if (success)
+                    {
+                        var isPause = Solver.isPaused();
 
-                    isPause = false;
+                        if (!NetworkInterface.IsPool &&
+                                ((NetworkInterface.Web3Interface)NetworkInterface).IsChallengedSubmitted(miningParameters.ChallengeNumberByte32String))
+                        {
+                            isPause = true;
+                        }
+                        else if (isPause)
+                        {
+                            if (m_failedScanCount > m_pauseOnFailedScan)
+                                m_failedScanCount = 0;
+
+                            isPause = false;
+                        }
+                        Solver.pauseFinding(isPause);
+                    }
+                    else
+                    {
+                        m_failedScanCount += 1;
+
+                        if (m_failedScanCount > m_pauseOnFailedScan && Solver.isMining())
+                            Solver.pauseFinding(true);
+                    }
                 }
-                Solver.pauseFinding(isPause);
             }
-            else
+            catch (Exception ex)
             {
-                m_failedScanCount += 1;
-
-                if (m_failedScanCount > m_pauseOnFailedScan && Solver.isMining())
-                    Solver.pauseFinding(true);
+                Program.Print(string.Format("[ERROR] {0}", ex.Message));
             }
         }
 

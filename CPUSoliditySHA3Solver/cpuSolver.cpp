@@ -43,15 +43,14 @@ std::string cpuSolver::getNewSolutionTemplate(std::string kingAddress)
 
 cpuSolver::cpuSolver(std::string const threads) noexcept :
 	m_miningThreadCount{ 0u },
-	m_hashStartTime{ std::chrono::steady_clock::now() },
+	m_hashStartTime{ new std::chrono::steady_clock::time_point[std::stoi(threads)] },
 	s_address{ "" },
 	s_challenge{ "" },
 	s_target{ "" },
 	m_address{ 0 },
 	m_prefix{ 0 },
 	b_target{ 0 },
-	m_target{ 0 },
-	m_solutionHashStartTime{ std::chrono::steady_clock::now() }
+	m_target{ 0 }
 {
 	const char *delim = (const char *)",";
 	char *s_threads = (char *)malloc(threads.size());
@@ -185,16 +184,18 @@ uint64_t cpuSolver::getTotalHashRate()
 	uint64_t totalHashes{ 0ull };
 
 	for (uint32_t id{ 0 }; id < m_miningThreadCount; ++id)
-		totalHashes += m_threadHashes[id];
-
-	return (uint64_t)((long double)totalHashes / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime).count()));
+	{
+		totalHashes +=
+			(uint64_t)((long double)m_threadHashes[id] / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime[id]).count()));
+	}
+	return totalHashes;
 }
 
 uint64_t cpuSolver::getHashRateByThreadID(uint32_t const threadID)
 {
 	using namespace std::chrono;
 	if (threadID < m_miningThreadCount)
-		return (uint64_t)((long double)m_threadHashes[threadID] / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime).count()));
+		return (uint64_t)((long double)m_threadHashes[threadID] / (duration_cast<seconds>(steady_clock::now() - m_hashStartTime[threadID]).count()));
 
 	else return 0ull;
 }
@@ -211,12 +212,11 @@ bool cpuSolver::islessThan(byte32_t &left, byte32_t &right)
 
 void cpuSolver::startFinding()
 {
-	uint64_t lastPosition;
-	resetWorkPosition(lastPosition);
-	m_hashStartTime = std::chrono::steady_clock::now();
+	onMessage(-1, "Info", "Start mining...");
 
 	for (uint32_t id{ 0 }; id < m_miningThreadCount; ++id)
 	{
+		m_hashStartTime[id] = std::chrono::steady_clock::now();
 		std::thread t{ &cpuSolver::findSolution, this, id, m_miningThreadAffinities[id] };
 		t.detach();
 	}
@@ -325,8 +325,15 @@ void cpuSolver::findSolution(uint32_t const threadID, uint32_t const affinityMas
 {
 	try
 	{
-		byte32_t currentSolution;
-		std::string currentChallenge;
+		uint64_t nonce{ 0 };
+		byte32_t digest{ 0 };
+		message_t miningMessage{ 0 }; // challenge32 + address20 + solution32
+		byte32_t currentSolution{ 0 };
+		std::string currentChallenge{ "" };
+
+		getKingAddress(&m_kingAddress);
+		getSolutionTemplate(&currentSolution);
+
 		m_threadHashes[threadID] = 0ull;
 		m_isThreadMining[threadID] = setCurrentThreadAffinity(affinityMask);
 
@@ -341,13 +348,9 @@ void cpuSolver::findSolution(uint32_t const threadID, uint32_t const affinityMas
 			{
 				char *c_currentChallenge = (char *)malloc(s_challenge.size());
 				strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
-				currentChallenge = std::string(c_currentChallenge);
+				currentChallenge = std::string{ c_currentChallenge };
 			}
 
-			getKingAddress(&m_kingAddress);
-			getSolutionTemplate(&currentSolution);
-
-			uint64_t nonce;
 			incrementWorkPosition(nonce, 1ull);
 			m_threadHashes[threadID]++;
 
@@ -357,27 +360,25 @@ void cpuSolver::findSolution(uint32_t const threadID, uint32_t const affinityMas
 				std::memcpy(&currentSolution[ADDRESS_LENGTH], &nonce, UINT64_LENGTH); // Shifted for King address
 			// no need to memcpy m_kingAddress as m_solutionTemplate already contains King address as prefix
 
-			message_t miningMessage; // challenge32 + address20 + solution32
 			std::memcpy(&miningMessage, &m_prefix, PREFIX_LENGTH); // challenge32 + address20
 			std::memcpy(&miningMessage[PREFIX_LENGTH], &currentSolution, UINT256_LENGTH); // solution32
 
-			byte32_t digest;
 			keccak_256(&digest[0], UINT256_LENGTH, &miningMessage[0], MESSAGE_LENGTH);
 
 			if (islessThan(digest, b_target))
 				onSolution(currentSolution, digest, currentChallenge);
 
-			if (nonce > INT64_MAX) resetWorkPosition(nonce);
-
-			if (m_threadHashes[threadID] > INT32_MAX)
+			if (m_threadHashes[threadID] > INT64_MAX)
 			{
 				m_threadHashes[threadID] = 0ull;
-				m_hashStartTime = std::chrono::steady_clock::now();
+				m_hashStartTime[threadID] = std::chrono::steady_clock::now();
 			}
 		}
 	}
-	catch (std::exception &ex) { onMessage(affinityMask, "Error", ex.what()); }
+	catch (std::exception &ex) { onMessage(threadID, "Error", ex.what()); }
 
 	m_isThreadMining[threadID] = false;
 	m_threadHashes[threadID] = 0ull;
+
+	onMessage(threadID, "Info", "Mining stopped.");
 }

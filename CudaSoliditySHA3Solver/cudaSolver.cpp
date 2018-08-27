@@ -58,8 +58,7 @@ CUDASolver::CUDASolver() noexcept :
 	m_address{ 0 },
 	m_kingAddress{ 0 },
 	m_miningMessage{ 0 },
-	m_target{ 0 },
-	m_solutionHashStartTime{ std::chrono::steady_clock::now() }
+	m_target{ 0 }
 {
 	try { if (NV_API::foundNvAPI64()) NV_API::initialize(); }
 	catch (std::exception ex) { onMessage(-1, "Error", ex.what()); }
@@ -69,7 +68,8 @@ CUDASolver::~CUDASolver() noexcept
 {
 	stopFinding();
 
-	NV_API::unload();
+	try { NV_API::unload(); }
+	catch (...) {}
 }
 
 void CUDASolver::setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback)
@@ -269,10 +269,7 @@ void CUDASolver::updateTarget(std::string const target)
 
 void CUDASolver::startFinding()
 {
-	uint64_t lastPosition;
-	getWorkPosition(lastPosition);
-	if (lastPosition > INT64_MAX) resetWorkPosition(lastPosition);
-	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
+	onMessage(-1, "Info", "Start mining...");
 
 	for (auto& device : m_devices)
 	{
@@ -740,9 +737,6 @@ void CUDASolver::checkInputs(std::unique_ptr<Device>& device, char *currentChall
 				device->hashStartTime.store(std::chrono::steady_clock::now());
 			}
 		}
-		m_solutionHashStartTime.store(std::chrono::steady_clock::now());
-
-		if (lastPosition > INT64_MAX) resetWorkPosition(lastPosition);
 
 		if (device->isNewTarget)
 		{

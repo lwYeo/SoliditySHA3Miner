@@ -54,12 +54,11 @@ private:
 	prefix_t m_prefix; // challenge32 + address20
 
 	uint32_t m_miningThreadCount;
-	uint32_t* m_miningThreadAffinities;
-	bool* m_isThreadMining;
+	uint32_t *m_miningThreadAffinities;
+	bool *m_isThreadMining;
 
-	uint64_t* m_threadHashes;
-	std::chrono::steady_clock::time_point m_hashStartTime;
-	std::chrono::steady_clock::time_point m_solutionHashStartTime;
+	uint64_t *m_threadHashes;
+	std::chrono::steady_clock::time_point *m_hashStartTime;
 
 public:
 	static uint32_t getLogicalProcessorsCount();

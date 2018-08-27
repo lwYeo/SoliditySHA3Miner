@@ -71,11 +71,12 @@ namespace SoliditySHA3Miner
         {
             lock (m_handler)
             {
-                foreach (var miner in m_allMiners)
-                {
-                    try { if (miner != null) miner.Dispose(); }
-                    catch (Exception ex) { Print(ex.Message); }
-                }
+                m_allMiners.AsParallel()
+                           .ForAll(miner =>
+                           {
+                               try { if (miner != null) miner.Dispose(); }
+                               catch (Exception ex) { Print(ex.Message); }
+                           });
 
                 if (m_waitCheckTimer != null) m_waitCheckTimer.Stop();
                 if (m_manualResetEvent != null) m_manualResetEvent.Set();
@@ -708,13 +709,14 @@ namespace SoliditySHA3Miner
                                            ? primaryPoolInterface
                                            : (NetworkInterface.INetworkInterface)web3Interface;
 
-                m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, submitStale, pauseOnFailedScans);
-
-                m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), submitStale, pauseOnFailedScans);
-
-                m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, submitStale, pauseOnFailedScans);
-
-                m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner };
+                if (cpuMode)
+                    m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, submitStale, pauseOnFailedScans);
+                else
+                {
+                    m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, submitStale, pauseOnFailedScans);
+                    m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), submitStale, pauseOnFailedScans);
+                }
+                m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner }.Where(m => m != null).ToArray();
 
                 if (m_allMiners.All(m => !m.HasAssignedDevices))
                 {
@@ -728,20 +730,29 @@ namespace SoliditySHA3Miner
 
                 API.Ccminer.StartListening(minerCcminerAPI, m_allMiners);
 
-                if (m_openCLMiner.HasAssignedDevices)
-                    m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                              hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+                if (cpuMode)
+                {
+                    if (m_cpuMiner.HasAssignedDevices)
+                        m_cpuMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
+                                               hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+                }
+                else
+                {
+                    if (m_openCLMiner.HasAssignedDevices)
+                        m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
+                                                    hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
 
-                if (m_cudaMiner.HasAssignedDevices)
-                    m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                            hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
-
-                if (m_cpuMiner.HasAssignedDevices)
-                    m_cpuMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                           hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+                    if (m_cudaMiner.HasAssignedDevices)
+                        m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
+                                                hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+                }
 
                 m_waitCheckTimer = new System.Timers.Timer(1000);
-                m_waitCheckTimer.Elapsed += delegate { if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPaused))) WaitSeconds++; };
+                m_waitCheckTimer.Elapsed +=
+                    delegate
+                    {
+                        if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPaused))) WaitSeconds++;
+                    };
                 m_waitCheckTimer.Start();
                 WaitSeconds = (ulong)(LaunchTime - DateTime.Now).TotalSeconds;
             }

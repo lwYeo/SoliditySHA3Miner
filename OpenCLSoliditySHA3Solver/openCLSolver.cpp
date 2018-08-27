@@ -144,8 +144,7 @@ openCLSolver::openCLSolver() noexcept :
 	m_address{ 0 },
 	m_kingAddress{ 0 },
 	m_miningMessage{ 0 },
-	m_target{ 0 },
-	m_solutionHashStartTime{ std::chrono::steady_clock::now() }
+	m_target{ 0 }
 {
 	try { if (ADL_API::foundAdlApi()) ADL_API::initialize(); }
 	catch (std::exception ex) { onMessage("", -1, "Error", ex.what()); }
@@ -503,10 +502,7 @@ int openCLSolver::getDeviceCurrentUtilizationPercent(std::string platformName, i
 
 void openCLSolver::startFinding()
 {
-	uint64_t lastPosition;
-	getWorkPosition(lastPosition);
-	if (lastPosition > INT64_MAX) resetWorkPosition(lastPosition);
-	m_solutionHashStartTime.store(std::chrono::steady_clock::now());
+	onMessage("", -1, "Info", "Start mining...");
 
 	for (auto& device : m_devices)
 	{
@@ -780,9 +776,6 @@ void openCLSolver::checkInputs(std::unique_ptr<Device> &device, char *currentCha
 				device->hashStartTime.store(std::chrono::steady_clock::now());
 			}
 		}
-		m_solutionHashStartTime.store(std::chrono::steady_clock::now());
-
-		if (lastPosition > INT64_MAX) resetWorkPosition(lastPosition);
 
 		if (device->isNewTarget)
 		{

@@ -83,8 +83,6 @@ private:
 	byte32_t m_solutionTemplate;
 	message_ut m_miningMessage;
 	arith_uint256 m_target;
-
-	std::atomic<std::chrono::steady_clock::time_point> m_solutionHashStartTime;
 	std::thread m_runThread;
 
 public:
