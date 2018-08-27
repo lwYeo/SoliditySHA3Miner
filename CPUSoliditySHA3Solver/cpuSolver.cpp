@@ -219,6 +219,7 @@ void cpuSolver::startFinding()
 		m_hashStartTime[id] = std::chrono::steady_clock::now();
 		std::thread t{ &cpuSolver::findSolution, this, id, m_miningThreadAffinities[id] };
 		t.detach();
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 
@@ -325,6 +326,10 @@ void cpuSolver::findSolution(uint32_t const threadID, uint32_t const affinityMas
 {
 	try
 	{
+		uint64_t const nonceSize{ 100000ull };
+		uint64_t beginNonce{ 0 };
+		uint64_t endNonce{ 0 };
+
 		uint64_t nonce{ 0 };
 		byte32_t digest{ 0 };
 		message_t miningMessage{ 0 }; // challenge32 + address20 + solution32
@@ -351,7 +356,14 @@ void cpuSolver::findSolution(uint32_t const threadID, uint32_t const affinityMas
 				currentChallenge = std::string{ c_currentChallenge };
 			}
 
-			incrementWorkPosition(nonce, 1ull);
+			nonce++;
+
+			if (nonce > endNonce)
+			{
+				incrementWorkPosition(beginNonce, nonceSize);
+				endNonce = beginNonce + nonceSize;
+				nonce = beginNonce;
+			}
 			m_threadHashes[threadID]++;
 
 			if (isAddressEmpty(m_kingAddress))
@@ -366,7 +378,10 @@ void cpuSolver::findSolution(uint32_t const threadID, uint32_t const affinityMas
 			keccak_256(&digest[0], UINT256_LENGTH, &miningMessage[0], MESSAGE_LENGTH);
 
 			if (islessThan(digest, b_target))
-				onSolution(currentSolution, digest, currentChallenge);
+			{
+				std::thread t{ &cpuSolver::onSolution, this, currentSolution, digest, currentChallenge };
+				t.detach();
+			}
 
 			if (m_threadHashes[threadID] > INT64_MAX)
 			{
