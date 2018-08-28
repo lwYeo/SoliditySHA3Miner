@@ -24,7 +24,7 @@ Libraries are included in the Software under the following license terms:
 
     Satoshi Nakamoto and The Bitcoin Core developers (uint256) [https://github.com/bitcoin/bitcoin/blob/master/COPYING]
     
-    Projet RNRT SAPHIR (sphlib) [http://www.saphir2.com/sphlib/]
+    libkeccak-tiny [https://github.com/coruus/keccak-tiny/]
     
     Nethereum [https://github.com/Nethereum/Nethereum/blob/master/LICENSE.md]
     
@@ -66,7 +66,7 @@ Options:
 	
     amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
 	
-    amdIntensity            GPU (AMD OpenCL) intensity (default: 24.223, decimals allowed)
+    amdIntensity            GPU (AMD OpenCL) intensity (default: auto, decimals allowed)
 	
     listCudaDevices         List of all CUDA devices in this system (device ID: GPU name)
 	
@@ -78,7 +78,7 @@ Options:
 	
     minerCcminerAPI         'IP:port' for the ccminer-style API (default: 127.0.0.1:4068), 0 disabled
 	
-    overrideMaxDiff         (Pool only) Use maximum difficulty and skips query from web3
+    overrideMaxTarget       (Pool only) Use maximum target and skips query from web3
 	
     customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)
 	
