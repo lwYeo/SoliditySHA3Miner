@@ -226,7 +226,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                         JObject submitShare;
                         submitShare = GetPoolParameter("submitShare", solution, minerAddress, digest, difficulty, challenge,
-                                                       m_customDifficulity > 0 ? "true" : "false");
+                                                       m_customDifficulity > 0 ? "true" : "false", Miner.Work.GetKingAddressString());
 
                         var response = Utils.Json.InvokeJObjectRPC(s_PoolURL, submitShare);
                         var result = response.SelectToken("$.result")?.Value<string>();
