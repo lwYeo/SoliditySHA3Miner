@@ -10,9 +10,6 @@
     <ClCompile Include="uint256\utilstrencodings.cpp">
       <Filter>uint256</Filter>
     </ClCompile>
-    <ClCompile Include="managed\solver.cpp">
-      <Filter>managed</Filter>
-    </ClCompile>
     <ClCompile Include="cpuSolver.cpp" />
     <ClCompile Include="sha3.cpp" />
   </ItemGroup>
@@ -39,22 +36,14 @@
     <ClInclude Include="uint256\utilstrencodings.h">
       <Filter>uint256</Filter>
     </ClInclude>
-    <ClInclude Include="managed\ManagedObject.h">
-      <Filter>managed</Filter>
-    </ClInclude>
-    <ClInclude Include="managed\solver.h">
-      <Filter>managed</Filter>
-    </ClInclude>
     <ClInclude Include="cpuSolver.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="solver.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="uint256">
       <UniqueIdentifier>{b018476a-c138-40bb-8beb-1ca2664a8201}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="managed">
-      <UniqueIdentifier>{5588d206-5f16-4f19-8814-0b68a9a612de}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -1,46 +1,39 @@
 #include <cassert>
 #include <chrono>
-#include <string>
 #include <random>
+#include <string>
+#include <thread>
 #include <vector>
 #include "types.h"
+#include "solver.h"
 #include "uint256/arith_uint256.h"
 
-#pragma managed(push, off)
+#ifndef __CPU_SOLVER__
+#define __CPU_SOLVER__
 
-#ifdef _M_CEE
-#	undef _M_CEE
-#	include <thread>
-#	define _M_CEE 001
-#else
-#	include <thread>
-#endif
+typedef void(*GetKingAddressCallback)(uint8_t *kingAddress);
+typedef void(*GetWorkPositionCallback)(uint64_t &lastWorkPosition);
+typedef void(*ResetWorkPositionCallback)(uint64_t &lastWorkPosition);
+typedef void(*IncrementWorkPositionCallback)(uint64_t &lastWorkPosition, uint64_t incrementSize);
+typedef void(*GetSolutionTemplateCallback)(uint8_t *solutionTemplate);
+typedef void(*MessageCallback)(int threadID, const char *type, const char *message);
+typedef void(*SolutionCallback)(const char *digest, const char *address, const char *challenge, const char *target, const char *solution);
 
-#pragma managed(pop)
+static GetKingAddressCallback m_getKingAddressCallback{ NULL };
+static GetSolutionTemplateCallback m_getSolutionTemplateCallback{ NULL };
+static GetWorkPositionCallback m_getWorkPositionCallback{ NULL };
+static ResetWorkPositionCallback m_resetWorkPositionCallback{ NULL };
+static IncrementWorkPositionCallback m_incrementWorkPositionCallback{ NULL };
+static MessageCallback m_messageCallback{ NULL };
+static SolutionCallback m_solutionCallback{ NULL };
 
 class cpuSolver
 {
 public:
-	typedef void(*GetKingAddressCallback)(uint8_t *);
-	typedef void(*GetWorkPositionCallback)(uint64_t &);
-	typedef void(*ResetWorkPositionCallback)(uint64_t &);
-	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
-	typedef void(*GetSolutionTemplateCallback)(uint8_t *);
-	typedef void(*MessageCallback)(int, const char *, const char *);
-	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *);
-
 	bool m_SubmitStale;
 
 private:
 	static bool m_pause;
-
-	GetKingAddressCallback m_getKingAddressCallback;
-	GetSolutionTemplateCallback m_getSolutionTemplateCallback;
-	GetWorkPositionCallback m_getWorkPositionCallback;
-	ResetWorkPositionCallback m_resetWorkPositionCallback;
-	IncrementWorkPositionCallback m_incrementWorkPositionCallback;
-	MessageCallback m_messageCallback;
-	SolutionCallback m_solutionCallback;
 
 	byte32_t b_target;
 	arith_uint256 m_target;
@@ -102,3 +95,5 @@ private:
 	bool setCurrentThreadAffinity(uint32_t const affinityMask);
 	void findSolution(uint32_t const threadID, uint32_t const affinityMask);
 };
+
+#endif // !__CPU_SOLVER__

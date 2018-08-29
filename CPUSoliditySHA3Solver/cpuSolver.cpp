@@ -1,6 +1,5 @@
 #include "cpuSolver.h"
 #include "sha3.h"
-#pragma unmanaged
 
 // --------------------------------------------------------------------
 // Static

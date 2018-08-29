@@ -150,3 +150,4 @@ x64/Release/0xGOLD.abi
 x64/Debug/sha3kingKernel.cl
 x64/Release/sha3kingKernel.cl
 OpenCLSoliditySHA3Solver/x64/Release/sha3kingKernel.cl
+CPUSoliditySHA3Solver/x64/Debug/vc141.idb

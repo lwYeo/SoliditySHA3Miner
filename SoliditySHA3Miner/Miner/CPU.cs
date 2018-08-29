@@ -1,23 +1,115 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Timers;
-using CPUSolver;
 
 namespace SoliditySHA3Miner.Miner
 {
     public class CPU : IMiner
     {
+        #region P/Invoke interface
+
+        private static class Solver
+        {
+            public const string SOLVER_NAME = "CPUSoliditySHA3Solver";
+
+            public unsafe delegate void GetSolutionTemplateCallback(byte* solutionTemplate);
+            public unsafe delegate void GetKingAddressCallback(byte* kingAddress);
+            public delegate void GetWorkPositionCallback(ref ulong lastWorkPosition);
+            public delegate void ResetWorkPositionCallback(ref ulong lastWorkPosition);
+            public delegate void IncrementWorkPositionCallback(ref ulong lastWorkPosition, ulong incrementSize);
+            public delegate void MessageCallback([In]int threadID, [In]StringBuilder type, [In]StringBuilder message);
+            public delegate void SolutionCallback([In]StringBuilder digest, [In]StringBuilder address, [In]StringBuilder challenge, [In]StringBuilder target, [In]StringBuilder solution);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void GetLogicalProcessorsCount(ref uint processorCount);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void GetNewSolutionTemplate(StringBuilder kingAddress, StringBuilder solutionTemplate);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static unsafe extern GetSolutionTemplateCallback SetOnGetSolutionTemplateHandler(GetSolutionTemplateCallback getSolutionTemplateCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static unsafe extern GetKingAddressCallback SetOnGetKingAddressHandler(GetKingAddressCallback getKingAddressCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern GetWorkPositionCallback SetOnGetWorkPositionHandler(GetWorkPositionCallback getWorkPositionCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern ResetWorkPositionCallback SetOnResetWorkPositionHandler(ResetWorkPositionCallback resetWorkPositionCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern IncrementWorkPositionCallback SetOnIncrementWorkPositionHandler(IncrementWorkPositionCallback incrementWorkPositionCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern MessageCallback SetOnMessageHandler(MessageCallback messageCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern SolutionCallback SetOnSolutionHandler(SolutionCallback solutionCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern IntPtr GetInstance(StringBuilder threads);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void DisposeInstance(IntPtr instance);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void SetSubmitStale(IntPtr instance, bool submitStale);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void IsMining(IntPtr instance, ref bool isMining);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void IsPaused(IntPtr instance, ref bool isPaused);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void GetHashRateByThreadID(IntPtr instance, uint threadID, ref ulong hashRate);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void GetTotalHashRate(IntPtr instance, ref ulong totalHashRate);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void UpdatePrefix(IntPtr instance, StringBuilder prefix);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void UpdateTarget(IntPtr instance, StringBuilder target);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void PauseFinding(IntPtr instance, bool pause);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void StartFinding(IntPtr instance);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern void StopFinding(IntPtr instance);
+        }
+
+        private Solver.GetSolutionTemplateCallback m_GetSolutionTemplateCallback;
+        private Solver.GetKingAddressCallback m_GetKingAddressCallback;
+        private Solver.GetWorkPositionCallback m_GetWorkPositionCallback;
+        private Solver.ResetWorkPositionCallback m_ResetWorkPositionCallback;
+        private Solver.IncrementWorkPositionCallback m_IncrementWorkPositionCallback;
+        private Solver.MessageCallback m_MessageCallback;
+        private Solver.SolutionCallback m_SolutionCallback;
+
+        #endregion
+
         #region Static
 
         public static uint GetLogicalProcessorCount()
         {
-            return Solver.getLogicalProcessorsCount();
+            var processorCount = 0u;
+            Solver.GetLogicalProcessorsCount(ref processorCount);
+            return processorCount;
         }
 
-        public static string GetNewSolutionTemplate(string solutionTemplate = "")
+        public static string GetNewSolutionTemplate(string kingAddress = "")
         {
-            return Solver.getNewSolutionTemplate(solutionTemplate);
+            var solutionTemplate = new StringBuilder(32 * 2 + 2);
+            Solver.GetNewSolutionTemplate(new StringBuilder(kingAddress), solutionTemplate);
+            return solutionTemplate.ToString();
         }
 
         #endregion
@@ -26,13 +118,13 @@ namespace SoliditySHA3Miner.Miner
         private int m_pauseOnFailedScan;
         private int m_failedScanCount;
 
-        public Solver Solver { get; }
-        
+        private readonly IntPtr m_instance;
+
         #region IMiner
 
         public NetworkInterface.INetworkInterface NetworkInterface { get; }
 
-        public bool HasAssignedDevices => Solver != null && Devices.Any(d => d.DeviceID > -1);
+        public bool HasAssignedDevices => m_instance != null && m_instance.ToInt64() != 0 && Devices.Any(d => d.DeviceID > -1);
 
         public bool HasMonitoringAPI => false;
 
@@ -44,8 +136,12 @@ namespace SoliditySHA3Miner.Miner
         {
             get
             {
-                try { return Solver == null ? false : Solver.isMining(); }
-                catch (Exception) { return false; }
+                var isMining = false;
+
+                if (m_instance != null && m_instance.ToInt64() != 0)
+                    Solver.IsMining(m_instance, ref isMining);
+
+                return isMining;
             }
         }
 
@@ -53,8 +149,12 @@ namespace SoliditySHA3Miner.Miner
         {
             get
             {
-                try { return Solver == null ? false : Solver.isPaused(); }
-                catch (Exception) { return false; }
+                var isPaused = false;
+
+                if (m_instance != null && m_instance.ToInt64() != 0)
+                    Solver.IsPaused(m_instance, ref isPaused);
+
+                return isPaused;
             }
         }
 
@@ -62,24 +162,41 @@ namespace SoliditySHA3Miner.Miner
         {
             try
             {
-                Solver.Dispose();
+                if (m_instance != null && m_instance.ToInt64() != 0)
+                    Solver.DisposeInstance(m_instance);
+
+                m_GetSolutionTemplateCallback = null;
+                m_GetKingAddressCallback = null;
+                m_GetWorkPositionCallback = null;
+                m_ResetWorkPositionCallback = null;
+                m_IncrementWorkPositionCallback = null;
+                m_MessageCallback = null;
+                m_SolutionCallback = null;
             }
             catch (Exception ex)
             {
                 Program.Print(string.Format("[ERROR] {0}", ex.Message));
             }
         }
-        
+
         public ulong GetHashrateByDevice(string platformName, int deviceID)
         {
-            try { return (ulong)Solver?.getHashRateByThreadID((uint)deviceID); }
-            catch (Exception) { return 0u; }
+            var hashrate = 0ul;
+
+            if (m_instance != null && m_instance.ToInt64() != 0)
+                Solver.GetHashRateByThreadID(m_instance, (uint)deviceID, ref hashrate);
+
+            return hashrate;
         }
 
         public ulong GetTotalHashrate()
         {
-            try { return Solver.getTotalHashRate(); }
-            catch (Exception) { return 0u; }
+            var hashrate = 0ul;
+
+            if (m_instance != null && m_instance.ToInt64() != 0)
+                Solver.GetTotalHashRate(m_instance, ref hashrate);
+
+            return hashrate;
         }
 
         public void StartMining(int networkUpdateInterval, int hashratePrintInterval)
@@ -92,7 +209,7 @@ namespace SoliditySHA3Miner.Miner
                 m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
                 m_hashPrintTimer.Start();
 
-                Solver.startFinding();
+                Solver.StartFinding(m_instance);
             }
             catch (Exception ex)
             {
@@ -106,7 +223,7 @@ namespace SoliditySHA3Miner.Miner
             try
             {
                 m_hashPrintTimer.Stop();
-                Solver.stopFinding();
+                Solver.StopFinding(m_instance);
             }
             catch (Exception ex)
             {
@@ -134,25 +251,23 @@ namespace SoliditySHA3Miner.Miner
                     devicesStr += device.DeviceID.ToString("X64");
                 }
 
+                m_instance = Solver.GetInstance(new StringBuilder(devicesStr));
                 unsafe
                 {
-                    Solver = new Solver(devicesStr)
-                    {
-                        OnGetKingAddressHandler = Work.GetKingAddress,
-                        OnGetSolutionTemplateHandler = Work.GetSolutionTemplate,
-                        OnGetWorkPositionHandler = Work.GetPosition,
-                        OnResetWorkPositionHandler = Work.ResetPosition,
-                        OnIncrementWorkPositionHandler = Work.IncrementPosition,
-                        OnMessageHandler = m_cpuSolver_OnMessage,
-                        OnSolutionHandler = m_cpuSolver_OnSolution
-                    };
+                    m_GetSolutionTemplateCallback = Solver.SetOnGetSolutionTemplateHandler(Work.GetSolutionTemplate);
+                    m_GetKingAddressCallback = Solver.SetOnGetKingAddressHandler(Work.GetKingAddress);
                 }
+                m_GetWorkPositionCallback = Solver.SetOnGetWorkPositionHandler(Work.GetPosition);
+                m_ResetWorkPositionCallback = Solver.SetOnResetWorkPositionHandler(Work.ResetPosition);
+                m_IncrementWorkPositionCallback = Solver.SetOnIncrementWorkPositionHandler(Work.IncrementPosition);
+                m_MessageCallback = Solver.SetOnMessageHandler(m_instance_OnMessage);
+                m_SolutionCallback = Solver.SetOnSolutionHandler(m_instance_OnSolution);
 
                 NetworkInterface.OnGetMiningParameterStatusEvent += NetworkInterface_OnGetMiningParameterStatusEvent;
                 NetworkInterface.OnNewMessagePrefixEvent += NetworkInterface_OnNewMessagePrefixEvent;
                 NetworkInterface.OnNewTargetEvent += NetworkInterface_OnNewTargetEvent;
 
-                Solver.setSubmitStale(isSubmitStale);
+                Solver.SetSubmitStale(m_instance, isSubmitStale);
 
                 if (string.IsNullOrWhiteSpace(devicesStr))
                 {
@@ -168,24 +283,30 @@ namespace SoliditySHA3Miner.Miner
 
         private void m_hashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            var hashrate = 0ul;
             var hashString = new StringBuilder();
             hashString.Append("OpenCL [INFO] Hashrates:");
 
             for (uint threadID = 0; threadID < Devices.Count(d => d.DeviceID > -1); threadID++)
-                hashString.AppendFormat(" {0} MH/s", Solver.getHashRateByThreadID(threadID) / 1000000.0f);
-            
+            {
+                Solver.GetHashRateByThreadID(m_instance, threadID, ref hashrate);
+                hashString.AppendFormat(" {0} MH/s", hashrate / 1000000.0f);
+            }
             Program.Print(hashString.ToString());
-            Program.Print(string.Format("OpenCL [INFO] Total Hashrate: {0} MH/s", Solver.getTotalHashRate() / 1000000.0f));
+
+            Solver.GetTotalHashRate(m_instance, ref hashrate);
+            Program.Print(string.Format("OpenCL [INFO] Total Hashrate: {0} MH/s", hashrate / 1000000.0f));
+
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
         }
 
-        private void m_cpuSolver_OnMessage(int threadID, string type, string message)
+        private void m_instance_OnMessage(int threadID, StringBuilder type, StringBuilder message)
         {
 
             var sFormat = new StringBuilder();
             if (threadID > -1) sFormat.Append("CPU Thread: {0} ");
 
-            switch (type.ToUpperInvariant())
+            switch (type.ToString().ToUpperInvariant())
             {
                 case "INFO":
                     sFormat.Append(threadID > -1 ? "[INFO] {1}" : "[INFO] {0}");
@@ -206,16 +327,16 @@ namespace SoliditySHA3Miner.Miner
 #endif
             }
             Program.Print(threadID > -1
-                ? string.Format(sFormat.ToString(), threadID, message)
-                : string.Format(sFormat.ToString(), message));
+                ? string.Format(sFormat.ToString(), threadID, message.ToString())
+                : string.Format(sFormat.ToString(), message.ToString()));
         }
 
         private void NetworkInterface_OnNewMessagePrefixEvent(NetworkInterface.INetworkInterface sender, string messagePrefix)
         {
             try
             {
-                if (Solver != null)
-                    Solver.updatePrefix(messagePrefix);
+                if (m_instance != null && m_instance.ToInt64() != 0)
+                    Solver.UpdatePrefix(m_instance, new StringBuilder(messagePrefix));
             }
             catch (Exception ex)
             {
@@ -227,8 +348,8 @@ namespace SoliditySHA3Miner.Miner
         {
             try
             {
-                if (Solver != null)
-                    Solver.updateTarget(target);
+                if (m_instance != null && m_instance.ToInt64() != 0)
+                    Solver.UpdateTarget(m_instance, new StringBuilder(target));
             }
             catch (Exception ex)
             {
@@ -241,11 +362,12 @@ namespace SoliditySHA3Miner.Miner
         {
             try
             {
-                if (Solver != null)
+                if (m_instance != null && m_instance.ToInt64() != 0)
                 {
                     if (success)
                     {
-                        var isPause = Solver.isPaused();
+                        var isPause = false;
+                        Solver.IsPaused(m_instance, ref isPause);
 
                         if (!NetworkInterface.IsPool &&
                                 ((NetworkInterface.Web3Interface)NetworkInterface).IsChallengedSubmitted(miningParameters.ChallengeNumberByte32String))
@@ -259,14 +381,17 @@ namespace SoliditySHA3Miner.Miner
 
                             isPause = false;
                         }
-                        Solver.pauseFinding(isPause);
+                        Solver.PauseFinding(m_instance, isPause);
                     }
                     else
                     {
                         m_failedScanCount += 1;
 
-                        if (m_failedScanCount > m_pauseOnFailedScan && Solver.isMining())
-                            Solver.pauseFinding(true);
+                        var isMining = false;
+                        Solver.IsMining(m_instance, ref isMining);
+
+                        if (m_failedScanCount > m_pauseOnFailedScan && IsMining)
+                            Solver.PauseFinding(m_instance, true);
                     }
                 }
             }
@@ -276,11 +401,11 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        private void m_cpuSolver_OnSolution(string digest, string address, string challenge, string target, string solution)
+        private void m_instance_OnSolution(StringBuilder digest, StringBuilder address, StringBuilder challenge, StringBuilder target, StringBuilder solution)
         {
             var difficulty = NetworkInterface.Difficulty.ToString("X64");
 
-            NetworkInterface.SubmitSolution(digest, address, challenge, difficulty, target, solution, this);
+            NetworkInterface.SubmitSolution(digest.ToString(), address.ToString(), challenge.ToString(), difficulty, target.ToString(), solution.ToString(), this);
         }
     }
 }
