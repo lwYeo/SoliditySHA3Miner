@@ -152,3 +152,6 @@ x64/Release/sha3kingKernel.cl
 OpenCLSoliditySHA3Solver/x64/Release/sha3kingKernel.cl
 CPUSoliditySHA3Solver/x64/Debug/vc141.idb
 OpenCLSoliditySHA3Solver/x64/Release/Resource.res
+x64/Debug/CPUSoliditySHA3Solver.ilk
+x64/Release/CPUSoliditySHA3Solver.iobj
+x64/Release/CPUSoliditySHA3Solver.ipdb

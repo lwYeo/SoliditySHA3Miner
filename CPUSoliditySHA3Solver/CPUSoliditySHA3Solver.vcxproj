@@ -119,7 +119,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
