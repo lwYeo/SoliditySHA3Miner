@@ -128,10 +128,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CPUSoliditySHA3Solver\CPUSoliditySHA3Solver.vcxproj">
-      <Project>{b3b05a02-57ff-4a7f-9d64-d8a5b7435b0c}</Project>
-      <Name>CPUSoliditySHA3Solver</Name>
-    </ProjectReference>
     <ProjectReference Include="..\CudaSoliditySHA3Solver\CudaSoliditySHA3Solver.vcxproj">
       <Project>{8541a1a2-dd45-4f28-9303-b28d3236dcb4}</Project>
       <Name>CudaSoliditySHA3Solver</Name>
