@@ -54,6 +54,9 @@
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="BouncyCastle.Crypto, Version=1.8.2.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
       <HintPath>..\packages\Portable.BouncyCastle.1.8.2\lib\net40\BouncyCastle.Crypto.dll</HintPath>
@@ -128,10 +131,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CudaSoliditySHA3Solver\CudaSoliditySHA3Solver.vcxproj">
-      <Project>{8541a1a2-dd45-4f28-9303-b28d3236dcb4}</Project>
-      <Name>CudaSoliditySHA3Solver</Name>
-    </ProjectReference>
     <ProjectReference Include="..\OpenCLSoliditySHA3Solver\OpenCLSoliditySHA3Solver.vcxproj">
       <Project>{a73b12b6-272f-4837-b5a3-c1aa545be4c5}</Project>
       <Name>OpenCLSoliditySHA3Solver</Name>

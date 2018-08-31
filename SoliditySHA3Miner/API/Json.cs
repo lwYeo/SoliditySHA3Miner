@@ -151,7 +151,9 @@ namespace SoliditySHA3Miner.API
                             {
                                 case "CUDA":
                                     {
-                                        var solver = ((Miner.CUDA)miner).Solver;
+                                        var tempValue = 0;
+                                        var tempStr = new StringBuilder(1024);
+                                        var instancePtr = ((Miner.CUDA)miner).m_instance;
 
                                         newMiner = new JsonAPI.CudaMiner()
                                         {
@@ -160,22 +162,44 @@ namespace SoliditySHA3Miner.API
                                             ModelName = device.Name,
                                             HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
                                             HasMonitoringAPI = miner.HasMonitoringAPI,
-
-                                            SettingIntensity = device.Intensity,
-                                            SettingMaxCoreClockMHz = solver.getDeviceSettingMaxCoreClock(device.DeviceID),
-                                            SettingMaxMemoryClockMHz = solver.getDeviceSettingMaxMemoryClock(device.DeviceID),
-                                            SettingPowerLimitPercent = solver.getDeviceSettingPowerLimit(device.DeviceID),
-                                            SettingThermalLimitC = solver.getDeviceSettingThermalLimit(device.DeviceID),
-                                            SettingFanLevelPercent = solver.getDeviceSettingFanLevelPercent(device.DeviceID),
-
-                                            CurrentFanTachometerRPM = solver.getDeviceCurrentFanTachometerRPM(device.DeviceID),
-                                            CurrentTemperatureC = solver.getDeviceCurrentTemperature(device.DeviceID),
-                                            CurrentCoreClockMHz = solver.getDeviceCurrentCoreClock(device.DeviceID),
-                                            CurrentMemoryClockMHz = solver.getDeviceCurrentMemoryClock(device.DeviceID),
-                                            CurrentUtilizationPercent = solver.getDeviceCurrentUtilizationPercent(device.DeviceID),
-                                            CurrentPState = solver.getDeviceCurrentPstate(device.DeviceID),
-                                            CurrentThrottleReasons = solver.getDeviceCurrentThrottleReasons(device.DeviceID)
+                                            SettingIntensity = device.Intensity
                                         };
+                                        
+                                        Miner.CUDA.Solver.GetDeviceSettingMaxCoreClock(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).SettingMaxCoreClockMHz = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceSettingMaxMemoryClock(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).SettingMaxMemoryClockMHz = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceSettingPowerLimit(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).SettingPowerLimitPercent = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceSettingThermalLimit(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).SettingThermalLimitC = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceSettingFanLevelPercent(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).SettingFanLevelPercent = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceCurrentFanTachometerRPM(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).CurrentFanTachometerRPM = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceCurrentTemperature(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).CurrentTemperatureC = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceCurrentCoreClock(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).CurrentCoreClockMHz = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceCurrentMemoryClock(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).CurrentMemoryClockMHz = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceCurrentUtilizationPercent(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).CurrentUtilizationPercent = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceCurrentPstate(instancePtr, device.DeviceID, ref tempValue);
+                                        ((JsonAPI.CudaMiner)newMiner).CurrentPState = tempValue;
+
+                                        Miner.CUDA.Solver.GetDeviceCurrentThrottleReasons(instancePtr, device.DeviceID, tempStr);
+                                        ((JsonAPI.CudaMiner)newMiner).CurrentThrottleReasons = tempStr.ToString();
                                     }
                                     break;
 

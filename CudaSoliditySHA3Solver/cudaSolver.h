@@ -5,35 +5,23 @@
 #include <memory>
 #include <random>
 #include <set>
+#include <thread> 
 #include "sha3.h"
 #include "device\device.h"
 #include "uint256/arith_uint256.h"
-
-#pragma managed(push, off)
-
-#ifdef _M_CEE 
-#	undef _M_CEE 
-#	include <thread> 
-#	define _M_CEE 001 
-#else 
-#	include <thread> 
-#endif 
-
-#pragma managed(pop)
 
 // --------------------------------------------------------------------
 // CUDA common constants
 // --------------------------------------------------------------------
 
 #ifdef __INTELLISENSE__
-//	reduce vstudio warnings (__byteperm, blockIdx...)
+	//	reduce vstudio warnings (__byteperm, blockIdx...)
 #	include <device_functions.h>
 #	include <device_launch_parameters.h>
 #endif //__INTELLISENSE__
 
 #define MAX_SOLUTION_COUNT_DEVICE			32
 #define NONCE_POSITION						UINT256_LENGTH + ADDRESS_LENGTH + ADDRESS_LENGTH
-#define KING_STRIDE							8
 
 __constant__ static uint64_t const Keccak_f1600_RC[24] =
 {
@@ -47,115 +35,121 @@ __constant__ static uint64_t const Keccak_f1600_RC[24] =
 	0x8000000000008080, 0x0000000080000001, 0x8000000080008008
 };
 
-class CUDASolver
+namespace CUDASolver
 {
-public:
-	typedef void(*GetKingAddressCallback)(uint8_t *);
-	typedef void(*GetSolutionTemplateCallback)(uint8_t *);
-	typedef void(*GetWorkPositionCallback)(uint64_t &);
-	typedef void(*ResetWorkPositionCallback)(uint64_t &);
-	typedef void(*IncrementWorkPositionCallback)(uint64_t &, uint64_t);
-	typedef void(*MessageCallback)(int, const char *, const char *);
-	typedef void(*SolutionCallback)(const char *, const char *, const char *, const char *, const char *);
+	typedef void(*GetKingAddressCallback)(uint8_t *kingAddress);
+	typedef void(*GetSolutionTemplateCallback)(uint8_t *solutionTemplate);
+	typedef void(*GetWorkPositionCallback)(uint64_t &lastWorkPosition);
+	typedef void(*ResetWorkPositionCallback)(uint64_t &lastWorkPosition);
+	typedef void(*IncrementWorkPositionCallback)(uint64_t &lastWorkPosition, uint64_t incrementSize);
+	typedef void(*MessageCallback)(int deviceID, const char *type, const char *message);
+	typedef void(*SolutionCallback)(const char *digest, const char *address, const char *challenge, const char *target, const char *solution);
 
-	bool isSubmitStale;
+	class CudaSolver
+	{
+	public:
+		GetKingAddressCallback m_getKingAddressCallback;
+		GetSolutionTemplateCallback m_getSolutionTemplateCallback;
+		GetWorkPositionCallback m_getWorkPositionCallback;
+		ResetWorkPositionCallback m_resetWorkPositionCallback;
+		IncrementWorkPositionCallback m_incrementWorkPositionCallback;
+		MessageCallback m_messageCallback;
+		SolutionCallback m_solutionCallback;
 
-private:
-	GetKingAddressCallback m_getKingAddressCallback;
-	GetSolutionTemplateCallback m_getSolutionTemplateCallback;
-	GetWorkPositionCallback m_getWorkPositionCallback;
-	ResetWorkPositionCallback m_resetWorkPositionCallback;
-	IncrementWorkPositionCallback m_incrementWorkPositionCallback;
-	MessageCallback m_messageCallback;
-	SolutionCallback m_solutionCallback;
-	std::vector<std::unique_ptr<Device>> m_devices;
+		bool isSubmitStale;
 
-	static bool m_pause;
-	static bool m_isSubmitting;
-	static bool m_isKingMaking;
+	private:
+		std::vector<std::unique_ptr<Device>> m_devices;
 
-	std::string s_address;
-	std::string s_challenge;
-	std::string s_target;
-	
-	address_t m_address;
-	address_t m_kingAddress;
-	byte32_t m_solutionTemplate;
-	message_ut m_miningMessage;
-	arith_uint256 m_target;
-	std::thread m_runThread;
+		static bool m_pause;
+		static bool m_isSubmitting;
+		static bool m_isKingMaking;
 
-public:
-	static bool foundNvAPI64();
+		std::string s_address;
+		std::string s_challenge;
+		std::string s_target;
 
-	static std::string getCudaErrorString(cudaError_t &error);
-	static int getDeviceCount(std::string &errorMessage);
-	static std::string getDeviceName(int deviceID, std::string &errorMessage);
-	
-	// require web3 contract getMethod -> _MAXIMUM_TARGET
-	CUDASolver() noexcept;
-	~CUDASolver() noexcept;
+		address_t m_address;
+		address_t m_kingAddress;
+		byte32_t m_solutionTemplate;
+		message_ut m_miningMessage;
+		arith_uint256 m_target;
+		std::thread m_runThread;
 
-	void setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback);
-	void setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback);
-	void setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback);
-	void setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback);
-	void setIncrementWorkPositionCallback(IncrementWorkPositionCallback incrementWorkPositionCallback);
-	void setMessageCallback(MessageCallback messageCallback);
-	void setSolutionCallback(SolutionCallback solutionCallback);
+	public:
+		static bool foundNvAPI64();
 
-	bool assignDevice(int const deviceID, float &intensity);
-	bool isAssigned();
-	bool isAnyInitialised();
-	bool isMining();
-	bool isPaused();
+		static std::string getCudaErrorString(cudaError_t &error);
+		static int getDeviceCount(std::string &errorMessage);
+		static void getDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *size);
+		static std::string getDeviceName(int deviceID, std::string &errorMessage);
+		static void getDeviceName(int deviceID, const char *deviceName, uint64_t *nameSize, const char *errorMessage, uint64_t *errorSize);
 
-	void updatePrefix(std::string const prefix);
-	void updateTarget(std::string const target);
+		// require web3 contract getMethod -> _MAXIMUM_TARGET
+		CudaSolver() noexcept;
+		~CudaSolver() noexcept;
 
-	void startFinding();
-	void stopFinding();
-	void pauseFinding(bool pauseFinding);
+		void setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback);
+		void setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback);
+		void setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback);
+		void setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback);
+		void setIncrementWorkPositionCallback(IncrementWorkPositionCallback incrementWorkPositionCallback);
+		void setMessageCallback(MessageCallback messageCallback);
+		void setSolutionCallback(SolutionCallback solutionCallback);
 
-	uint64_t getTotalHashRate();
-	uint64_t getHashRateByDeviceID(int const deviceID);
+		bool assignDevice(int const deviceID, float &intensity);
+		bool isAssigned();
+		bool isAnyInitialised();
+		bool isMining();
+		bool isPaused();
 
-	int getDeviceSettingMaxCoreClock(int deviceID);
-	int getDeviceSettingMaxMemoryClock(int deviceID);
-	int getDeviceSettingPowerLimit(int deviceID);
-	int getDeviceSettingThermalLimit(int deviceID);
-	int getDeviceSettingFanLevelPercent(int deviceID);
+		void updatePrefix(std::string const prefix);
+		void updateTarget(std::string const target);
 
-	int getDeviceCurrentFanTachometerRPM(int deviceID);
-	int getDeviceCurrentTemperature(int deviceID);
-	int getDeviceCurrentCoreClock(int deviceID);
-	int getDeviceCurrentMemoryClock(int deviceID);
-	int getDeviceCurrentUtilizationPercent(int deviceID);
-	int getDeviceCurrentPstate(int deviceID);
-	std::string getDeviceCurrentThrottleReasons(int deviceID);
+		void startFinding();
+		void stopFinding();
+		void pauseFinding(bool pauseFinding);
 
-private:
-	void initializeDevice(std::unique_ptr<Device> &device);
-	bool isAddressEmpty(address_t &address);
-	void getKingAddress(address_t *kingAddress);
-	void getSolutionTemplate(byte32_t *solutionTemplate);
-	void getWorkPosition(uint64_t &workPosition);
-	void resetWorkPosition(uint64_t &lastPosition);
-	void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);
-	void onMessage(int deviceID, const char *type, const char *message);
-	void onMessage(int deviceID, std::string type, std::string message);
-	
-	void onSolution(byte32_t const solution, std::string challenge, std::unique_ptr<Device> &device);
+		uint64_t getTotalHashRate();
+		uint64_t getHashRateByDeviceID(int const deviceID);
 
-	void findSolution(int const deviceID);
-	void findSolutionKing(int const deviceID);
-	void checkInputs(std::unique_ptr<Device> &device, char *currentChallenge);
-	void pushTarget(std::unique_ptr<Device> &device);
-	void pushTargetKing(std::unique_ptr<Device> &device);
-	void pushMessage(std::unique_ptr<Device> &device);
-	void pushMessageKing(std::unique_ptr<Device> &device);
-	void submitSolutions(std::set<uint64_t> solutions, std::string challenge, int const deviceID);
+		int getDeviceSettingMaxCoreClock(int deviceID);
+		int getDeviceSettingMaxMemoryClock(int deviceID);
+		int getDeviceSettingPowerLimit(int deviceID);
+		int getDeviceSettingThermalLimit(int deviceID);
+		int getDeviceSettingFanLevelPercent(int deviceID);
 
-	uint64_t getNextWorkPosition(std::unique_ptr<Device> &device);
-	sponge_ut const getMidState(message_ut &newMessage);
-};
+		int getDeviceCurrentFanTachometerRPM(int deviceID);
+		int getDeviceCurrentTemperature(int deviceID);
+		int getDeviceCurrentCoreClock(int deviceID);
+		int getDeviceCurrentMemoryClock(int deviceID);
+		int getDeviceCurrentUtilizationPercent(int deviceID);
+		int getDeviceCurrentPstate(int deviceID);
+		std::string getDeviceCurrentThrottleReasons(int deviceID);
+
+	private:
+		void initializeDevice(std::unique_ptr<Device> &device);
+		bool isAddressEmpty(address_t &address);
+		void getKingAddress(address_t *kingAddress);
+		void getSolutionTemplate(byte32_t *solutionTemplate);
+		void getWorkPosition(uint64_t &workPosition);
+		void resetWorkPosition(uint64_t &lastPosition);
+		void incrementWorkPosition(uint64_t &lastPosition, uint64_t increment);
+		void onMessage(int deviceID, const char *type, const char *message);
+		void onMessage(int deviceID, std::string type, std::string message);
+
+		void onSolution(byte32_t const solution, std::string challenge, std::unique_ptr<Device> &device);
+
+		void findSolution(int const deviceID);
+		void findSolutionKing(int const deviceID);
+		void checkInputs(std::unique_ptr<Device> &device, char *currentChallenge);
+		void pushTarget(std::unique_ptr<Device> &device);
+		void pushTargetKing(std::unique_ptr<Device> &device);
+		void pushMessage(std::unique_ptr<Device> &device);
+		void pushMessageKing(std::unique_ptr<Device> &device);
+		void submitSolutions(std::set<uint64_t> solutions, std::string challenge, int const deviceID);
+
+		uint64_t getNextWorkPosition(std::unique_ptr<Device> &device);
+		sponge_ut const getMidState(message_ut &newMessage);
+	};
+}

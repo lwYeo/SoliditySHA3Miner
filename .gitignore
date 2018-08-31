@@ -155,3 +155,7 @@ OpenCLSoliditySHA3Solver/x64/Release/Resource.res
 x64/Debug/CPUSoliditySHA3Solver.ilk
 x64/Release/CPUSoliditySHA3Solver.iobj
 x64/Release/CPUSoliditySHA3Solver.ipdb
+x64/Debug/CudaSoliditySHA3Solver.ilk
+x64/Release/CudaSoliditySHA3Solver.iobj
+x64/Release/CudaSoliditySHA3Solver.ipdb
+CudaSoliditySHA3Solver/x64/Debug/vc141.idb

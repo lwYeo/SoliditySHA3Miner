@@ -1,6 +1,5 @@
-#include "cudasolver.h"
+#include "cudaSolver.h"
 #include "cudaErrorCheck.cu"
-#pragma unmanaged
 
 typedef union
 {
@@ -177,92 +176,99 @@ __global__ void hashMessage(uint64_t *__restrict__ solutions, uint32_t *__restri
 	}
 }
 
-void CUDASolver::pushMessageKing(std::unique_ptr<Device>& device)
+// --------------------------------------------------------------------
+// CudaSolver
+// --------------------------------------------------------------------
+namespace CUDASolver
 {
-	cudaMemcpyToSymbol(d_message, &device->currentMessage.byteArray, MESSAGE_LENGTH, 0, cudaMemcpyHostToDevice);
-
-	device->isNewMessage = false;
-}
-
-void CUDASolver::pushTargetKing(std::unique_ptr<Device>& device)
-{
-	cudaMemcpyToSymbol(d_target, &device->currentTarget, UINT256_LENGTH, 0, cudaMemcpyHostToDevice);
-
-	device->isNewTarget = false;
-}
-
-void CUDASolver::findSolutionKing(int const deviceID)
-{
-	auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
-
-	if (!device->initialized) return;
-
-	while (!(device->isNewTarget || device->isNewMessage)) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
-
-	CudaSafeCall(cudaSetDevice(device->deviceID));
-
-	char *c_currentChallenge = (char *)malloc(s_challenge.size());
-	strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
-
-	onMessage(device->deviceID, "Info", "Start mining...");
-	onMessage(device->deviceID, "Debug", "Threads: " + std::to_string(device->threads()) + " Grid size: " + std::to_string(device->grid().x) + " Block size:" + std::to_string(device->block().x));
-
-	device->mining = true;
-	device->hashCount.store(0ull);
-	device->hashStartTime.store(std::chrono::steady_clock::now() - std::chrono::milliseconds(500)); // reduce excessive high hashrate reporting at start
-	do
+	void CudaSolver::pushMessageKing(std::unique_ptr<Device>& device)
 	{
-		while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
+		cudaMemcpyToSymbol(d_message, &device->currentMessage.byteArray, MESSAGE_LENGTH, 0, cudaMemcpyHostToDevice);
 
-		checkInputs(device, c_currentChallenge);
+		device->isNewMessage = false;
+	}
 
-		hashMessage<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
+	void CudaSolver::pushTargetKing(std::unique_ptr<Device>& device)
+	{
+		cudaMemcpyToSymbol(d_target, &device->currentTarget, UINT256_LENGTH, 0, cudaMemcpyHostToDevice);
 
-		CudaCheckError();
+		device->isNewTarget = false;
+	}
 
-		cudaError_t response = cudaDeviceSynchronize();
-		if (response != cudaSuccess)
+	void CudaSolver::findSolutionKing(int const deviceID)
+	{
+		auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
+
+		if (!device->initialized) return;
+
+		while (!(device->isNewTarget || device->isNewMessage)) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
+
+		CudaSafeCall(cudaSetDevice(device->deviceID));
+
+		char *c_currentChallenge = (char *)malloc(s_challenge.size());
+		strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+
+		onMessage(device->deviceID, "Info", "Start mining...");
+		onMessage(device->deviceID, "Debug", "Threads: " + std::to_string(device->threads()) + " Grid size: " + std::to_string(device->grid().x) + " Block size:" + std::to_string(device->block().x));
+
+		device->mining = true;
+		device->hashCount.store(0ull);
+		device->hashStartTime.store(std::chrono::steady_clock::now() - std::chrono::milliseconds(500)); // reduce excessive high hashrate reporting at start
+		do
 		{
-			std::string cudaErrors;
-			cudaError_t lastError = cudaGetLastError();
-			while (lastError != cudaSuccess)
+			while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
+
+			checkInputs(device, c_currentChallenge);
+
+			hashMessage << <device->grid(), device->block() >> >(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
+
+			CudaCheckError();
+
+			cudaError_t response = cudaDeviceSynchronize();
+			if (response != cudaSuccess)
 			{
-				if (!cudaErrors.empty()) cudaErrors += " <- ";
-				cudaErrors += cudaGetErrorString(lastError);
-				lastError = cudaGetLastError();
+				std::string cudaErrors;
+				cudaError_t lastError = cudaGetLastError();
+				while (lastError != cudaSuccess)
+				{
+					if (!cudaErrors.empty()) cudaErrors += " <- ";
+					cudaErrors += cudaGetErrorString(lastError);
+					lastError = cudaGetLastError();
+				}
+				onMessage(device->deviceID, "Error", "Kernel launch failed: " + cudaErrors);
+
+				device->mining = false;
+				break;
 			}
-			onMessage(device->deviceID, "Error", "Kernel launch failed: " + cudaErrors);
 
-			device->mining = false;
-			break;
-		}
-
-		if (*device->h_SolutionCount > 0u)
-		{
-			std::set<uint64_t> uniqueSolutions;
-
-			for (uint32_t i{ 0u }; i < MAX_SOLUTION_COUNT_DEVICE && i < *device->h_SolutionCount; ++i)
+			if (*device->h_SolutionCount > 0u)
 			{
-				uint64_t const tempSolution{ device->h_Solutions[i] };
+				std::set<uint64_t> uniqueSolutions;
 
-				if (tempSolution != 0u && uniqueSolutions.find(tempSolution) == uniqueSolutions.end())
-					uniqueSolutions.emplace(tempSolution);
+				for (uint32_t i{ 0u }; i < MAX_SOLUTION_COUNT_DEVICE && i < *device->h_SolutionCount; ++i)
+				{
+					uint64_t const tempSolution{ device->h_Solutions[i] };
+
+					if (tempSolution != 0u && uniqueSolutions.find(tempSolution) == uniqueSolutions.end())
+						uniqueSolutions.emplace(tempSolution);
+				}
+
+				std::thread t{ &CudaSolver::submitSolutions, this, uniqueSolutions, std::string{ c_currentChallenge }, device->deviceID };
+				t.detach();
+
+				std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
 			}
+		} while (device->mining);
 
-			std::thread t{ &CUDASolver::submitSolutions, this, uniqueSolutions, std::string{ c_currentChallenge }, device->deviceID };
-			t.detach();
+		onMessage(device->deviceID, "Info", "Stop mining...");
+		device->hashCount.store(0ull);
 
-			std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
-		}
-	} while (device->mining);
+		CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
+		CudaSafeCall(cudaFreeHost(device->h_Solutions));
+		CudaSafeCall(cudaDeviceReset());
 
-	onMessage(device->deviceID, "Info", "Stop mining...");
-	device->hashCount.store(0ull);
-
-	CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
-	CudaSafeCall(cudaFreeHost(device->h_Solutions));
-	CudaSafeCall(cudaDeviceReset());
-
-	device->initialized = false;
-	onMessage(device->deviceID, "Info", "Mining stopped.");
+		device->initialized = false;
+		onMessage(device->deviceID, "Info", "Mining stopped.");
+	}
 }
+
