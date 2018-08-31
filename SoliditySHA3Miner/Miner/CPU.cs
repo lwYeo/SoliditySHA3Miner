@@ -10,7 +10,7 @@ namespace SoliditySHA3Miner.Miner
     {
         #region P/Invoke interface
 
-        private static class Solver
+        public static class Solver
         {
             public const string SOLVER_NAME = "CPUSoliditySHA3Solver";
 
@@ -29,31 +29,31 @@ namespace SoliditySHA3Miner.Miner
             public static extern void GetNewSolutionTemplate(StringBuilder kingAddress, StringBuilder solutionTemplate);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static unsafe extern GetSolutionTemplateCallback SetOnGetSolutionTemplateHandler(GetSolutionTemplateCallback getSolutionTemplateCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static unsafe extern GetKingAddressCallback SetOnGetKingAddressHandler(GetKingAddressCallback getKingAddressCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern GetWorkPositionCallback SetOnGetWorkPositionHandler(GetWorkPositionCallback getWorkPositionCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern ResetWorkPositionCallback SetOnResetWorkPositionHandler(ResetWorkPositionCallback resetWorkPositionCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern IncrementWorkPositionCallback SetOnIncrementWorkPositionHandler(IncrementWorkPositionCallback incrementWorkPositionCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern MessageCallback SetOnMessageHandler(MessageCallback messageCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern SolutionCallback SetOnSolutionHandler(SolutionCallback solutionCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern IntPtr GetInstance(StringBuilder threads);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void DisposeInstance(IntPtr instance);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static unsafe extern GetSolutionTemplateCallback SetOnGetSolutionTemplateHandler(IntPtr instance, GetSolutionTemplateCallback getSolutionTemplateCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static unsafe extern GetKingAddressCallback SetOnGetKingAddressHandler(IntPtr instance, GetKingAddressCallback getKingAddressCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern GetWorkPositionCallback SetOnGetWorkPositionHandler(IntPtr instance, GetWorkPositionCallback getWorkPositionCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern ResetWorkPositionCallback SetOnResetWorkPositionHandler(IntPtr instance, ResetWorkPositionCallback resetWorkPositionCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern IncrementWorkPositionCallback SetOnIncrementWorkPositionHandler(IntPtr instance, IncrementWorkPositionCallback incrementWorkPositionCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern MessageCallback SetOnMessageHandler(IntPtr instance, MessageCallback messageCallback);
+
+            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern SolutionCallback SetOnSolutionHandler(IntPtr instance, SolutionCallback solutionCallback);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void SetSubmitStale(IntPtr instance, bool submitStale);
@@ -118,7 +118,7 @@ namespace SoliditySHA3Miner.Miner
         private int m_pauseOnFailedScan;
         private int m_failedScanCount;
 
-        private readonly IntPtr m_instance;
+        public readonly IntPtr m_instance;
 
         #region IMiner
 
@@ -254,14 +254,14 @@ namespace SoliditySHA3Miner.Miner
                 m_instance = Solver.GetInstance(new StringBuilder(devicesStr));
                 unsafe
                 {
-                    m_GetSolutionTemplateCallback = Solver.SetOnGetSolutionTemplateHandler(Work.GetSolutionTemplate);
-                    m_GetKingAddressCallback = Solver.SetOnGetKingAddressHandler(Work.GetKingAddress);
+                    m_GetSolutionTemplateCallback = Solver.SetOnGetSolutionTemplateHandler(m_instance, Work.GetSolutionTemplate);
+                    m_GetKingAddressCallback = Solver.SetOnGetKingAddressHandler(m_instance, Work.GetKingAddress);
                 }
-                m_GetWorkPositionCallback = Solver.SetOnGetWorkPositionHandler(Work.GetPosition);
-                m_ResetWorkPositionCallback = Solver.SetOnResetWorkPositionHandler(Work.ResetPosition);
-                m_IncrementWorkPositionCallback = Solver.SetOnIncrementWorkPositionHandler(Work.IncrementPosition);
-                m_MessageCallback = Solver.SetOnMessageHandler(m_instance_OnMessage);
-                m_SolutionCallback = Solver.SetOnSolutionHandler(m_instance_OnSolution);
+                m_GetWorkPositionCallback = Solver.SetOnGetWorkPositionHandler(m_instance, Work.GetPosition);
+                m_ResetWorkPositionCallback = Solver.SetOnResetWorkPositionHandler(m_instance, Work.ResetPosition);
+                m_IncrementWorkPositionCallback = Solver.SetOnIncrementWorkPositionHandler(m_instance, Work.IncrementPosition);
+                m_MessageCallback = Solver.SetOnMessageHandler(m_instance, m_instance_OnMessage);
+                m_SolutionCallback = Solver.SetOnSolutionHandler(m_instance, m_instance_OnSolution);
 
                 NetworkInterface.OnGetMiningParameterStatusEvent += NetworkInterface_OnGetMiningParameterStatusEvent;
                 NetworkInterface.OnNewMessagePrefixEvent += NetworkInterface_OnNewMessagePrefixEvent;

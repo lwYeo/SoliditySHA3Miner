@@ -12,6 +12,7 @@
     </ClCompile>
     <ClCompile Include="cpuSolver.cpp" />
     <ClCompile Include="sha3.cpp" />
+    <ClCompile Include="solver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sha3.h" />
