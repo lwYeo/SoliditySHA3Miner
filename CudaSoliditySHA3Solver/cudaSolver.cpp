@@ -291,8 +291,6 @@ namespace CUDASolver
 
 	void CudaSolver::startFinding()
 	{
-		onMessage(-1, "Info", "Start mining...");
-
 		for (auto& device : m_devices)
 		{
 			if (m_isKingMaking)

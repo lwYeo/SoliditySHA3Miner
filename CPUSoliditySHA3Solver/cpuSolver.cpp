@@ -213,8 +213,6 @@ namespace CPUSolver
 
 	void cpuSolver::startFinding()
 	{
-		onMessage(-1, "Info", "Start mining...");
-
 		for (uint32_t id{ 0 }; id < m_miningThreadCount; ++id)
 		{
 			m_hashStartTime[id] = std::chrono::steady_clock::now();
@@ -343,7 +341,11 @@ namespace CPUSolver
 			m_threadHashes[threadID] = 0ull;
 			m_isThreadMining[threadID] = setCurrentThreadAffinity(affinityMask);
 
-			if (m_isThreadMining[threadID]) onMessage(threadID, "Info", "Affinity mask to CPU " + std::to_string(affinityMask));
+			if (m_isThreadMining[threadID])
+			{
+				onMessage(threadID, "Info", "Affinity masked to CPU " + std::to_string(affinityMask));
+				onMessage(threadID, "Info", "Start mining...");
+			}
 			else onMessage(threadID, "Error", "Failed to set affinity mask to CPU " + std::to_string(affinityMask));
 
 			while (m_isThreadMining[threadID])

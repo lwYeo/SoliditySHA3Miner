@@ -504,8 +504,6 @@ namespace OpenCLSolver
 
 	void openCLSolver::startFinding()
 	{
-		onMessage("", -1, "Info", "Start mining...");
-
 		for (auto& device : m_devices)
 		{
 			onMessage(device->platformName, device->deviceEnum, "Info", "Initializing device...");
