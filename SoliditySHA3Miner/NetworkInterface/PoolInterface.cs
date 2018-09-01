@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Nethereum.Hex.HexTypes;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Timers;
-using Nethereum.Hex.HexTypes;
-using Newtonsoft.Json.Linq;
 
 namespace SoliditySHA3Miner.NetworkInterface
 {
@@ -22,7 +22,9 @@ namespace SoliditySHA3Miner.NetworkInterface
         private MiningParameters m_cacheParameters;
 
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
+
         public event NewMessagePrefixEvent OnNewMessagePrefixEvent;
+
         public event NewTargetEvent OnNewTargetEvent;
 
         public bool IsPool => true;
@@ -235,9 +237,9 @@ namespace SoliditySHA3Miner.NetworkInterface
                         if (!success) RejectedShares++;
                         SubmittedShares++;
 
-                        Program.Print(string.Format("[INFO] {0} [{1}] submitted: {2}", 
+                        Program.Print(string.Format("[INFO] {0} [{1}] submitted: {2}",
                                                     (minerAddress == DevFee.Address ? "Dev. fee share" : "Miner share"),
-                                                    SubmittedShares, 
+                                                    SubmittedShares,
                                                     (success ? "success" : "failed")));
 #if DEBUG
                         Program.Print(submitShare.ToString());

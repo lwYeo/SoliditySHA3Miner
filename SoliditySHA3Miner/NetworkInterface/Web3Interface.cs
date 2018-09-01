@@ -1,17 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Numerics;
-using System.Threading.Tasks;
-using System.Timers;
-using Nethereum.Contracts;
+﻿using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Threading.Tasks;
+using System.Timers;
 
 namespace SoliditySHA3Miner.NetworkInterface
 {
@@ -35,7 +35,9 @@ namespace SoliditySHA3Miner.NetworkInterface
         private HexBigInteger m_maxTarget;
 
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
+
         public event NewMessagePrefixEvent OnNewMessagePrefixEvent;
+
         public event NewTargetEvent OnNewTargetEvent;
 
         public bool IsPool => false;
@@ -73,7 +75,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_account = new Account(privateKey);
                 minerAddress = m_account.Address;
             }
-            
+
             if (!addressUtil.IsValidAddressLength(minerAddress))
             {
                 throw new Exception("Invalid miner address provided, ensure address is 42 characters long (including '0x').");
@@ -142,7 +144,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             Program.Print("[INFO] Checking latest parameters from network...");
 
             m_cacheParameters = MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
-            
+
             return m_cacheParameters;
         }
 
@@ -262,7 +264,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                             throw new Exception("Failed to verify transaction.");
 
                         transactionID = m_web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encodedTx).Result;
-                        
+
                         if (!string.IsNullOrWhiteSpace(transactionID))
                         {
                             if (!m_submittedChallengeList.Contains(challenge))

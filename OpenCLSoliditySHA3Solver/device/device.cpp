@@ -2,9 +2,9 @@
 
 namespace OpenCLSolver
 {
-// --------------------------------------------------------------------
-// Static
-// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+	// Static
+	// --------------------------------------------------------------------
 
 	std::vector<std::unique_ptr<Device>> Device::devices;
 	const char *Device::kernelSource;
@@ -196,9 +196,9 @@ namespace OpenCLSolver
 		return true;
 	}
 
-// --------------------------------------------------------------------
-// Public
-// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+	// Public
+	// --------------------------------------------------------------------
 
 	Device::Device(int devEnum, cl_device_id devID, cl_device_type devType, cl_platform_id devPlatformID, bool isKingMaking,
 		float const userDefIntensity, uint32_t userLocalWorkSize) :
@@ -559,4 +559,3 @@ namespace OpenCLSolver
 		globalWorkSize = (uint32_t)(userTotalWorkSize / localWorkSize) * localWorkSize; // in multiples of localWorkSize
 	}
 }
-

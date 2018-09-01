@@ -15,11 +15,17 @@ namespace SoliditySHA3Miner.Miner
             public const string SOLVER_NAME = "CPUSoliditySHA3Solver";
 
             public unsafe delegate void GetSolutionTemplateCallback(byte* solutionTemplate);
+
             public unsafe delegate void GetKingAddressCallback(byte* kingAddress);
+
             public delegate void GetWorkPositionCallback(ref ulong lastWorkPosition);
+
             public delegate void ResetWorkPositionCallback(ref ulong lastWorkPosition);
+
             public delegate void IncrementWorkPositionCallback(ref ulong lastWorkPosition, ulong incrementSize);
+
             public delegate void MessageCallback([In]int threadID, [In]StringBuilder type, [In]StringBuilder message);
+
             public delegate void SolutionCallback([In]StringBuilder digest, [In]StringBuilder address, [In]StringBuilder challenge, [In]StringBuilder target, [In]StringBuilder solution);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
@@ -94,7 +100,7 @@ namespace SoliditySHA3Miner.Miner
         private Solver.MessageCallback m_MessageCallback;
         private Solver.SolutionCallback m_SolutionCallback;
 
-        #endregion
+        #endregion P/Invoke interface
 
         #region Static
 
@@ -112,7 +118,7 @@ namespace SoliditySHA3Miner.Miner
             return solutionTemplate.ToString();
         }
 
-        #endregion
+        #endregion Static
 
         private Timer m_hashPrintTimer;
         private int m_pauseOnFailedScan;
@@ -231,7 +237,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        #endregion
+        #endregion IMiner
 
         public CPU(NetworkInterface.INetworkInterface networkInterface, Device[] devices, bool isSubmitStale, int pauseOnFailedScans)
         {
@@ -302,7 +308,6 @@ namespace SoliditySHA3Miner.Miner
 
         private void m_instance_OnMessage(int threadID, StringBuilder type, StringBuilder message)
         {
-
             var sFormat = new StringBuilder();
             if (threadID > -1) sFormat.Append("CPU Thread: {0} ");
 
@@ -311,12 +316,15 @@ namespace SoliditySHA3Miner.Miner
                 case "INFO":
                     sFormat.Append(threadID > -1 ? "[INFO] {1}" : "[INFO] {0}");
                     break;
+
                 case "WARN":
                     sFormat.Append(threadID > -1 ? "[WARN] {1}" : "[WARN] {0}");
                     break;
+
                 case "ERROR":
                     sFormat.Append(threadID > -1 ? "[ERROR] {1}" : "[ERROR] {0}");
                     break;
+
                 case "DEBUG":
                 default:
 #if DEBUG

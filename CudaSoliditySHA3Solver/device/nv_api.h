@@ -18,7 +18,7 @@
 #ifndef __unix
 
 // mac os 32-bit still needs this
-#if ( (defined(macintosh) && defined(__LP64__) && (__NVAPI_RESERVED0__)) || (!defined(macintosh) && defined(__NVAPI_RESERVED0__)) ) 
+#if ( (defined(macintosh) && defined(__LP64__) && (__NVAPI_RESERVED0__)) || (!defined(macintosh) && defined(__NVAPI_RESERVED0__)) )
 
 typedef unsigned int								NvU32;				// 0 to 4294967295
 typedef signed int									NvS32;				// -2147483648 to 2147483647

@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Nethereum.Hex.HexTypes;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Nethereum.Hex.HexTypes;
 
 namespace SoliditySHA3Miner.Utils
 {

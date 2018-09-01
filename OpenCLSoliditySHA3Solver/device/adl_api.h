@@ -55,7 +55,7 @@ private:
 
 public:
 	static bool isInitialized;
-	
+
 	static bool foundAdlApi();
 	static void initialize();
 	static void unload();

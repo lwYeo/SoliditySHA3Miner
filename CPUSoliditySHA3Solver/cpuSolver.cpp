@@ -3,9 +3,9 @@
 
 namespace CPUSolver
 {
-// --------------------------------------------------------------------
-// Static
-// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+	// Static
+	// --------------------------------------------------------------------
 
 	bool cpuSolver::m_pause{ false };
 
@@ -25,7 +25,7 @@ namespace CPUSolver
 			reinterpret_cast<uint64_t&>(b_solutionTemp[i]) = uInt_d(rGen);
 
 		if (kingAddress.empty())
-			std::memset(&b_solutionTemp[12], 0, UINT64_LENGTH); // keep first and last 12 bytes, leave middle 8 bytes for mid state 
+			std::memset(&b_solutionTemp[12], 0, UINT64_LENGTH); // keep first and last 12 bytes, leave middle 8 bytes for mid state
 		else
 		{
 			address_t king;
@@ -38,9 +38,9 @@ namespace CPUSolver
 		return "0x" + bytesToHexString(b_solutionTemp);
 	}
 
-// --------------------------------------------------------------------
-// Public
-// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+	// Public
+	// --------------------------------------------------------------------
 
 	cpuSolver::cpuSolver(std::string const threads) noexcept :
 		m_miningThreadCount{ 0u },
@@ -237,9 +237,9 @@ namespace CPUSolver
 		m_pause = pauseFinding;
 	}
 
-// --------------------------------------------------------------------
-// Private
-// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+	// Private
+	// --------------------------------------------------------------------
 
 	bool cpuSolver::isAddressEmpty(address_t kingAddress)
 	{

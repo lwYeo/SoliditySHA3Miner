@@ -133,4 +133,3 @@ namespace OpenCLSolver
 		bool setKernelArgs(std::string& errorMessage, bool const isKingMaking);
 	};
 }
-

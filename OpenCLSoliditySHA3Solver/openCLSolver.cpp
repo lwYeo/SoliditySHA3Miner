@@ -5,9 +5,9 @@ namespace OpenCLSolver
 #define ROTL64(x, y) (((x) << (y)) ^ ((x) >> (64u - (y))))
 #define ROTR64(x, y) (((x) >> (y)) ^ ((x) << (64u - (y))))
 
-// --------------------------------------------------------------------
-// Static
-// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+	// Static
+	// --------------------------------------------------------------------
 
 	std::vector<Platform> openCLSolver::platforms;
 	bool openCLSolver::m_pause{ false };
@@ -134,9 +134,9 @@ namespace OpenCLSolver
 		return "Unknown";
 	}
 
-// --------------------------------------------------------------------
-// Public
-// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+	// Public
+	// --------------------------------------------------------------------
 
 	openCLSolver::openCLSolver() noexcept :
 		s_address{ "" },
@@ -537,9 +537,9 @@ namespace OpenCLSolver
 		m_pause = pauseFinding;
 	}
 
-// --------------------------------------------------------------------
-// Private
-// --------------------------------------------------------------------
+	// --------------------------------------------------------------------
+	// Private
+	// --------------------------------------------------------------------
 
 	bool openCLSolver::isAddressEmpty(address_t &address)
 	{
@@ -892,7 +892,6 @@ namespace OpenCLSolver
 
 			device->status = clEnqueueUnmapMemObject(device->queue, device->solutionCountBuffer, device->h_solutionCount, NULL, NULL, NULL);
 			if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error unmapping solution count from host (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-
 		} while (device->mining);
 
 		onMessage(device->platformName, device->deviceEnum, "Info", "Stop mining...");
@@ -911,4 +910,3 @@ namespace OpenCLSolver
 		onMessage(device->platformName, device->deviceEnum, "Info", "Mining stopped.");
 	}
 }
-

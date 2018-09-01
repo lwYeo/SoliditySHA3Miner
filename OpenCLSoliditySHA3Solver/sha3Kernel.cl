@@ -64,7 +64,7 @@ static inline nonce_t bswap64(const nonce_t input)
 #if PLATFORM == OPENCL_PLATFORM_NVIDIA
 
 	asm("{"
-		"  prmt.b32 %0, %3, 0, 0x0123;"
+	"  prmt.b32 %0, %3, 0, 0x0123;"
 		"  prmt.b32 %1, %2, 0, 0x0123;"
 		"}" : "=r"(output.uint2_s.x), "=r"(output.uint2_s.y) : "r"(input.uint2_s.x), "r"(input.uint2_s.y));
 
@@ -129,7 +129,7 @@ static inline uint2 chi(uint2 const a, uint2 const b, uint2 const c)
 
 	uint2 output;
 	asm("{"
-		"  lop3.b32 %0, %2, %4, %6, 0xD2;"
+	"  lop3.b32 %0, %2, %4, %6, 0xD2;"
 		"  lop3.b32 %1, %3, %5, %7, 0xD2;"
 		"}" : "=r"(output.x), "=r"(output.y) : "r"(a.x), "r"(a.y), "r"(b.x), "r"(b.y), "r"(c.x), "r"(c.y));
 	return output;

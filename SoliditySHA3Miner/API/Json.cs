@@ -52,7 +52,7 @@ namespace SoliditySHA3Miner.API
                 return;
             }
 
-            var tempIPAddress = httpBind.Split(new string[]{ "//" }, StringSplitOptions.None)[1].Split(':')[0];
+            var tempIPAddress = httpBind.Split(new string[] { "//" }, StringSplitOptions.None)[1].Split(':')[0];
             if (!IPAddress.TryParse(tempIPAddress, out IPAddress ipAddress))
             {
                 Program.Print("[ERROR] Invalid IP address provided for JSON-API.");
@@ -65,7 +65,7 @@ namespace SoliditySHA3Miner.API
                 catch (Exception)
                 {
                     Program.Print("[ERROR] JSON-API failed to bind to: " + (string.IsNullOrEmpty(apiBind) ? Defaults.JsonAPIPath : apiBind));
-                    return; 
+                    return;
                 }
             };
 
@@ -106,7 +106,7 @@ namespace SoliditySHA3Miner.API
             while (m_isOngoing)
             {
                 HttpListenerResponse response = listener.GetContext().Response;
-                
+
                 var api = new JsonAPI();
                 float divisor = 0;
                 ulong totalHashRate = 0ul;
@@ -139,7 +139,7 @@ namespace SoliditySHA3Miner.API
                     api.HashRateUnit = "KH/s";
                     api.TotalHashRate = totalHashRate / divisor;
                 }
-                
+
                 foreach (var miner in m_miners)
                 {
                     foreach (var device in miner.Devices.Where(d => d.DeviceID > -1))
@@ -165,7 +165,7 @@ namespace SoliditySHA3Miner.API
                                             HasMonitoringAPI = miner.HasMonitoringAPI,
                                             SettingIntensity = device.Intensity
                                         };
-                                        
+
                                         Miner.CUDA.Solver.GetDeviceSettingMaxCoreClock(instancePtr, device.DeviceID, ref tempValue);
                                         ((JsonAPI.CUDA_Miner)newMiner).SettingMaxCoreClockMHz = tempValue;
 
@@ -271,6 +271,7 @@ namespace SoliditySHA3Miner.API
                                         SettingIntensity = device.Intensity
                                     };
                                     break;
+
                                 default:
                                     newMiner = new JsonAPI.Miner()
                                     {
@@ -285,11 +286,11 @@ namespace SoliditySHA3Miner.API
                                     break;
                             }
                         }
-                        
+
                         if (newMiner != null) api.Miners.Add(newMiner);
                     }
                 }
-                
+
                 byte[] buffer = Encoding.UTF8.GetBytes(Utils.Json.SerializeFromObject(api, Utils.Json.BaseClassFirstSettings));
                 response.ContentLength64 = buffer.Length;
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nethereum.Hex.HexTypes;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -8,7 +9,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Nethereum.Hex.HexTypes;
 
 namespace SoliditySHA3Miner
 {
@@ -17,11 +17,13 @@ namespace SoliditySHA3Miner
         public const string Address = "0x9172ff7884CEFED19327aDaCe9C470eF1796105c";
         public const float Percent = 2.0F;
         public const float MinimumPercent = 1.5F;
+
         public static float UserPercent
         {
             get => (m_UserPercent < MinimumPercent) ? Percent : m_UserPercent;
             set => m_UserPercent = value;
         }
+
         private static float m_UserPercent = Percent;
     }
 
@@ -48,14 +50,14 @@ namespace SoliditySHA3Miner
         public const bool LogFile = false;
     }
 
-    class Program
+    internal class Program
     {
         #region closing handler
 
         [DllImport("Kernel32")]
         private static extern bool SetConsoleCtrlHandler(EventHandler handler, bool add);
 
-        enum CtrlType
+        private enum CtrlType
         {
             CTRL_C_EVENT = 0,
             CTRL_BREAK_EVENT = 1,
@@ -63,9 +65,10 @@ namespace SoliditySHA3Miner
             CTRL_LOGOFF_EVENT = 5,
             CTRL_SHUTDOWN_EVENT = 6
         }
+
         private delegate bool EventHandler(CtrlType sig);
 
-        static EventHandler m_handler;
+        private static EventHandler m_handler;
 
         private static bool Handler(CtrlType sig)
         {
@@ -85,7 +88,7 @@ namespace SoliditySHA3Miner
             }
         }
 
-        #endregion
+        #endregion closing handler
 
         public static readonly DateTime LaunchTime = DateTime.Now;
 
@@ -121,7 +124,7 @@ namespace SoliditySHA3Miner
                         try
                         {
                             if (!Directory.Exists(Path.GetDirectoryName(logFilePath))) Directory.CreateDirectory(Path.GetDirectoryName(logFilePath));
-                            
+
                             using (var logStream = File.AppendText(logFilePath))
                             {
                                 logStream.WriteLine(message);
@@ -232,7 +235,7 @@ namespace SoliditySHA3Miner
         {
             Miner.OpenCL.PreInitialize(true, out string initErrorMessage);
             if (!string.IsNullOrWhiteSpace(initErrorMessage)) Console.WriteLine(initErrorMessage);
-            
+
             var amdDevices = Miner.OpenCL.GetDevices("AMD Accelerated Parallel Processing", out string getDevicesErrorMessage);
             if (!string.IsNullOrWhiteSpace(getDevicesErrorMessage)) Console.WriteLine(getDevicesErrorMessage);
 
@@ -354,7 +357,7 @@ namespace SoliditySHA3Miner
                     cudaDevices[i].Intensity = float.Parse(sCudaIntensities[0]);
         }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             IsLogFile = Defaults.LogFile;
 
@@ -379,8 +382,8 @@ namespace SoliditySHA3Miner
 
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             Console.Title = string.Format("{0} {1} by lwYeo@github ({2})", GetApplicationName(), GetApplicationVersion(), GetApplicationYear());
-            
-            Print(GetHeader(), excludePrefix:true);
+
+            Print(GetHeader(), excludePrefix: true);
 
             m_handler += new EventHandler(Handler);
             SetConsoleCtrlHandler(m_handler, true);
@@ -423,91 +426,119 @@ namespace SoliditySHA3Miner
                             m_manualResetEvent.Set();
                             Environment.Exit(0);
                             break;
+
                         case "cpuMode":
                             cpuMode = bool.Parse(arg.Split('=')[1]);
                             break;
+
                         case "cpuID":
                             SetCpuDevices(arg.Split('=')[1].Split(','), ref cpuDevices);
                             break;
+
                         case "allowIntel":
                             allowIntel = bool.Parse(arg.Split('=')[1]);
                             break;
+
                         case "allowAMD":
                             allowAMD = bool.Parse(arg.Split('=')[1]);
                             break;
+
                         case "allowCUDA":
                             allowCUDA = bool.Parse(arg.Split('=')[1]);
                             break;
+
                         case "listAmdDevices":
                             PrintAmdDevices();
                             m_manualResetEvent.Set();
                             Environment.Exit(0);
                             break;
+
                         case "amdDevice":
                             SetAmdDevices(arg.Split('=')[1].Split(','), ref amdDevices);
                             break;
+
                         case "listCudaDevices":
                             PrintCudaDevices();
                             m_manualResetEvent.Set();
                             Environment.Exit(0);
                             break;
+
                         case "cudaDevice":
                             SetCudaDevices(arg.Split('=')[1].Split(','), ref cudaDevices);
                             break;
+
                         case "minerJsonAPI":
                             minerJsonAPI = arg.Split('=')[1];
                             break;
+
                         case "minerCcminerAPI":
                             minerCcminerAPI = arg.Split('=')[1];
                             break;
+
                         case "overrideMaxTarget":
                             overrideMaxTarget = new HexBigInteger(BigInteger.Parse((arg.Split('=')[1])));
                             break;
+
                         case "customDifficulty":
                             customDifficulty = uint.Parse(arg.Split('=')[1]);
                             break;
+
                         case "maxScanRetry":
                             maxScanRetry = int.Parse(arg.Split('=')[1]);
                             break;
+
                         case "pauseOnFailedScans":
                             pauseOnFailedScans = int.Parse(arg.Split('=')[1]);
                             break;
+
                         case "submitStale":
                             submitStale = bool.Parse(arg.Split('=')[1]);
                             break;
+
                         case "abiFile":
                             abiFile = arg.Split('=')[1];
                             break;
+
                         case "web3api":
                             web3api = arg.Split('=')[1];
                             break;
+
                         case "contract":
                             contractAddress = arg.Split('=')[1];
                             break;
+
                         case "networkUpdateInterval":
                             networkUpdateInterval = int.Parse(arg.Split('=')[1]);
                             break;
+
                         case "hashrateUpdateInterval":
                             hashrateUpdateInterval = int.Parse(arg.Split('=')[1]);
                             break;
+
                         case "kingAddress":
                             kingAddress = arg.Split('=')[1];
                             break;
+
                         case "address":
                             minerAddress = arg.Split('=')[1];
                             break;
+
                         case "privateKey":
                             privateKey = arg.Split('=')[1];
                             break;
+
                         case "gasToMine":
                             gasToMine = float.Parse(arg.Split('=')[1]);
                             break;
+
                         case "pool":
                             primaryPool = arg.Split('=')[1];
                             break;
+
                         case "secondaryPool":
                             secondaryPool = arg.Split('=')[1];
                             break;
+
                         case "devFee":
                             DevFee.UserPercent = float.Parse(arg.Split('=')[1]);
                             break;
@@ -661,9 +692,11 @@ namespace SoliditySHA3Miner
                             case "intelIntensity":
                                 SetIntelIntensities(arg.Split('=')[1].Split(','), ref intelDevices);
                                 break;
+
                             case "amdIntensity":
                                 SetAmdIntensities(arg.Split('=')[1].Split(','), ref amdDevices);
                                 break;
+
                             case "cudaIntensity":
                                 SetCudaIntensities(arg.Split('=')[1].Split(','), ref cudaDevices);
                                 break;
@@ -677,7 +710,7 @@ namespace SoliditySHA3Miner
                     }
                 }
             }
-            
+
             try
             {
                 Miner.Work.SetKingAddress(kingAddress);

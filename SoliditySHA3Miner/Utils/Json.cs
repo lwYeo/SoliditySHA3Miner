@@ -1,16 +1,16 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 
 namespace SoliditySHA3Miner.Utils
 {
-    static class Json
+    internal static class Json
     {
         private const int MAX_TIMEOUT = 5;
         private static object _Object1 = new object();
@@ -71,7 +71,7 @@ namespace SoliditySHA3Miner.Utils
                 var jObject = (T)Activator.CreateInstance(typeof(T));
                 try
                 {
-                    using (var oClient = new HttpClient()) 
+                    using (var oClient = new HttpClient())
                     {
                         oClient.Timeout = new TimeSpan(0, 0, MAX_TIMEOUT);
                         using (HttpResponseMessage oResponse = oClient.GetAsync(url).Result)
@@ -128,7 +128,6 @@ namespace SoliditySHA3Miner.Utils
                 {
                     return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(objectToClone),
                                                             new JsonSerializerSettings() { ObjectCreationHandling = ObjectCreationHandling.Replace });
-
                 }
                 catch { return default(T); }
             }
@@ -136,7 +135,9 @@ namespace SoliditySHA3Miner.Utils
 
         public class ClassNameContractResolver : DefaultContractResolver
         {
-            private ClassNameContractResolver() { }
+            private ClassNameContractResolver()
+            {
+            }
 
             static ClassNameContractResolver() => Instance = new ClassNameContractResolver();
 
@@ -156,7 +157,9 @@ namespace SoliditySHA3Miner.Utils
 
         public class BaseFirstContractResolver : DefaultContractResolver
         {
-            private BaseFirstContractResolver() { }
+            private BaseFirstContractResolver()
+            {
+            }
 
             static BaseFirstContractResolver() => Instance = new BaseFirstContractResolver();
 

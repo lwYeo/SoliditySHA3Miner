@@ -224,7 +224,7 @@ __global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restr
 			state[x + 10] = xor3(state[x + 10], D[x], C[x]);
 			state[x + 15] = xor3(state[x + 15], D[x], C[x]);
 			state[x + 20] = xor3(state[x + 20], D[x], C[x]);
-	}
+		}
 #else
 		for (uint_fast8_t x{ 0u }; x < 5u; ++x)
 		{
@@ -362,7 +362,7 @@ namespace CUDASolver
 
 			checkInputs(device, c_currentChallenge);
 
-			hashMidstate << <device->grid(), device->block() >> >(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
+			hashMidstate<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
 
 			CudaCheckError();
 
@@ -413,4 +413,3 @@ namespace CUDASolver
 		onMessage(device->deviceID, "Info", "Mining stopped.");
 	}
 }
-

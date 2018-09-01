@@ -15,19 +15,25 @@ namespace SoliditySHA3Miner.Miner
             public const string SOLVER_NAME = "OpenCLSoliditySHA3Solver";
 
             public unsafe delegate void GetSolutionTemplateCallback(byte* solutionTemplate);
+
             public unsafe delegate void GetKingAddressCallback(byte* kingAddress);
+
             public delegate void GetWorkPositionCallback(ref ulong lastWorkPosition);
+
             public delegate void ResetWorkPositionCallback(ref ulong lastWorkPosition);
+
             public delegate void IncrementWorkPositionCallback(ref ulong lastWorkPosition, ulong incrementSize);
+
             public delegate void MessageCallback([In]StringBuilder platform, [In]int deviceID, [In]StringBuilder type, [In]StringBuilder message);
+
             public delegate void SolutionCallback([In]StringBuilder digest, [In]StringBuilder address, [In]StringBuilder challenge, [In]StringBuilder target, [In]StringBuilder solution);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void FoundADL_API(ref bool hasADL_API);
-            
+
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void PreInitialize(bool allowIntel, StringBuilder errorMessage, ref ulong errorSize);
-            
+
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void GetPlatformNames(StringBuilder platformNames);
 
@@ -81,7 +87,7 @@ namespace SoliditySHA3Miner.Miner
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void IsPaused(IntPtr instance, ref bool isPaused);
-            
+
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void GetInstanceDeviceName(IntPtr instance, StringBuilder platformName, int deviceEnum, StringBuilder deviceName, ref ulong nameSize);
 
@@ -145,7 +151,7 @@ namespace SoliditySHA3Miner.Miner
         private Solver.MessageCallback m_MessageCallback;
         private Solver.SolutionCallback m_SolutionCallback;
 
-        #endregion
+        #endregion P/Invoke interface
 
         #region static
 
@@ -201,7 +207,7 @@ namespace SoliditySHA3Miner.Miner
             var devicesString = new StringBuilder();
             ulong errSize = 0ul, nameSize = 0ul;
             var deviceCount = 0;
-            
+
             Solver.GetDeviceCount(new StringBuilder(platformName), ref deviceCount, errMsg, ref errSize);
             errorMessage = errMsg.ToString();
 
@@ -222,7 +228,7 @@ namespace SoliditySHA3Miner.Miner
             return devicesString.ToString();
         }
 
-        #endregion
+        #endregion static
 
         private Timer m_hashPrintTimer;
         private int m_pauseOnFailedScan;
@@ -364,7 +370,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        #endregion
+        #endregion IMiner
 
         public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device[] devices, bool isSubmitStale, int pauseOnFailedScans)
         {
@@ -415,7 +421,7 @@ namespace SoliditySHA3Miner.Miner
                         deviceName.Clear();
                         Solver.AssignDevice(m_instance, new StringBuilder(Devices[i].Platform), Devices[i].DeviceID, ref Devices[i].Intensity);
                         Solver.GetInstanceDeviceName(m_instance, new StringBuilder(Devices[i].Platform), Devices[i].DeviceID, deviceName, ref deviceNameSize);
-                        
+
                         if (errMsg.Length > 0)
                             m_instance_OnMessage(new StringBuilder(Devices[i].Platform), Devices[i].DeviceID, new StringBuilder("ERROR"), errMsg);
                         else
@@ -464,7 +470,7 @@ namespace SoliditySHA3Miner.Miner
                         coreClockString.AppendFormat(" {0}MHz", coreClock);
                     }
                 Program.Print(coreClockString.ToString());
-                
+
                 temperatureString.Append("OpenCL [INFO] Temperatures:");
                 foreach (var device in Devices)
                     if (device.DeviceID > -1)
@@ -473,7 +479,7 @@ namespace SoliditySHA3Miner.Miner
                         temperatureString.AppendFormat(" {0}C", temperature);
                     }
                 Program.Print(temperatureString.ToString());
-                
+
                 fanTachometerRpmString.Append("OpenCL [INFO] Fan tachometers:");
                 foreach (var device in Devices)
                     if (device.DeviceID > -1)
@@ -487,7 +493,7 @@ namespace SoliditySHA3Miner.Miner
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
         }
-        
+
         private void m_instance_OnMessage(StringBuilder platform, int deviceEnum, StringBuilder type, StringBuilder message)
         {
             var sFormat = new StringBuilder();
@@ -499,12 +505,15 @@ namespace SoliditySHA3Miner.Miner
                 case "INFO":
                     sFormat.Append(deviceEnum > -1 ? "[INFO] {1}" : "[INFO] {0}");
                     break;
+
                 case "WARN":
                     sFormat.Append(deviceEnum > -1 ? "[WARN] {1}" : "[WARN] {0}");
                     break;
+
                 case "ERROR":
                     sFormat.Append(deviceEnum > -1 ? "[ERROR] {1}" : "[ERROR] {0}");
                     break;
+
                 case "DEBUG":
                 default:
 #if DEBUG

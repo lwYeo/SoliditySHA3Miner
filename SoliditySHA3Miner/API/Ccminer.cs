@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -13,7 +12,7 @@ namespace SoliditySHA3Miner.API
         private const string ALGO = "soliditysha3";
         private const string EMULATE_API_VERSION = "1.9";
         private const string API_FORMAT = "Name={0};VER={1};API={2};ALGO={3};GPUS={4:D};KHS={5:F2};SOLV={6:D};ACC={7:D};REJ={8:D};ACCMN={9:F3};DIFF={10:F6};NETKHS={11:F0};POOLS={12:D};WAIT={13:D};UPTIME={14:F0};TS={15:D}|\r\n";
-        
+
         private static Thread m_apiThread;
         private static Miner.IMiner[] m_miners;
 
@@ -21,10 +20,10 @@ namespace SoliditySHA3Miner.API
 
         public static void StartListening(string apiBind, params Miner.IMiner[] miners)
         {
-            if (m_apiThread != null 
+            if (m_apiThread != null
                 && (m_apiThread.ThreadState != ThreadState.Aborted || m_apiThread.ThreadState != ThreadState.Stopped)) return;
 
-            if(string.IsNullOrWhiteSpace(apiBind))
+            if (string.IsNullOrWhiteSpace(apiBind))
             {
                 Program.Print("[INFO] minerCcminerAPI is null or empty, using default...");
                 apiBind = Defaults.CcminerAPIPath;

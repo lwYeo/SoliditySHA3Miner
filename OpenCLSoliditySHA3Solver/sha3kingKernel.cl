@@ -53,7 +53,6 @@ static inline ulong rol(const ulong x, const uint s)
 	output = (s > 32u) ? amd_bitalign((x2).yx, (x2).xy, 64u - s) : amd_bitalign((x2).xy, (x2).yx, 32u - s);
 	return as_ulong(output);
 
-
 #elif PLATFORM == OPENCL_PLATFORM_NVIDIA && COMPUTE >= 35
 
 	uint2 output;

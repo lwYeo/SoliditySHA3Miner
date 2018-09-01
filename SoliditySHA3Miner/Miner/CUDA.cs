@@ -15,11 +15,17 @@ namespace SoliditySHA3Miner.Miner
             public const string SOLVER_NAME = "CudaSoliditySHA3Solver";
 
             public unsafe delegate void GetSolutionTemplateCallback(byte* solutionTemplate);
+
             public unsafe delegate void GetKingAddressCallback(byte* kingAddress);
+
             public delegate void GetWorkPositionCallback(ref ulong lastWorkPosition);
+
             public delegate void ResetWorkPositionCallback(ref ulong lastWorkPosition);
+
             public delegate void IncrementWorkPositionCallback(ref ulong lastWorkPosition, ulong incrementSize);
+
             public delegate void MessageCallback([In]int deviceID, [In]StringBuilder type, [In]StringBuilder message);
+
             public delegate void SolutionCallback([In]StringBuilder digest, [In]StringBuilder address, [In]StringBuilder challenge, [In]StringBuilder target, [In]StringBuilder solution);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
@@ -142,7 +148,7 @@ namespace SoliditySHA3Miner.Miner
         private Solver.MessageCallback m_MessageCallback;
         private Solver.SolutionCallback m_SolutionCallback;
 
-        #endregion
+        #endregion P/Invoke interface
 
         #region Static
 
@@ -201,7 +207,7 @@ namespace SoliditySHA3Miner.Miner
             return devicesString.ToString();
         }
 
-        #endregion
+        #endregion Static
 
         private Timer m_hashPrintTimer;
         private int m_pauseOnFailedScan;
@@ -343,7 +349,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        #endregion
+        #endregion IMiner
 
         public CUDA(NetworkInterface.INetworkInterface networkInterface, Device[] cudaDevices, bool isSubmitStale, int pauseOnFailedScans)
         {
@@ -371,7 +377,7 @@ namespace SoliditySHA3Miner.Miner
                 m_IncrementWorkPositionCallback = Solver.SetOnIncrementWorkPositionHandler(m_instance, Work.IncrementPosition);
                 m_MessageCallback = Solver.SetOnMessageHandler(m_instance, m_instance_OnMessage);
                 m_SolutionCallback = Solver.SetOnSolutionHandler(m_instance, m_instance_OnSolution);
-                
+
                 NetworkInterface.OnGetMiningParameterStatusEvent += NetworkInterface_OnGetMiningParameterStatusEvent;
                 NetworkInterface.OnNewMessagePrefixEvent += NetworkInterface_OnNewMessagePrefixEvent;
                 NetworkInterface.OnNewTargetEvent += NetworkInterface_OnNewTargetEvent;
@@ -459,18 +465,21 @@ namespace SoliditySHA3Miner.Miner
             var sFormat = new StringBuilder();
             if (deviceID > -1) sFormat.Append("CUDA ID: {0} ");
             else sFormat.Append("CUDA ");
-            
+
             switch (type.ToString().ToUpperInvariant())
             {
                 case "INFO":
                     sFormat.Append(deviceID > -1 ? "[INFO] {1}" : "[INFO] {0}");
                     break;
+
                 case "WARN":
                     sFormat.Append(deviceID > -1 ? "[WARN] {1}" : "[WARN] {0}");
                     break;
+
                 case "ERROR":
                     sFormat.Append(deviceID > -1 ? "[ERROR] {1}" : "[ERROR] {0}");
                     break;
+
                 case "DEBUG":
                 default:
 #if DEBUG

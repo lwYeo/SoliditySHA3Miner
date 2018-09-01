@@ -134,7 +134,7 @@ bool ADL_API::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessag
 	void* performanceLevelsBuffer{ NULL };
 	ADLODNCapabilities overdriveCapabilities{ NULL };
 	ADLODNPerformanceLevels *odPerformanceLevels{ NULL };
-	
+
 	try
 	{
 		if (!checkVersion(errorMessage)) return false;

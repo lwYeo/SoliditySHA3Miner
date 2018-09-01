@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Hex.HexTypes;
+using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Nethereum.Hex.HexConvertors.Extensions;
-using Nethereum.Hex.HexTypes;
 
 namespace SoliditySHA3Miner.Miner
 {
@@ -17,9 +17,11 @@ namespace SoliditySHA3Miner.Miner
         bool IsPaused { get; }
 
         void StartMining(int networkUpdateInterval, int hashratePrintInterval);
+
         void StopMining();
 
         ulong GetTotalHashrate();
+
         ulong GetHashrateByDevice(string platformName, int deviceID);
     }
 
@@ -68,7 +70,7 @@ namespace SoliditySHA3Miner.Miner
         {
             if (SolutionTemplate == null) return;
 
-            fixed (byte *tempSolutionTemplate = SolutionTemplate)
+            fixed (byte* tempSolutionTemplate = SolutionTemplate)
             {
                 Buffer.MemoryCopy(tempSolutionTemplate, solutionTemplate, 32L, 32L);
             }

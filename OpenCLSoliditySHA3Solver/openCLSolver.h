@@ -134,4 +134,3 @@ namespace OpenCLSolver
 		sponge_ut const getMidState(message_ut &newMessage);
 	};
 }
-
