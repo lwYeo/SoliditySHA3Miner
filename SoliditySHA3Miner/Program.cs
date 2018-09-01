@@ -102,7 +102,7 @@ namespace SoliditySHA3Miner
 
         public static string GetApplicationName() => typeof(Program).Assembly.GetName().Name;
 
-        public static string GetApplicationVersion() => typeof(Program).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
+        public static string GetApplicationVersion() => typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
         public static string GetApplicationYear() => File.GetCreationTime(typeof(Program).Assembly.Location).Year.ToString();
 

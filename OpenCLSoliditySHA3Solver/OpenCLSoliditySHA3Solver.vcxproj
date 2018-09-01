@@ -40,8 +40,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.1\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.1\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -53,10 +55,7 @@
       <AdditionalLibraryDirectories>$(AMDAPPSDKROOT)\lib\x86_64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy "sha3Kernel.cl" "$(OutDir)sha3Kernel.cl" /Y
-copy "sha3Kernel.cl" "$(OutDir)sha3kingKernel.cl" /Y
-copy "sha3kingKernel.cl" "$(OutDir)sha3kingKernel.cl" /Y
-copy "sha3kingKernel.cl" "$(OutDir)sha3kingKernel.cl" /Y</Command>
+      <Command>XCOPY /Y "$(ProjectDir)*.cl" "$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.1\*.cl"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -75,10 +74,7 @@ copy "sha3kingKernel.cl" "$(OutDir)sha3kingKernel.cl" /Y</Command>
       <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
-      <Command>copy "sha3Kernel.cl" "$(OutDir)sha3Kernel.cl" /Y
-copy "sha3Kernel.cl" "$(OutDir)sha3kingKernel.cl" /Y
-copy "sha3kingKernel.cl" "$(OutDir)sha3kingKernel.cl" /Y
-copy "sha3kingKernel.cl" "$(OutDir)sha3kingKernel.cl" /Y</Command>
+      <Command>XCOPY /Y "$(ProjectDir)*.cl" "$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.1\*.cl"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
