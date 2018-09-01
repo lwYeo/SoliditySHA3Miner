@@ -2,6 +2,7 @@
 packages/
 Debug/
 Release/
+Build/
 *.pdb
 *.asm
 *.vcxproj.user

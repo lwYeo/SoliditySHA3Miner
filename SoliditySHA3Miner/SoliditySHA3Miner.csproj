@@ -149,7 +149,12 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>start XCOPY /Y "$(TargetDir)*.exe" "$(SolutionDir)Build\*.exe"
+start XCOPY /Y "$(TargetDir)*.exe.config" "$(SolutionDir)Build\*.exe.config"
+start XCOPY /Y "$(TargetDir)*.dll" "$(SolutionDir)Build\*.dll"
+start XCOPY /Y "$(TargetDir)*.bat" "$(SolutionDir)Build\*.bat"
+start XCOPY /Y "$(TargetDir)*.cl" "$(SolutionDir)Build\*.cl"
+start XCOPY /Y "$(TargetDir)*.abi" "$(SolutionDir)Build\*.abi"
+start XCOPY /Y "$(TargetDir)*.txt" "$(SolutionDir)Build\*.txt"</PostBuildEvent>
   </PropertyGroup>
 </Project>
