@@ -131,12 +131,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OpenCLSoliditySHA3Solver\OpenCLSoliditySHA3Solver.vcxproj">
-      <Project>{a73b12b6-272f-4837-b5a3-c1aa545be4c5}</Project>
-      <Name>OpenCLSoliditySHA3Solver</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.1">
       <Visible>False</Visible>
       <ProductName>Microsoft .NET Framework 4.7.1 %28x86 and x64%29</ProductName>
@@ -155,6 +149,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if $(ConfigurationName) == Release del "$(TargetDir)*.xml", "$(TargetDir)*.pdb"</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>

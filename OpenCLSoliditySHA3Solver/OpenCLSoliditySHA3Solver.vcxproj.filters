@@ -10,9 +10,6 @@
     <ClCompile Include="uint256\utilstrencodings.cpp">
       <Filter>uint256</Filter>
     </ClCompile>
-    <ClCompile Include="managed\solver.cpp">
-      <Filter>managed</Filter>
-    </ClCompile>
     <ClCompile Include="openCLSolver.cpp" />
     <ClCompile Include="device\device.cpp">
       <Filter>device</Filter>
@@ -21,6 +18,7 @@
       <Filter>device</Filter>
     </ClCompile>
     <ClCompile Include="sha3.cpp" />
+    <ClCompile Include="solver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="uint256\arith_uint256.h">
@@ -46,12 +44,6 @@
     </ClInclude>
     <ClInclude Include="types.h" />
     <ClInclude Include="openCLSolver.h" />
-    <ClInclude Include="managed\managedObject.h">
-      <Filter>managed</Filter>
-    </ClInclude>
-    <ClInclude Include="managed\solver.h">
-      <Filter>managed</Filter>
-    </ClInclude>
     <ClInclude Include="device\device.h">
       <Filter>device</Filter>
     </ClInclude>
@@ -69,13 +61,11 @@
       <Filter>device</Filter>
     </ClInclude>
     <ClInclude Include="sha3.h" />
+    <ClInclude Include="solver.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="uint256">
       <UniqueIdentifier>{9e554012-3d3d-4ac3-bf66-c67ac50e4870}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="managed">
-      <UniqueIdentifier>{a3f1fbe1-1ab7-4a34-805b-35f1d9b1bc5c}</UniqueIdentifier>
     </Filter>
     <Filter Include="device">
       <UniqueIdentifier>{38830ddd-4e18-4b61-99dd-acd18b0f005a}</UniqueIdentifier>

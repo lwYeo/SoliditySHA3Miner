@@ -21,7 +21,6 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
-    <CLRSupport>true</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -29,7 +28,6 @@
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <CLRSupport>true</CLRSupport>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -42,61 +40,45 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(AMDAPPSDKROOT)/include;$(AMDAPPSDKROOT)/include/SDKUtil;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(OutDir)/$(ProjectName).pdb</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(AMDAPPSDKROOT)\lib\x86_64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "sha3Kernel.cl" "$(OutDir)sha3Kernel.cl" /Y
-copy "sha3Kernel.cl" "$(SolutionDir)$(OutDir)"</Command>
+copy "sha3Kernel.cl" "$(OutDir)sha3kingKernel.cl" /Y
+copy "sha3kingKernel.cl" "$(OutDir)sha3kingKernel.cl" /Y
+copy "sha3kingKernel.cl" "$(OutDir)sha3kingKernel.cl" /Y</Command>
     </PostBuildEvent>
-    <PreBuildEvent>
-      <Command>
-      </Command>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(AMDAPPSDKROOT)/include;$(AMDAPPSDKROOT)/include/SDKUtil;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ProgramDataBaseFileName>$(OutDir)/$(ProjectName).pdb</ProgramDataBaseFileName>
-      <AssemblerListingLocation>Release</AssemblerListingLocation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(AMDAPPSDKROOT)\lib\x86_64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <LinkTimeCodeGeneration>
-      </LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>copy "sha3Kernel.cl" "$(OutDir)sha3Kernel.cl" /Y
-copy "sha3Kernel.cl" "$(SolutionDir)$(OutDir)sha3kingKernel.cl" /Y
+copy "sha3Kernel.cl" "$(OutDir)sha3kingKernel.cl" /Y
 copy "sha3kingKernel.cl" "$(OutDir)sha3kingKernel.cl" /Y
-copy "sha3kingKernel.cl" "$(SolutionDir)$(OutDir)sha3kingKernel.cl" /Y</Command>
+copy "sha3kingKernel.cl" "$(OutDir)sha3kingKernel.cl" /Y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -105,11 +87,10 @@ copy "sha3kingKernel.cl" "$(SolutionDir)$(OutDir)sha3kingKernel.cl" /Y</Command>
     <ClInclude Include="device\adl_include\adl_sdk.h" />
     <ClInclude Include="device\adl_include\adl_structures.h" />
     <ClInclude Include="device\device.h" />
-    <ClInclude Include="managed\managedObject.h" />
-    <ClInclude Include="managed\solver.h" />
     <ClInclude Include="openCLSolver.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sha3.h" />
+    <ClInclude Include="solver.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="uint256\arith_uint256.h" />
     <ClInclude Include="uint256\compat_byteswap.h" />
@@ -122,9 +103,9 @@ copy "sha3kingKernel.cl" "$(SolutionDir)$(OutDir)sha3kingKernel.cl" /Y</Command>
   <ItemGroup>
     <ClCompile Include="device\adl_api.cpp" />
     <ClCompile Include="device\device.cpp" />
-    <ClCompile Include="managed\solver.cpp" />
     <ClCompile Include="openCLSolver.cpp" />
     <ClCompile Include="sha3.cpp" />
+    <ClCompile Include="solver.cpp" />
     <ClCompile Include="uint256\arith_uint256.cpp" />
     <ClCompile Include="uint256\uint256.cpp" />
     <ClCompile Include="uint256\utilstrencodings.cpp" />

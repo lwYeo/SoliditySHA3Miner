@@ -152,10 +152,11 @@ namespace SoliditySHA3Miner.API
                                 case "CUDA":
                                     {
                                         var tempValue = 0;
+                                        var tempSize = 0ul;
                                         var tempStr = new StringBuilder(1024);
                                         var instancePtr = ((Miner.CUDA)miner).m_instance;
 
-                                        newMiner = new JsonAPI.CudaMiner()
+                                        newMiner = new JsonAPI.CUDA_Miner()
                                         {
                                             Type = device.Type,
                                             DeviceID = device.DeviceID,
@@ -166,46 +167,48 @@ namespace SoliditySHA3Miner.API
                                         };
                                         
                                         Miner.CUDA.Solver.GetDeviceSettingMaxCoreClock(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).SettingMaxCoreClockMHz = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).SettingMaxCoreClockMHz = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceSettingMaxMemoryClock(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).SettingMaxMemoryClockMHz = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).SettingMaxMemoryClockMHz = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceSettingPowerLimit(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).SettingPowerLimitPercent = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).SettingPowerLimitPercent = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceSettingThermalLimit(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).SettingThermalLimitC = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).SettingThermalLimitC = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceSettingFanLevelPercent(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).SettingFanLevelPercent = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).SettingFanLevelPercent = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceCurrentFanTachometerRPM(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).CurrentFanTachometerRPM = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).CurrentFanTachometerRPM = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceCurrentTemperature(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).CurrentTemperatureC = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).CurrentTemperatureC = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceCurrentCoreClock(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).CurrentCoreClockMHz = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).CurrentCoreClockMHz = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceCurrentMemoryClock(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).CurrentMemoryClockMHz = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).CurrentMemoryClockMHz = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceCurrentUtilizationPercent(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).CurrentUtilizationPercent = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).CurrentUtilizationPercent = tempValue;
 
                                         Miner.CUDA.Solver.GetDeviceCurrentPstate(instancePtr, device.DeviceID, ref tempValue);
-                                        ((JsonAPI.CudaMiner)newMiner).CurrentPState = tempValue;
+                                        ((JsonAPI.CUDA_Miner)newMiner).CurrentPState = tempValue;
 
-                                        Miner.CUDA.Solver.GetDeviceCurrentThrottleReasons(instancePtr, device.DeviceID, tempStr);
-                                        ((JsonAPI.CudaMiner)newMiner).CurrentThrottleReasons = tempStr.ToString();
+                                        Miner.CUDA.Solver.GetDeviceCurrentThrottleReasons(instancePtr, device.DeviceID, tempStr, ref tempSize);
+                                        ((JsonAPI.CUDA_Miner)newMiner).CurrentThrottleReasons = tempStr.ToString();
                                     }
                                     break;
 
                                 case "OpenCL":
                                     {
-                                        var solver = ((Miner.OpenCL)miner).Solver;
+                                        var tempValue = 0;
+                                        var tempStr = new StringBuilder(1024);
+                                        var instancePtr = ((Miner.OpenCL)miner).m_instance;
 
                                         newMiner = new JsonAPI.AMD_Miner()
                                         {
@@ -214,22 +217,39 @@ namespace SoliditySHA3Miner.API
                                             ModelName = device.Name,
                                             HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
                                             HasMonitoringAPI = miner.HasMonitoringAPI,
-
                                             Platform = device.Platform,
-                                            SettingIntensity = device.Intensity,
-
-                                            SettingMaxCoreClockMHz = solver.getDeviceSettingMaxCoreClock(device.Platform, device.DeviceID),
-                                            SettingMaxMemoryClockMHz = solver.getDeviceSettingMaxMemoryClock(device.Platform, device.DeviceID),
-                                            SettingPowerLimitPercent = solver.getDeviceSettingPowerLimit(device.Platform, device.DeviceID),
-                                            SettingThermalLimitC = solver.getDeviceSettingThermalLimit(device.Platform, device.DeviceID),
-                                            SettingFanLevelPercent = solver.getDeviceSettingFanLevelPercent(device.Platform, device.DeviceID),
-
-                                            CurrentFanTachometerRPM = solver.getDeviceCurrentFanTachometerRPM(device.Platform, device.DeviceID),
-                                            CurrentTemperatureC = solver.getDeviceCurrentTemperature(device.Platform, device.DeviceID),
-                                            CurrentCoreClockMHz = solver.getDeviceCurrentCoreClock(device.Platform, device.DeviceID),
-                                            CurrentMemoryClockMHz = solver.getDeviceCurrentMemoryClock(device.Platform, device.DeviceID),
-                                            CurrentUtilizationPercent = solver.getDeviceCurrentUtilizationPercent(device.Platform, device.DeviceID)
+                                            SettingIntensity = device.Intensity
                                         };
+
+                                        Miner.OpenCL.Solver.GetDeviceSettingMaxCoreClock(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).SettingMaxCoreClockMHz = tempValue;
+
+                                        Miner.OpenCL.Solver.GetDeviceSettingMaxMemoryClock(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).SettingMaxMemoryClockMHz = tempValue;
+
+                                        Miner.OpenCL.Solver.GetDeviceSettingPowerLimit(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).SettingPowerLimitPercent = tempValue;
+
+                                        Miner.OpenCL.Solver.GetDeviceSettingThermalLimit(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).SettingThermalLimitC = tempValue;
+
+                                        Miner.OpenCL.Solver.GetDeviceSettingFanLevelPercent(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).SettingFanLevelPercent = tempValue;
+
+                                        Miner.OpenCL.Solver.GetDeviceCurrentFanTachometerRPM(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).CurrentFanTachometerRPM = tempValue;
+
+                                        Miner.OpenCL.Solver.GetDeviceCurrentTemperature(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).CurrentTemperatureC = tempValue;
+
+                                        Miner.OpenCL.Solver.GetDeviceCurrentCoreClock(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).CurrentCoreClockMHz = tempValue;
+
+                                        Miner.OpenCL.Solver.GetDeviceCurrentMemoryClock(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).CurrentMemoryClockMHz = tempValue;
+
+                                        Miner.OpenCL.Solver.GetDeviceCurrentUtilizationPercent(instancePtr, new StringBuilder(device.Platform), device.DeviceID, ref tempValue);
+                                        ((JsonAPI.AMD_Miner)newMiner).CurrentUtilizationPercent = tempValue;
                                     }
                                     break;
                             }
@@ -304,7 +324,7 @@ namespace SoliditySHA3Miner.API
                 public bool HasMonitoringAPI { get; set; }
             }
 
-            public class CudaMiner : Miner
+            public class CUDA_Miner : Miner
             {
                 public float SettingIntensity { get; set; }
                 public int SettingMaxCoreClockMHz { get; set; }
