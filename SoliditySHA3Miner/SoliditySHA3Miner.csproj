@@ -11,6 +11,7 @@
     <RepositoryUrl>https://github.com/lwYeo/SoliditySHA3Miner</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
     <Copyright>Copyright © lwYeo 2018</Copyright>
+    <StartupObject>SoliditySHA3Miner.Program</StartupObject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

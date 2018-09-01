@@ -156,7 +156,7 @@ namespace SoliditySHA3Miner
         {
             return "\n" +
                 "*** " + GetApplicationName() + " " + GetApplicationVersion() + " by lwYeo@github (" + GetApplicationYear() + ") ***\n" +
-                "*** Built with C#.NET 4.7.1, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
+                "*** Built with .NET Core 2.1 SDK, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
                 "*** Include kernel from Mikers, Azlehria and LtTofu (Mag517)\n" +
                 "\n" +
                 "Donation addresses:\n" +
