@@ -15,6 +15,8 @@ namespace SoliditySHA3Miner.API
 
         private static Thread m_apiThread;
         private static Miner.IMiner[] m_miners;
+        private static TcpListener m_currentListener;
+        private static bool m_isRunning;
 
         private static uint GetUNIXCurrentTimestamp => (uint)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
 
@@ -65,6 +67,7 @@ namespace SoliditySHA3Miner.API
             {
                 IsBackground = true
             };
+            m_isRunning = true;
             m_apiThread.Start();
         }
 
@@ -73,9 +76,10 @@ namespace SoliditySHA3Miner.API
             if (m_apiThread != null)
             {
                 Program.Print("[INFO] ccminer-API service stopping...");
+                m_isRunning = false;
                 try
                 {
-                    m_apiThread.Abort();
+                    m_currentListener.Server.Close();
                     m_apiThread.Join(2000);
                 }
                 catch (Exception ex)
@@ -84,21 +88,23 @@ namespace SoliditySHA3Miner.API
                 }
             }
         }
-
+        
         private static void Listen(IPAddress ipAddress, int port)
         {
             try
             {
                 IPEndPoint localEndPoint = new IPEndPoint(ipAddress, port);
-                var listener = new TcpListener(localEndPoint);
-                listener.Start();
-                Program.Print(string.Format("[INFO] ccminer-API service started at {0}...", listener.LocalEndpoint));
+                m_currentListener = new TcpListener(localEndPoint);
+                m_currentListener.Start();
+                Program.Print(string.Format("[INFO] ccminer-API service started at {0}...", m_currentListener.LocalEndpoint));
 
-                while (true)
+                while (m_isRunning)
                 {
                     try
                     {
-                        var client = listener.AcceptTcpClient();
+                        var client = m_currentListener.AcceptTcpClient();
+
+                        if (!m_isRunning) break;
 
                         using (var stream = client.GetStream())
                         {
@@ -134,12 +140,14 @@ namespace SoliditySHA3Miner.API
                         }
                         client.Close();
                     }
-                    catch (ThreadAbortException) { break; }
+                    catch (SocketException ex)
+                    {
+                        if (ex.ErrorCode != 10004)
+                            Program.Print("[ERROR] " + ex.ToString());
+                    }
                     catch (Exception ex) { Program.Print("[ERROR] " + ex.ToString()); }
                 }
-                listener.Stop();
             }
-            catch (ThreadAbortException) { }
             catch (Exception ex) { Program.Print("[ERROR] " + ex.ToString()); }
             Program.Print("[INFO] ccminer-API stopped.");
         }
