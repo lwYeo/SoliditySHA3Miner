@@ -60,6 +60,7 @@ namespace CUDASolver
 
 	private:
 		std::vector<std::unique_ptr<Device>> m_devices;
+		std::thread m_runThread;
 
 		static bool m_pause;
 		static bool m_isSubmitting;
@@ -74,14 +75,13 @@ namespace CUDASolver
 		byte32_t m_solutionTemplate;
 		message_ut m_miningMessage;
 		arith_uint256 m_target;
-		std::thread m_runThread;
 
 	public:
 		static bool foundNvAPI64();
 
 		static std::string getCudaErrorString(cudaError_t &error);
 		static int getDeviceCount(std::string &errorMessage);
-		static void getDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *size);
+		static void getDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *errorSize);
 		static std::string getDeviceName(int deviceID, std::string &errorMessage);
 		static void getDeviceName(int deviceID, const char *deviceName, uint64_t *nameSize, const char *errorMessage, uint64_t *errorSize);
 

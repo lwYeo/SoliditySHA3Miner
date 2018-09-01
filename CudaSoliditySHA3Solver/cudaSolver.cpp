@@ -36,12 +36,12 @@ namespace CUDASolver
 		return 0;
 	}
 
-	void CudaSolver::getDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *size)
+	void CudaSolver::getDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *errorSize)
 	{
 		std::string errMsg{ 0 };
 		*deviceCount = getDeviceCount(errMsg);
 		errorMessage = errMsg.c_str();
-		*size = (uint64_t)errMsg.length();
+		*errorSize = (uint64_t)errMsg.length();
 	}
 
 	std::string CudaSolver::getDeviceName(int deviceID, std::string &errorMessage)

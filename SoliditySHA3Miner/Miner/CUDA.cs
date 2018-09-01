@@ -26,7 +26,7 @@ namespace SoliditySHA3Miner.Miner
             public static extern void FoundNvAPI64(ref bool hasNvAPI64);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void GetDeviceCount(ref int deviceCount, StringBuilder errorMessage, ref ulong size);
+            public static extern void GetDeviceCount(ref int deviceCount, StringBuilder errorMessage, ref ulong errorSize);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void GetDeviceName(int deviceID, StringBuilder deviceName, ref ulong nameSize, StringBuilder errorMessage, ref ulong errorSize);
@@ -131,7 +131,7 @@ namespace SoliditySHA3Miner.Miner
             public static extern void GetDeviceCurrentPstate(IntPtr instance, int deviceID, ref int pState);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void GetDeviceCurrentThrottleReasons(IntPtr instance, int deviceID, StringBuilder throttleReasons);
+            public static extern void GetDeviceCurrentThrottleReasons(IntPtr instance, int deviceID, StringBuilder throttleReasons, ref ulong reasonSize);
         }
 
         private Solver.GetSolutionTemplateCallback m_GetSolutionTemplateCallback;
@@ -151,9 +151,9 @@ namespace SoliditySHA3Miner.Miner
             errorMessage = string.Empty;
             var errMsg = new StringBuilder(1024);
             var deviceCount = 0;
-            var size = 0ul;
+            var errSize = 0ul;
 
-            Solver.GetDeviceCount(ref deviceCount, errMsg, ref size);
+            Solver.GetDeviceCount(ref deviceCount, errMsg, ref errSize);
 
             errorMessage = errMsg.ToString();
             return deviceCount;
@@ -164,9 +164,9 @@ namespace SoliditySHA3Miner.Miner
             errorMessage = string.Empty;
             var errMsg = new StringBuilder(1024);
             var deviceName = new StringBuilder(256);
-            ulong nameSize = 0, errorSize = 0;
+            ulong nameSize = 0, errSize = 0;
 
-            Solver.GetDeviceName(deviceID, deviceName, ref nameSize, errMsg, ref errorSize);
+            Solver.GetDeviceName(deviceID, deviceName, ref nameSize, errMsg, ref errSize);
 
             errorMessage = errMsg.ToString();
             return deviceName.ToString();
@@ -178,20 +178,20 @@ namespace SoliditySHA3Miner.Miner
             var errMsg = new StringBuilder(1024);
             var deviceName = new StringBuilder(256);
             var devicesString = new StringBuilder();
-            ulong nameSize = 0, errorSize = 0;
+            ulong nameSize = 0, errSize = 0;
             var cudaCount = 0;
-            var size = 0ul;
 
-            Solver.GetDeviceCount(ref cudaCount, errMsg, ref size);
+            Solver.GetDeviceCount(ref cudaCount, errMsg, ref errSize);
             errorMessage = errMsg.ToString();
 
             if (!string.IsNullOrEmpty(errorMessage)) return string.Empty;
 
             for (int i = 0; i < cudaCount; i++)
             {
+                errMsg.Clear();
                 deviceName.Clear();
 
-                Solver.GetDeviceName(i, deviceName, ref nameSize, errMsg, ref errorSize);
+                Solver.GetDeviceName(i, deviceName, ref nameSize, errMsg, ref errSize);
                 errorMessage = errMsg.ToString();
 
                 if (!string.IsNullOrEmpty(errorMessage)) return string.Empty;
@@ -293,6 +293,7 @@ namespace SoliditySHA3Miner.Miner
             try
             {
                 m_hashPrintTimer.Stop();
+
                 Solver.StopFinding(m_instance);
             }
             catch (Exception ex)

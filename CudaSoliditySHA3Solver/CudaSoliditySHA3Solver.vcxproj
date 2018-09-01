@@ -11,38 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cudaSolver.h" />
-    <ClInclude Include="device\device.h" />
-    <ClInclude Include="device\nv_api.h" />
-    <ClInclude Include="device\nv_apiEnum.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="sha3.h" />
-    <ClInclude Include="solver.h" />
-    <ClInclude Include="types.h" />
-    <ClInclude Include="uint256\arith_uint256.h" />
-    <ClInclude Include="uint256\compat_byteswap.h" />
-    <ClInclude Include="uint256\compat_endian.h" />
-    <ClInclude Include="uint256\crypto_common.h" />
-    <ClInclude Include="uint256\tinyformat.h" />
-    <ClInclude Include="uint256\uint256.h" />
-    <ClInclude Include="uint256\utilstrencodings.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="cudaSha3.cu" />
-    <CudaCompile Include="cudaSha3King.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="cudaErrorCheck.cu" />
-    <ClCompile Include="cudaSolver.cpp" />
-    <ClCompile Include="device\device.cpp" />
-    <ClCompile Include="device\nv_api.cpp" />
-    <ClCompile Include="sha3.cpp" />
-    <ClCompile Include="solver.cpp" />
-    <ClCompile Include="uint256\arith_uint256.cpp" />
-    <ClCompile Include="uint256\uint256.cpp" />
-    <ClCompile Include="uint256\utilstrencodings.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -82,15 +50,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <FunctionLevelLinking>
-      </FunctionLevelLinking>
     </ClCompile>
     <Link>
-      <SubSystem>
-      </SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -103,15 +65,12 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <SubSystem>
-      </SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <CudaCompile>
@@ -121,6 +80,38 @@
       <PtxAsOptionV>true</PtxAsOptionV>
     </CudaCompile>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="cudaSolver.h" />
+    <ClInclude Include="device\device.h" />
+    <ClInclude Include="device\nv_api.h" />
+    <ClInclude Include="device\nv_apiEnum.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="sha3.h" />
+    <ClInclude Include="solver.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="uint256\arith_uint256.h" />
+    <ClInclude Include="uint256\compat_byteswap.h" />
+    <ClInclude Include="uint256\compat_endian.h" />
+    <ClInclude Include="uint256\crypto_common.h" />
+    <ClInclude Include="uint256\tinyformat.h" />
+    <ClInclude Include="uint256\uint256.h" />
+    <ClInclude Include="uint256\utilstrencodings.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="cudaSha3.cu" />
+    <CudaCompile Include="cudaSha3King.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="cudaErrorCheck.cu" />
+    <ClCompile Include="cudaSolver.cpp" />
+    <ClCompile Include="device\device.cpp" />
+    <ClCompile Include="device\nv_api.cpp" />
+    <ClCompile Include="sha3.cpp" />
+    <ClCompile Include="solver.cpp" />
+    <ClCompile Include="uint256\arith_uint256.cpp" />
+    <ClCompile Include="uint256\uint256.cpp" />
+    <ClCompile Include="uint256\utilstrencodings.cpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.2.targets" />

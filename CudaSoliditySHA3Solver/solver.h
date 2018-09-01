@@ -11,7 +11,7 @@ namespace CUDASolver
 	{
 		__declspec(dllexport) void __cdecl FoundNvAPI64(bool *hasNvAPI64);
 
-		__declspec(dllexport) void __cdecl GetDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *size);
+		__declspec(dllexport) void __cdecl GetDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *errorSize);
 
 		__declspec(dllexport) void __cdecl GetDeviceName(int deviceID, const char *deviceName, uint64_t *nameSize, const char *errorMessage, uint64_t *errorSize);
 
@@ -81,7 +81,7 @@ namespace CUDASolver
 
 		__declspec(dllexport) void __cdecl GetDeviceCurrentPstate(CudaSolver *instance, const int deviceID, int *pState);
 
-		__declspec(dllexport) void __cdecl GetDeviceCurrentThrottleReasons(CudaSolver *instance, const int deviceID, const char *throttleReasons);
+		__declspec(dllexport) void __cdecl GetDeviceCurrentThrottleReasons(CudaSolver *instance, const int deviceID, const char *throttleReasons, uint64_t *reasonSize);
 	}
 }
 

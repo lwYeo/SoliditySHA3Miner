@@ -7,9 +7,9 @@ namespace CUDASolver
 		*hasNvAPI64 = CudaSolver::foundNvAPI64();
 	}
 
-	void GetDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *size)
+	void GetDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *errorSize)
 	{
-		CudaSolver::getDeviceCount(deviceCount, errorMessage, size);
+		CudaSolver::getDeviceCount(deviceCount, errorMessage, errorSize);
 	}
 
 	void GetDeviceName(int deviceID, const char *deviceName, uint64_t *nameSize, const char *errorMessage, uint64_t *errorSize)
@@ -195,10 +195,12 @@ namespace CUDASolver
 		*pState = instance->getDeviceCurrentPstate(deviceID);
 	}
 
-	void GetDeviceCurrentThrottleReasons(CudaSolver *instance, const int deviceID, const char *throttleReasons)
+	void GetDeviceCurrentThrottleReasons(CudaSolver *instance, const int deviceID, const char *throttleReasons, uint64_t *reasonSize)
 	{
 		auto reasons = instance->getDeviceCurrentThrottleReasons(deviceID);
 		const char *reasonStr = reasons.c_str();
 		std::memcpy((void *)throttleReasons, reasonStr, reasons.length());
+		std::memset((void *)&throttleReasons[reasons.length()], '\0', 1ull);
+		*reasonSize = reasons.length();
 	}
 }
