@@ -28,8 +28,6 @@ if(NOT CMAKE_BUILD_TYPE)
   message(STATUS "Build type not specified: Use Release by default.")
 endif(NOT CMAKE_BUILD_TYPE)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-
 ############## Artefacts Output #################
 # Defines outputs , depending Debug or Release. #
 #################################################
@@ -76,3 +74,4 @@ file(GLOB SRC_FILES
 add_library(${PROJECT_NAME} SHARED
    ${SRC_FILES}
 )
+
