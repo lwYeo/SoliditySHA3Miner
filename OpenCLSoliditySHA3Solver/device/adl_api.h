@@ -1,9 +1,20 @@
 #pragma once
-#include <string>
-#include <Windows.h>
-#include "adl_include/adl_sdk.h"
 
-#define ADL64_API										"atiadlxx.dll"
+#ifdef __linux__
+#	ifndef LINUX
+#		define LINUX
+#	endif
+#	include <dlfcn.h>
+#	define ADL64_API									"libatiadlxx.so"
+#else
+#include <Windows.h>
+#	define ADL64_API									"atiadlxx.dll"
+#endif
+
+#include <cstring>
+#include <stdexcept>
+#include <string>
+#include "adl_include/adl_sdk.h"
 
 class ADL_API
 {
@@ -22,7 +33,11 @@ private:
 	typedef int(*ADL2_OVERDRIVEN_POWERLIMIT_GET)		(ADL_CONTEXT_HANDLE, int, ADLODNPowerLimitSetting *);
 	typedef int(*ADL2_OVERDRIVEN_TEMPERATURE_GET)		(ADL_CONTEXT_HANDLE, int, int, int *);
 
+	#ifdef __linux__
+	static void											*hDLL;
+	#else
 	static HINSTANCE									hDLL;
+	#endif
 
 	static ADL_MAIN_CONTROL_CREATE						ADL_Main_Control_Create;
 	static ADL_MAIN_CONTROL_DESTROY						ADL_Main_Control_Destroy;

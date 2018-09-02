@@ -221,48 +221,48 @@ namespace OpenCLSolver
 
 		status = clGetPlatformInfo(platformID, CL_PLATFORM_NAME, sizeof(charBuffer), charBuffer, NULL);
 		platformName = (std::string{ charBuffer } == "") ? "Unknown" : charBuffer;
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_PLATFORM_NAME.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_PLATFORM_NAME.");
 
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_VENDOR, sizeof(charBuffer), charBuffer, NULL);
 		vendor = (std::string{ charBuffer } == "") ? "Unknown" : charBuffer;
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_DEVICE_VENDOR.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_DEVICE_VENDOR.");
 
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_NAME, sizeof(charBuffer), charBuffer, NULL);
 		name = (std::string{ charBuffer } == "") ? "Unknown" : charBuffer;
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_DEVICE_NAME.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_DEVICE_NAME.");
 
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_OPENCL_C_VERSION, sizeof(charBuffer), charBuffer, NULL);
 		openCLVersion = (std::string{ charBuffer } == "") ? "Unknown" : charBuffer;
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_DEVICE_OPENCL_C_VERSION.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_DEVICE_OPENCL_C_VERSION.");
 
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_EXTENSIONS, sizeof(charBuffer), charBuffer, NULL);
 		extensions = charBuffer;
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_DEVICE_EXTENSIONS.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_DEVICE_EXTENSIONS.");
 
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(sizeBuffer), sizeBuffer, NULL);
 		maxWorkItemSizes.insert(maxWorkItemSizes.end(), sizeBuffer, sizeBuffer + sizeof(sizeBuffer) / sizeof(size_t));
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_DEVICE_MAX_WORK_ITEM_SIZES.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_DEVICE_MAX_WORK_ITEM_SIZES.");
 
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(maxWorkGroupSize), &maxWorkGroupSize, NULL);
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_DEVICE_MAX_WORK_GROUP_SIZE.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_DEVICE_MAX_WORK_GROUP_SIZE.");
 
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(maxComputeUnits), &maxComputeUnits, NULL);
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_DEVICE_MAX_COMPUTE_UNITS.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_DEVICE_MAX_COMPUTE_UNITS.");
 
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(maxMemAllocSize), &maxMemAllocSize, NULL);
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_DEVICE_MAX_MEM_ALLOC_SIZE.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_DEVICE_MAX_MEM_ALLOC_SIZE.");
 
 		status = clGetDeviceInfo(deviceID, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(globalMemSize), &globalMemSize, NULL);
-		if (status != CL_SUCCESS) throw std::exception("Failed to get CL_DEVICE_GLOBAL_MEM_SIZE.");
+		if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CL_DEVICE_GLOBAL_MEM_SIZE.");
 
 		if (isCUDA())
 		{
 			cl_uint computeCapabilityMajor, computeCapabilityMinor;
 			status = clGetDeviceInfo(deviceID, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(cl_uint), &computeCapabilityMajor, NULL);
-			if (status != CL_SUCCESS) throw std::exception("Failed to get CUDA compute capability.");
+			if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CUDA compute capability.");
 
 			status = clGetDeviceInfo(deviceID, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(cl_uint), &computeCapabilityMinor, NULL);
-			if (status != CL_SUCCESS) throw std::exception("Failed to get CUDA compute capability.");
+			if (status != CL_SUCCESS) throw std::runtime_error("Failed to get CUDA compute capability.");
 
 			computeCapability = computeCapabilityMajor * 10 + computeCapabilityMinor;
 		}
@@ -427,7 +427,7 @@ namespace OpenCLSolver
 	void Device::initialize(std::string& errorMessage, bool const isKingMaking)
 	{
 		errorMessage = "";
-		cl_context_properties contextProp[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)platformID, NULL };
+		cl_context_properties contextProp[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)platformID, 0 };
 
 		context = clCreateContext(contextProp, 1u, &deviceID, NULL, NULL, &status);
 		if (status != CL_SUCCESS)
@@ -436,7 +436,7 @@ namespace OpenCLSolver
 			return;
 		}
 
-		queue = clCreateCommandQueue(context, deviceID, NULL, &status);
+		queue = clCreateCommandQueue(context, deviceID, 0, &status);
 		if (status != CL_SUCCESS)
 		{
 			errorMessage = std::string{ "Failed to create command queue (" } +getOpenCLErrorCodeStr(status) + ')';

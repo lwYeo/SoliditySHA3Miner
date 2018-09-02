@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include <thread>
 #include <string.h>
@@ -17,15 +18,15 @@
 
 namespace OpenCLSolver
 {
-#define DEFAULT_INTENSITY 24.056f
-#define DEFAULT_INTENSITY_KING 24.12f
-#define DEFAULT_LOCAL_WORK_SIZE 128u
-#define MAX_SOLUTION_COUNT_DEVICE 32u
+	#define DEFAULT_INTENSITY 24.056f
+	#define DEFAULT_INTENSITY_KING 24.12f
+	#define DEFAULT_LOCAL_WORK_SIZE 128u
+	#define MAX_SOLUTION_COUNT_DEVICE 32u
 
-#define KERNEL_FILE "sha3Kernel.cl"
-#define KING_KERNEL_FILE "sha3kingKernel.cl"
-#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
-#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+	#define KERNEL_FILE "sha3Kernel.cl"
+	#define KING_KERNEL_FILE "sha3kingKernel.cl"
+	#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+	#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 
 	class Device
 	{

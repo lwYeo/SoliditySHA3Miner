@@ -81,7 +81,7 @@ namespace OpenCLSolver
 			if (platform.name == platformName)
 			{
 				cl_uint deviceCount;
-				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, NULL, NULL, &deviceCount);
+				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
 
 				if (status != CL_SUCCESS)
 				{
@@ -106,7 +106,7 @@ namespace OpenCLSolver
 			if (platform.name == platformName)
 			{
 				cl_uint deviceCount;
-				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, NULL, NULL, &deviceCount);
+				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
 
 				if (status != CL_SUCCESS)
 				{
@@ -235,7 +235,7 @@ namespace OpenCLSolver
 			if (platform.name == platformName)
 			{
 				cl_uint deviceCount;
-				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, NULL, NULL, &deviceCount);
+				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
 
 				if (status != CL_SUCCESS)
 				{
@@ -731,7 +731,7 @@ namespace OpenCLSolver
 
 	void openCLSolver::pushTarget(std::unique_ptr<Device> &device)
 	{
-		device->status = clEnqueueWriteBuffer(device->queue, device->targetBuffer, CL_TRUE, 0u, UINT64_LENGTH, device->currentHigh64Target, NULL, NULL, NULL);
+		device->status = clEnqueueWriteBuffer(device->queue, device->targetBuffer, CL_TRUE, 0u, UINT64_LENGTH, device->currentHigh64Target, 0, NULL, NULL);
 		if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error setting target buffer to kernel (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
 		device->isNewTarget = false;
@@ -739,7 +739,7 @@ namespace OpenCLSolver
 
 	void openCLSolver::pushTargetKing(std::unique_ptr<Device> &device)
 	{
-		device->status = clEnqueueWriteBuffer(device->queue, device->targetBuffer, CL_TRUE, 0u, UINT256_LENGTH, &device->currentTarget, NULL, NULL, NULL);
+		device->status = clEnqueueWriteBuffer(device->queue, device->targetBuffer, CL_TRUE, 0u, UINT256_LENGTH, &device->currentTarget, 0, NULL, NULL);
 		if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error setting target buffer to kernel (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
 		device->isNewTarget = false;
@@ -747,7 +747,7 @@ namespace OpenCLSolver
 
 	void openCLSolver::pushMessage(std::unique_ptr<Device> &device)
 	{
-		device->status = clEnqueueWriteBuffer(device->queue, device->midstateBuffer, CL_TRUE, 0u, SPONGE_LENGTH, &device->currentMidstate, NULL, NULL, NULL);
+		device->status = clEnqueueWriteBuffer(device->queue, device->midstateBuffer, CL_TRUE, 0u, SPONGE_LENGTH, &device->currentMidstate, 0, NULL, NULL);
 		if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error writing to midstate buffer (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
 		device->isNewMessage = false;
@@ -755,7 +755,7 @@ namespace OpenCLSolver
 
 	void openCLSolver::pushMessageKing(std::unique_ptr<Device> &device)
 	{
-		device->status = clEnqueueWriteBuffer(device->queue, device->messageBuffer, CL_TRUE, 0u, MESSAGE_LENGTH, &device->currentMessage, NULL, NULL, NULL);
+		device->status = clEnqueueWriteBuffer(device->queue, device->messageBuffer, CL_TRUE, 0u, MESSAGE_LENGTH, &device->currentMessage, 0, NULL, NULL);
 		if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error writing to message buffer (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
 		device->isNewMessage = false;
@@ -791,8 +791,12 @@ namespace OpenCLSolver
 					pushMessageKing(device);
 				else
 					pushMessage(device);
-
+				
+				#ifdef __linux__
+				strcpy(currentChallenge, s_challenge.c_str());
+				#else
 				strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+				#endif
 			}
 		}
 	}
@@ -831,7 +835,7 @@ namespace OpenCLSolver
 				if (device->status != CL_SUCCESS)
 					onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error setting work positon buffer to kernel (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
-				device->status = clEnqueueNDRangeKernel(device->queue, device->kernel, 1u, NULL, &device->globalWorkSize, &device->localWorkSize, NULL, NULL, &device->kernelWaitEvent);
+				device->status = clEnqueueNDRangeKernel(device->queue, device->kernel, 1u, NULL, &device->globalWorkSize, &device->localWorkSize, 0, NULL, &device->kernelWaitEvent);
 				if (device->status != CL_SUCCESS)
 					onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error starting kernel (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 			}
@@ -856,12 +860,12 @@ namespace OpenCLSolver
 				else if (waitKernelCount < 5u && device->kernelWaitSleepDuration > 0u) device->kernelWaitSleepDuration--;
 			}
 
-			device->h_solutionCount = (uint32_t *)clEnqueueMapBuffer(device->queue, device->solutionCountBuffer, CL_TRUE, CL_MAP_READ, 0, UINT32_LENGTH, NULL, NULL, NULL, &device->status);
+			device->h_solutionCount = (uint32_t *)clEnqueueMapBuffer(device->queue, device->solutionCountBuffer, CL_TRUE, CL_MAP_READ, 0, UINT32_LENGTH, 0, NULL, NULL, &device->status);
 			if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error getting solution count from device (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
 			if (device->h_solutionCount[0] > 0u)
 			{
-				device->h_solutions = (uint64_t *)clEnqueueMapBuffer(device->queue, device->solutionsBuffer, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, UINT64_LENGTH * MAX_SOLUTION_COUNT_DEVICE, NULL, NULL, NULL, &device->status);
+				device->h_solutions = (uint64_t *)clEnqueueMapBuffer(device->queue, device->solutionsBuffer, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, UINT64_LENGTH * MAX_SOLUTION_COUNT_DEVICE, 0, NULL, NULL, &device->status);
 				if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error getting solutions from device (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
 				std::set<uint64_t> uniqueSolutions;
@@ -876,19 +880,19 @@ namespace OpenCLSolver
 				std::thread t{ &openCLSolver::submitSolutions, this, uniqueSolutions, std::string{ c_currentChallenge }, device->platformName, device->deviceEnum };
 				t.detach();
 
-				device->status = clEnqueueUnmapMemObject(device->queue, device->solutionsBuffer, device->h_solutions, NULL, NULL, NULL);
+				device->status = clEnqueueUnmapMemObject(device->queue, device->solutionsBuffer, device->h_solutions, 0, NULL, NULL);
 				if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error unmapping solutions from host (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
-				device->status = clEnqueueUnmapMemObject(device->queue, device->solutionCountBuffer, device->h_solutionCount, NULL, NULL, NULL);
+				device->status = clEnqueueUnmapMemObject(device->queue, device->solutionCountBuffer, device->h_solutionCount, 0, NULL, NULL);
 				if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error unmapping solution count from host (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
-				device->h_solutionCount = (uint32_t *)clEnqueueMapBuffer(device->queue, device->solutionCountBuffer, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, UINT32_LENGTH, NULL, NULL, NULL, &device->status);
+				device->h_solutionCount = (uint32_t *)clEnqueueMapBuffer(device->queue, device->solutionCountBuffer, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, UINT32_LENGTH, 0, NULL, NULL, &device->status);
 				if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error getting solution count from device (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 
 				device->h_solutionCount[0] = 0u;
 			}
 
-			device->status = clEnqueueUnmapMemObject(device->queue, device->solutionCountBuffer, device->h_solutionCount, NULL, NULL, NULL);
+			device->status = clEnqueueUnmapMemObject(device->queue, device->solutionCountBuffer, device->h_solutionCount, 0, NULL, NULL);
 			if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error unmapping solution count from host (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
 		} while (device->mining);
 
