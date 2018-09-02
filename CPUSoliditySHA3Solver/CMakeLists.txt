@@ -75,3 +75,4 @@ add_library(${PROJECT_NAME} SHARED
    ${SRC_FILES}
 )
 
+set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
