@@ -385,9 +385,12 @@ namespace SoliditySHA3Miner
 
             Print(GetHeader(), excludePrefix: true);
 
-            m_handler += new EventHandler(Handler);
-            SetConsoleCtrlHandler(m_handler, true);
-
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                m_handler += new EventHandler(Handler);
+                SetConsoleCtrlHandler(m_handler, true);
+            }
+            
             Miner.Device[] cpuDevices = new Miner.Device[] { };
             Miner.Device[] amdDevices = new Miner.Device[] { };
             Miner.Device[] intelDevices = new Miner.Device[] { };
