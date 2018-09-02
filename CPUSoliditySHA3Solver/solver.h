@@ -21,43 +21,44 @@ namespace CPUSolver
 
 		EXPORT void CDECL GetNewSolutionTemplate(const char *kingAddress, const char *solutionTemplate);
 
-		EXPORT void *CDECL GetInstance(const char *threads) noexcept;
+		EXPORT cpuSolver *CDECL GetInstance(const char *threads) noexcept;
 
-		EXPORT void CDECL DisposeInstance(void *instance) noexcept;
+		EXPORT void CDECL DisposeInstance(cpuSolver *instance) noexcept;
 
-		EXPORT void *CDECL SetOnGetKingAddressHandler(void *instance, void *getKingAddressCallback);
+		EXPORT GetKingAddressCallback CDECL SetOnGetKingAddressHandler(cpuSolver *instance, GetKingAddressCallback getKingAddressCallback);
 
-		EXPORT void *CDECL SetOnGetSolutionTemplateHandler(void *instance, void *getSolutionTemplateCallback);
+		EXPORT GetSolutionTemplateCallback CDECL SetOnGetSolutionTemplateHandler(cpuSolver *instance, GetSolutionTemplateCallback getSolutionTemplateCallback);
 
-		EXPORT void *CDECL SetOnGetWorkPositionHandler(void *instance, void *getWorkPositionCallback);
+		EXPORT GetWorkPositionCallback CDECL SetOnGetWorkPositionHandler(cpuSolver *instance, GetWorkPositionCallback getWorkPositionCallback);
 
-		EXPORT void *CDECL SetOnResetWorkPositionHandler(void *instance, void *resetWorkPositionCallback);
+		EXPORT ResetWorkPositionCallback CDECL SetOnResetWorkPositionHandler(cpuSolver *instance, ResetWorkPositionCallback resetWorkPositionCallback);
 
-		EXPORT void *CDECL SetOnIncrementWorkPositionHandler(void *instance, void *incrementWorkPositionCallback);
+		EXPORT IncrementWorkPositionCallback CDECL SetOnIncrementWorkPositionHandler(cpuSolver *instance, IncrementWorkPositionCallback incrementWorkPositionCallback);
 
-		EXPORT void *CDECL SetOnMessageHandler(void *instance, void *messageCallback);
+		EXPORT MessageCallback CDECL SetOnMessageHandler(cpuSolver *instance, MessageCallback messageCallback);
 
-		EXPORT void *CDECL SetOnSolutionHandler(void *instance, void *solutionCallback);
+		EXPORT SolutionCallback CDECL SetOnSolutionHandler(cpuSolver *instance, SolutionCallback solutionCallback);
 
-		EXPORT void CDECL SetSubmitStale(void *instance, const bool submitStale);
+		EXPORT void CDECL SetSubmitStale(cpuSolver *instance, const bool submitStale);
 
-		EXPORT void CDECL IsMining(void *instance, bool *isMining);
+		EXPORT void CDECL IsMining(cpuSolver *instance, bool *isMining);
 
-		EXPORT void CDECL IsPaused(void *instance, bool *isPaused);
+		EXPORT void CDECL IsPaused(cpuSolver *instance, bool *isPaused);
 
-		EXPORT void CDECL GetHashRateByThreadID(void *instance, const uint32_t threadID, uint64_t *hashRate);
+		EXPORT void CDECL GetHashRateByThreadID(cpuSolver *instance, const uint32_t threadID, uint64_t *hashRate);
 
-		EXPORT void CDECL GetTotalHashRate(void *instance, uint64_t *totalHashRate);
+		EXPORT void CDECL GetTotalHashRate(cpuSolver *instance, uint64_t *totalHashRate);
 
-		EXPORT void CDECL UpdatePrefix(void *instance, const char *prefix);
+		EXPORT void CDECL UpdatePrefix(cpuSolver *instance, const char *prefix);
 
-		EXPORT void CDECL UpdateTarget(void *instance, const char *target);
+		EXPORT void CDECL UpdateTarget(cpuSolver *instance, const char *target);
 
-		EXPORT void CDECL PauseFinding(void *instance, const bool pause);
+		EXPORT void CDECL PauseFinding(cpuSolver *instance, const bool pause);
 
-		EXPORT void CDECL StartFinding(void *instance);
+		EXPORT void CDECL StartFinding(cpuSolver *instance);
 
-		EXPORT void CDECL StopFinding(void *instance);
+		EXPORT void CDECL StopFinding(cpuSolver *instance);
+	
 	}
 }
 

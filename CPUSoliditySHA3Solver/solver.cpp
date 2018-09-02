@@ -14,111 +14,111 @@ namespace CPUSolver
 		std::memcpy((void *)solutionTemplate, newTemplateStr, UINT256_LENGTH * 2 + 2);
 	}
 
-	void *SetOnGetKingAddressHandler(void *instance, void *getKingAddressCallback)
+	GetKingAddressCallback SetOnGetKingAddressHandler(cpuSolver *instance, GetKingAddressCallback getKingAddressCallback)
 	{
-		((cpuSolver *)instance)->m_getKingAddressCallback = (GetKingAddressCallback)getKingAddressCallback;
+		instance->m_getKingAddressCallback = getKingAddressCallback;
 		return getKingAddressCallback;
 	}
 
-	void *SetOnGetSolutionTemplateHandler(void *instance, void *getSolutionTemplateCallback)
+	GetSolutionTemplateCallback SetOnGetSolutionTemplateHandler(cpuSolver *instance, GetSolutionTemplateCallback getSolutionTemplateCallback)
 	{
-		((cpuSolver *)instance)->m_getSolutionTemplateCallback = (GetSolutionTemplateCallback)getSolutionTemplateCallback;
+		instance->m_getSolutionTemplateCallback = getSolutionTemplateCallback;
 		return getSolutionTemplateCallback;
 	}
 
-	void *SetOnGetWorkPositionHandler(void *instance, void *getWorkPositionCallback)
+	GetWorkPositionCallback SetOnGetWorkPositionHandler(cpuSolver *instance, GetWorkPositionCallback getWorkPositionCallback)
 	{
-		((cpuSolver *)instance)->m_getWorkPositionCallback = (GetWorkPositionCallback)getWorkPositionCallback;
+		instance->m_getWorkPositionCallback = getWorkPositionCallback;
 		return getWorkPositionCallback;
 	}
 
-	void *SetOnResetWorkPositionHandler(void *instance, void *resetWorkPositionCallback)
+	ResetWorkPositionCallback SetOnResetWorkPositionHandler(cpuSolver *instance, ResetWorkPositionCallback resetWorkPositionCallback)
 	{
-		((cpuSolver *)instance)->m_resetWorkPositionCallback = (ResetWorkPositionCallback)resetWorkPositionCallback;
+		instance->m_resetWorkPositionCallback = resetWorkPositionCallback;
 		return resetWorkPositionCallback;
 	}
 
-	void *SetOnIncrementWorkPositionHandler(void *instance, void *incrementWorkPositionCallback)
+	IncrementWorkPositionCallback SetOnIncrementWorkPositionHandler(cpuSolver *instance, IncrementWorkPositionCallback incrementWorkPositionCallback)
 	{
-		((cpuSolver *)instance)->m_incrementWorkPositionCallback = (IncrementWorkPositionCallback)incrementWorkPositionCallback;
+		instance->m_incrementWorkPositionCallback = incrementWorkPositionCallback;
 		return incrementWorkPositionCallback;
 	}
 
-	void *SetOnMessageHandler(void *instance, void *messageCallback)
+	MessageCallback SetOnMessageHandler(cpuSolver *instance, MessageCallback messageCallback)
 	{
-		((cpuSolver *)instance)->m_messageCallback = (MessageCallback)messageCallback;
+		instance->m_messageCallback = messageCallback;
 		return messageCallback;
 	}
 
-	void *SetOnSolutionHandler(void *instance, void *solutionCallback)
+	SolutionCallback SetOnSolutionHandler(cpuSolver *instance, SolutionCallback solutionCallback)
 	{
-		((cpuSolver *)instance)->m_solutionCallback = (SolutionCallback)solutionCallback;
+		instance->m_solutionCallback = solutionCallback;
 		return solutionCallback;
 	}
 
-	void *GetInstance(const char *threads) noexcept
+	cpuSolver *GetInstance(const char *threads) noexcept
 	{
 		try { return new cpuSolver(threads); }
 		catch (...) { return nullptr; }
 	}
 
-	void DisposeInstance(void *instance) noexcept
+	void DisposeInstance(cpuSolver *instance) noexcept
 	{
 		try
 		{
-			((cpuSolver *)instance)->~cpuSolver();
+			instance->~cpuSolver();
 			free(instance);
 		}
 		catch (...) {}
 	}
 
-	void SetSubmitStale(void *instance, const bool submitStale)
+	void SetSubmitStale(cpuSolver *instance, const bool submitStale)
 	{
-		((cpuSolver *)instance)->m_SubmitStale = submitStale;
+		instance->m_SubmitStale = submitStale;
 	}
 
-	void IsMining(void *instance, bool *isMining)
+	void IsMining(cpuSolver *instance, bool *isMining)
 	{
-		*isMining = ((cpuSolver *)instance)->isMining();
+		*isMining = instance->isMining();
 	}
 
-	void IsPaused(void *instance, bool *isPaused)
+	void IsPaused(cpuSolver *instance, bool *isPaused)
 	{
-		*isPaused = ((cpuSolver *)instance)->isPaused();
+		*isPaused = instance->isPaused();
 	}
 
-	void GetHashRateByThreadID(void *instance, const uint32_t threadID, uint64_t *hashRate)
+	void GetHashRateByThreadID(cpuSolver *instance, const uint32_t threadID, uint64_t *hashRate)
 	{
-		*hashRate = ((cpuSolver *)instance)->getHashRateByThreadID(threadID);
+		*hashRate = instance->getHashRateByThreadID(threadID);
 	}
 
-	void GetTotalHashRate(void *instance, uint64_t *totalHashRate)
+	void GetTotalHashRate(cpuSolver *instance, uint64_t *totalHashRate)
 	{
-		*totalHashRate = ((cpuSolver *)instance)->getTotalHashRate();
+		*totalHashRate = instance->getTotalHashRate();
 	}
 
-	void UpdatePrefix(void *instance, const char *prefix)
+	void UpdatePrefix(cpuSolver *instance, const char *prefix)
 	{
-		((cpuSolver *)instance)->updatePrefix(prefix);
+		instance->updatePrefix(prefix);
 	}
 
-	void UpdateTarget(void *instance, const char *target)
+	void UpdateTarget(cpuSolver *instance, const char *target)
 	{
-		((cpuSolver *)instance)->updateTarget(target);
+		instance->updateTarget(target);
 	}
 
-	void PauseFinding(void *instance, const bool pause)
+	void PauseFinding(cpuSolver *instance, const bool pause)
 	{
-		((cpuSolver *)instance)->pauseFinding(pause);
+		instance->pauseFinding(pause);
 	}
 
-	void StartFinding(void *instance)
+	void StartFinding(cpuSolver *instance)
 	{
-		((cpuSolver *)instance)->startFinding();
+		instance->startFinding();
 	}
 
-	void StopFinding(void *instance)
+	void StopFinding(cpuSolver *instance)
 	{
-		((cpuSolver *)instance)->stopFinding();
+		instance->stopFinding();
 	}
 }

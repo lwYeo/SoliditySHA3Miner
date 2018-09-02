@@ -7,7 +7,6 @@
 #include <thread>
 #include <vector>
 #include "types.h"
-#include "solver.h"
 #include "uint256/arith_uint256.h"
 
 #ifndef __CPU_SOLVER__
