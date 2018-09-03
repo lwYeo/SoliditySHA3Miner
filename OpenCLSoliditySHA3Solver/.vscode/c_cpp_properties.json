@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/opt/AMDAPPSDK-3.0/include",
+                "${AMDAPPSDKROOT}/include",
                 "/usr/include"
             ],
             "defines": [],
