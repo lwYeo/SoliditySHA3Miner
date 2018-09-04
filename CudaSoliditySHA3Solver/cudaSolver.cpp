@@ -1,5 +1,5 @@
 #include "cudaErrorCheck.cu"
-#include "CudaSolver.h"
+#include "cudaSolver.h"
 
 namespace CUDASolver
 {
@@ -772,8 +772,12 @@ namespace CUDASolver
 					pushMessageKing(device);
 				else
 					pushMessage(device);
-
+				
+				#ifdef __linux__
+				strcpy(currentChallenge, s_challenge.c_str());
+				#else
 				strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+				#endif
 			}
 		}
 	}

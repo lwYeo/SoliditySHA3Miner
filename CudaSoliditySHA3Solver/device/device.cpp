@@ -23,7 +23,7 @@ namespace CUDASolver
 		m_lastIntensity{ 0.0F }
 	{
 		char pciBusID_s[13];
-		if (cudaDeviceGetPCIBusId(pciBusID_s, 13, deviceID) == NVAPI_OK)
+		if (cudaDeviceGetPCIBusId(pciBusID_s, 13, deviceID) == (cudaError_t)NVAPI_OK)
 		{
 			pciBusID = strtoul(std::string{ pciBusID_s }.substr(5, 2).c_str(), NULL, 16);
 			m_api.assignPciBusID(pciBusID);

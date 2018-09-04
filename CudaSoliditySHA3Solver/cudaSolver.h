@@ -7,7 +7,7 @@
 #include <set>
 #include <thread>
 #include "sha3.h"
-#include "device\device.h"
+#include "device/device.h"
 #include "uint256/arith_uint256.h"
 
 // --------------------------------------------------------------------

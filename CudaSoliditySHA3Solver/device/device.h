@@ -2,10 +2,11 @@
 
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cuda_runtime.h>
 #include <thread>
 #include "nv_api.h"
-#include "..\types.h"
+#include "../types.h"
 
 namespace CUDASolver
 {

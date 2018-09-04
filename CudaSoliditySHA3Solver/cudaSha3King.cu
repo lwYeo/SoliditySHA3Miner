@@ -52,7 +52,7 @@ __constant__ static const uint8_t pi[24] =
 #define FOR5(v, s, e)					v = 0; REPEAT5(e; v += s;)
 
 /*** Keccak-f[1600] ***/
-__device__ __forceinline__ static inline void keccakf(void *state)
+__device__ __forceinline__ static void keccakf(void *state)
 {
 	uint64_t *a{ (uint64_t *)state };
 	uint64_t b[5]{ 0 };
@@ -97,7 +97,7 @@ __device__ __forceinline__ static inline void keccakf(void *state)
 #define FOR(i, ST, L, S)				_(for (size_t i = 0; i < L; i += ST) { S; })
 
 #define mkapply_ds(NAME, S)																				\
-	__device__ __forceinline__ static inline void NAME(uint8_t* dst, const uint8_t* src, size_t len)	\
+	__device__ __forceinline__ static void NAME(uint8_t* dst, const uint8_t* src, size_t len)			\
 		{																								\
 			FOR(i, 1, len, S);																			\
 		}
@@ -105,7 +105,7 @@ __device__ __forceinline__ static inline void keccakf(void *state)
 mkapply_ds(xorin, dst[i] ^= src[i])					// xorin
 
 #define mkapply_sd(NAME, S)																				\
-	__device__ __forceinline__ static inline void NAME(const uint8_t* src, uint8_t* dst, size_t len)	\
+	__device__ __forceinline__ static void NAME(const uint8_t* src, uint8_t* dst, size_t len)			\
 	{																									\
 		FOR(i, 1, len, S);																				\
 	}
@@ -122,7 +122,7 @@ mkapply_sd(setout, dst[i] = src[i])					// setout
 		L -= rate;																						\
 	}
 
-__device__ __forceinline__ static inline void keccak256(uint8_t *digest, uint8_t const *message)
+__device__ __forceinline__ static void keccak256(uint8_t *digest, uint8_t const *message)
 {
 	uint8_t sponge[SPONGE_LENGTH]{ 0 };
 	uint32_t messageLength{ MESSAGE_LENGTH };
@@ -147,7 +147,7 @@ __device__ __forceinline__ static inline void keccak256(uint8_t *digest, uint8_t
 	setout(sponge, digest, digestLength);
 }
 
-__device__ __forceinline__ static inline bool islessThan(uint8_t *left, uint8_t *right)
+__device__ __forceinline__ static bool islessThan(uint8_t *left, uint8_t *right)
 {
 	for (uint32_t i{ 0 }; i < UINT256_LENGTH; ++i)
 	{
@@ -206,7 +206,11 @@ namespace CUDASolver
 		CudaSafeCall(cudaSetDevice(device->deviceID));
 
 		char *c_currentChallenge = (char *)malloc(s_challenge.size());
+		#ifdef __linux__
+		strcpy(c_currentChallenge, s_challenge.c_str());
+		#else
 		strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+		#endif
 
 		onMessage(device->deviceID, "Info", "Start mining...");
 		onMessage(device->deviceID, "Debug", "Threads: " + std::to_string(device->threads()) + " Grid size: " + std::to_string(device->grid().x) + " Block size:" + std::to_string(device->block().x));

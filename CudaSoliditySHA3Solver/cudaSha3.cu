@@ -348,7 +348,11 @@ namespace CUDASolver
 		CudaSafeCall(cudaSetDevice(device->deviceID));
 
 		char *c_currentChallenge = (char *)malloc(s_challenge.size());
+		#ifdef __linux__
+		strcpy(c_currentChallenge, s_challenge.c_str());
+		#else
 		strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+		#endif
 
 		onMessage(device->deviceID, "Info", "Start mining...");
 		onMessage(device->deviceID, "Debug", "Threads: " + std::to_string(device->threads()) + " Grid size: " + std::to_string(device->grid().x) + " Block size:" + std::to_string(device->block().x));

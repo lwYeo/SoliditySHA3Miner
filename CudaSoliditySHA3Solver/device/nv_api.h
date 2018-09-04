@@ -1,10 +1,15 @@
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include "nv_apiEnum.h"
-#include "..\types.h"
+#include "../types.h"
 
 #define NvAPI64										"nvapi64.dll"
-#define	NvAPI_QueryInterface						(LPCSTR)"nvapi_QueryInterface"
+#ifdef __linux__
+#	define	NvAPI_QueryInterface					"nvapi_QueryInterface"
+#else
+#	define	NvAPI_QueryInterface					(LPCSTR)"nvapi_QueryInterface"
+#endif
 
 #define NVAPI_SHORT_STRING_MAX						64
 #define NVAPI_MAX_PHYSICAL_GPUS						64

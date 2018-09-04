@@ -1,4 +1,20 @@
-#include <windows.h>
+#ifdef __linux__ // equivalent functions in linux
+#	include <dlfcn.h>
+
+void *LoadLibrary(const char *name)
+{
+	return dlopen(name, RTLD_LAZY|RTLD_GLOBAL);
+}
+
+void *GetProcAddress(void *pLibrary, const char *name)
+{
+    return dlsym(pLibrary, name);
+}
+
+#else
+#	include <windows.h>
+#endif
+
 #include "nv_api.h"
 
 // --------------------------------------------------------------------
@@ -39,7 +55,7 @@ void NV_API::initialize()
 	if (isInitialized) return;
 
 	QueryInterface = (QueryInterface_t)GetProcAddress(LoadLibrary(NvAPI64), NvAPI_QueryInterface);
-	if (QueryInterface == NULL) throw std::exception("Failed to initialize NvAPI64.");
+	if (QueryInterface == NULL) throw std::runtime_error("Failed to initialize NvAPI64.");
 
 	GetErrorMessage = (GetErrorMessage_t)QueryInterface(NvAPI_FUNCTIONS::GetErrorMessage);
 
