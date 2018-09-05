@@ -381,7 +381,7 @@ namespace SoliditySHA3Miner
             }
 
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            Console.Title = string.Format("{0} {1} by lwYeo@github ({2})", GetApplicationName(), GetApplicationVersion(), GetApplicationYear());
+            Console.Title = string.Format("{0} {1} beta by lwYeo@github ({2})", GetApplicationName(), GetApplicationVersion(), GetApplicationYear());
 
             Print(GetHeader(), excludePrefix: true);
 
