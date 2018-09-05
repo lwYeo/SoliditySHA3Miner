@@ -768,14 +768,8 @@ namespace OpenCLSolver
 
 		if (device->isNewMessage || device->isNewTarget)
 		{
-			for (auto& device : m_devices)
-			{
-				if (device->hashCount.load() > INT64_MAX)
-				{
-					device->hashCount.store(0ull);
-					device->hashStartTime.store(std::chrono::steady_clock::now());
-				}
-			}
+			device->hashCount.store(0ull);
+			device->hashStartTime.store(std::chrono::steady_clock::now());
 
 			if (device->isNewTarget)
 			{
@@ -823,7 +817,13 @@ namespace OpenCLSolver
 		char *c_currentChallenge = (char *)malloc(s_challenge.size());
 		do
 		{
-			while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
+			while (m_pause)
+			{
+				device->hashCount.store(0ull);
+				device->hashStartTime.store(std::chrono::steady_clock::now());
+
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			}
 
 			checkInputs(device, c_currentChallenge);
 

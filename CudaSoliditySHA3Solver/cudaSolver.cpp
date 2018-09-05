@@ -749,14 +749,8 @@ namespace CUDASolver
 			uint64_t lastPosition;
 			getWorkPosition(lastPosition);
 
-			for (auto& device : m_devices)
-			{
-				if (device->hashCount.load() > INT64_MAX)
-				{
-					device->hashCount.store(0ull);
-					device->hashStartTime.store(std::chrono::steady_clock::now());
-				}
-			}
+			device->hashCount.store(0ull);
+			device->hashStartTime.store(std::chrono::steady_clock::now());
 
 			if (device->isNewTarget)
 			{

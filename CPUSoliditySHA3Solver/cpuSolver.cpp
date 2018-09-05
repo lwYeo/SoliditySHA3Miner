@@ -382,7 +382,13 @@ namespace CPUSolver
 
 			while (m_isThreadMining[threadID])
 			{
-				while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(500)); }
+				while (m_pause)
+				{
+					m_threadHashes[threadID] = 0ull;
+					m_hashStartTime[threadID] = std::chrono::steady_clock::now();
+
+					std::this_thread::sleep_for(std::chrono::milliseconds(500));
+				}
 
 				if (currentChallenge != s_challenge)
 				{
@@ -420,10 +426,7 @@ namespace CPUSolver
 				{
 					std::thread t{ &cpuSolver::onSolution, this, currentSolution, digest, currentChallenge };
 					t.detach();
-				}
 
-				if (m_threadHashes[threadID] > INT64_MAX)
-				{
 					m_threadHashes[threadID] = 0ull;
 					m_hashStartTime[threadID] = std::chrono::steady_clock::now();
 				}
