@@ -390,6 +390,19 @@ namespace SoliditySHA3Miner
                 m_handler += new EventHandler(Handler);
                 SetConsoleCtrlHandler(m_handler, true);
             }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                m_handler += new EventHandler(Handler);
+                
+                AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+                {
+                    Handler(CtrlType.CTRL_CLOSE_EVENT);
+                };
+                Console.CancelKeyPress += (s, ev) =>
+                {
+                    Handler(CtrlType.CTRL_C_EVENT);
+                };
+            }
             
             Miner.Device[] cpuDevices = new Miner.Device[] { };
             Miner.Device[] amdDevices = new Miner.Device[] { };
