@@ -7,7 +7,9 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/SoliditySHA3Miner.csproj"
+                "${workspaceFolder}/SoliditySHA3Miner.csproj",
+                "-o",
+                "${workspaceRoot}/build/Debug/"
             ],
             "problemMatcher": "$msCompile"
         },
@@ -19,7 +21,9 @@
                 "build",
                 "${workspaceFolder}/SoliditySHA3Miner.csproj",
                 "-c",
-                "Release"
+                "Release",
+                "-o",
+                "${workspaceRoot}/build/Release/"
             ],
             "problemMatcher": "$msCompile",
             "group": {
