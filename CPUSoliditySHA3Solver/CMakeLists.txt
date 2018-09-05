@@ -8,13 +8,6 @@ set(PROJECT_NAME CPUSoliditySHA3Solver)
 # Output Variables
 set(OUTPUT_DEBUG bin/Debug/)
 set(OUTPUT_REL bin/Release/)
-# Folders files
-set(CPP_DIR_1 ./)
-set(CPP_DIR_2 ./)
-set(CPP_DIR_3 ./)
-set(CPP_DIR_4 uint256)
-set(HEADER_DIR_1 )
-set(HEADER_DIR_2 uint256)
 
 ############## CMake Project ################
 #        The main options of project        #
@@ -61,18 +54,19 @@ endif(NOT MSVC)
 #   --   Add files to project.   --   #
 #######################################
 
+set(CPP_DIR_1 ./)
+set(CPP_DIR_2 uint256)
+set(HEADER_DIR_1 )
+set(HEADER_DIR_2 uint256)
+
 file(GLOB SRC_FILES
     ${CPP_DIR_1}/*.cpp
     ${CPP_DIR_2}/*.cpp
-    ${CPP_DIR_3}/*.cpp
-    ${CPP_DIR_4}/*.cpp
     ${HEADER_DIR_1}/*.h
     ${HEADER_DIR_2}/*.h
 )
 
 # Add library to build.
-add_library(${PROJECT_NAME} SHARED
-   ${SRC_FILES}
-)
+add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
