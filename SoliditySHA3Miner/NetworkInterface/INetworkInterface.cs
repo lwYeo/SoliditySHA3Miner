@@ -22,8 +22,10 @@ namespace SoliditySHA3Miner.NetworkInterface
         ulong Difficulty { get; }
         string DifficultyHex { get; }
 
+        ulong GetEffectiveHashrate();
+        void ResetEffectiveHashrate();
         void UpdateMiningParameters();
 
-        void SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, Miner.IMiner sender);
+        bool SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, Miner.IMiner sender);
     }
 }

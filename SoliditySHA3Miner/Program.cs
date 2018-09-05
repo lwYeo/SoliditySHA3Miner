@@ -729,11 +729,14 @@ namespace SoliditySHA3Miner
 
             try
             {
+                networkUpdateInterval = networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval;
+                hashrateUpdateInterval = hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval;
+
                 Miner.Work.SetKingAddress(kingAddress);
                 Miner.Work.SetSolutionTemplate(Miner.CPU.GetNewSolutionTemplate(Miner.Work.GetKingAddressString()));
 
                 var web3Interface = new NetworkInterface.Web3Interface(web3api, contractAddress, minerAddress, privateKey, gasToMine,
-                                                                       abiFile, networkUpdateInterval);
+                                                                       abiFile, networkUpdateInterval, hashrateUpdateInterval);
 
                 HexBigInteger tempMaxTarget = null;
                 if (overrideMaxTarget.Value > 0u)
@@ -748,10 +751,11 @@ namespace SoliditySHA3Miner
 
                 var secondaryPoolInterface = string.IsNullOrWhiteSpace(secondaryPool)
                                            ? null
-                                           : new NetworkInterface.PoolInterface(minerAddress, secondaryPool, maxScanRetry, -1,
+                                           : new NetworkInterface.PoolInterface(minerAddress, secondaryPool, maxScanRetry, -1, -1,
                                                                                 customDifficulty, tempMaxTarget);
 
-                var primaryPoolInterface = new NetworkInterface.PoolInterface(minerAddress, primaryPool, maxScanRetry, networkUpdateInterval,
+                var primaryPoolInterface = new NetworkInterface.PoolInterface(minerAddress, primaryPool, maxScanRetry,
+                                                                              networkUpdateInterval, hashrateUpdateInterval,
                                                                               customDifficulty, tempMaxTarget, secondaryPoolInterface);
 
                 var mainNetworkInterface = (string.IsNullOrWhiteSpace(privateKey))
@@ -782,18 +786,15 @@ namespace SoliditySHA3Miner
                 if (cpuMode)
                 {
                     if (m_cpuMiner.HasAssignedDevices)
-                        m_cpuMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                               hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+                        m_cpuMiner.StartMining(networkUpdateInterval, hashrateUpdateInterval);
                 }
                 else
                 {
                     if (m_openCLMiner.HasAssignedDevices)
-                        m_openCLMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                                    hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+                        m_openCLMiner.StartMining(networkUpdateInterval, hashrateUpdateInterval);
 
                     if (m_cudaMiner.HasAssignedDevices)
-                        m_cudaMiner.StartMining(networkUpdateInterval < 1000 ? Defaults.NetworkUpdateInterval : networkUpdateInterval,
-                                                hashrateUpdateInterval < 1000 ? Defaults.HashrateUpdateInterval : hashrateUpdateInterval);
+                        m_cudaMiner.StartMining(networkUpdateInterval, hashrateUpdateInterval);
                 }
 
                 m_waitCheckTimer = new System.Timers.Timer(1000);

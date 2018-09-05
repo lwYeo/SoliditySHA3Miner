@@ -285,6 +285,7 @@ namespace SoliditySHA3Miner.Miner
                 m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
                 m_hashPrintTimer.Start();
 
+                NetworkInterface.ResetEffectiveHashrate();
                 Solver.StartFinding(m_instance);
             }
             catch (Exception ex)
@@ -299,6 +300,8 @@ namespace SoliditySHA3Miner.Miner
             try
             {
                 m_hashPrintTimer.Stop();
+
+                NetworkInterface.ResetEffectiveHashrate();
 
                 Solver.StopFinding(m_instance);
             }
