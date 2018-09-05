@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -121,9 +120,6 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion Static
 
-        private const int MAX_SUBMIT_DTM_COUNT = 100;
-        private readonly List<DateTime> m_submitDateTimeList;
-
         private Timer m_hashPrintTimer;
         private int m_pauseOnFailedScan;
         private int m_failedScanCount;
@@ -209,16 +205,6 @@ namespace SoliditySHA3Miner.Miner
             return hashrate;
         }
 
-        public ulong GetEffectiveHashrate()
-        {
-            var hashrate = 0ul;
-
-            //if (m_submitDateTimeList.Count() > 1)
-            //    hashrate = (ulong)((m_submitDateTimeList.Last() - m_submitDateTimeList.First()).TotalSeconds) * diff;
-
-            return hashrate;
-        }
-
         public void StartMining(int networkUpdateInterval, int hashratePrintInterval)
         {
             try
@@ -228,9 +214,6 @@ namespace SoliditySHA3Miner.Miner
                 m_hashPrintTimer = new Timer(hashratePrintInterval);
                 m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
                 m_hashPrintTimer.Start();
-
-                m_submitDateTimeList.Clear();
-                m_submitDateTimeList.Add(DateTime.Now);
 
                 Solver.StartFinding(m_instance);
             }
@@ -246,7 +229,6 @@ namespace SoliditySHA3Miner.Miner
             try
             {
                 m_hashPrintTimer.Stop();
-                m_submitDateTimeList.Clear();
                 Solver.StopFinding(m_instance);
             }
             catch (Exception ex)
@@ -265,7 +247,6 @@ namespace SoliditySHA3Miner.Miner
                 NetworkInterface = networkInterface;
                 m_pauseOnFailedScan = pauseOnFailedScans;
                 m_failedScanCount = 0;
-                m_submitDateTimeList = new List<DateTime>(MAX_SUBMIT_DTM_COUNT);
 
                 var devicesStr = string.Empty;
                 foreach (var device in Devices)
@@ -430,9 +411,6 @@ namespace SoliditySHA3Miner.Miner
 
         private void m_instance_OnSolution(StringBuilder digest, StringBuilder address, StringBuilder challenge, StringBuilder target, StringBuilder solution)
         {
-            if (m_submitDateTimeList.Count >= MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
-            m_submitDateTimeList.Add(DateTime.Now);
-
             var difficulty = NetworkInterface.Difficulty.ToString("X64");
 
             NetworkInterface.SubmitSolution(digest.ToString(), address.ToString(), challenge.ToString(), difficulty, target.ToString(), solution.ToString(), this);
