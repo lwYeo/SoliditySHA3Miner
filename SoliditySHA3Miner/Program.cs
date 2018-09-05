@@ -155,7 +155,7 @@ namespace SoliditySHA3Miner
         private static string GetHeader()
         {
             return "\n" +
-                "*** " + GetApplicationName() + " " + GetApplicationVersion() + " by lwYeo@github (" + GetApplicationYear() + ") ***\n" +
+                "*** " + GetApplicationName() + " " + GetApplicationVersion() + " beta by lwYeo@github (" + GetApplicationYear() + ") ***\n" +
                 "*** Built with .NET Core 2.1 SDK, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
                 "*** Include kernel from Mikers, Azlehria and LtTofu (Mag517)\n" +
                 "\n" +
@@ -393,7 +393,7 @@ namespace SoliditySHA3Miner
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 m_handler += new EventHandler(Handler);
-                
+
                 AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
                 {
                     Handler(CtrlType.CTRL_CLOSE_EVENT);
