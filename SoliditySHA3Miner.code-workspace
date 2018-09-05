@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "CPUSoliditySHA3Solver"
+		},
+		{
+			"path": "CudaSoliditySHA3Solver"
+		},
+		{
+			"path": "OpenCLSoliditySHA3Solver"
+		},
+		{
+			"path": "SoliditySHA3Miner"
+		}
+	],
+	"settings": {}
+}
