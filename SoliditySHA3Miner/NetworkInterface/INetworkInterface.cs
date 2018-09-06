@@ -3,18 +3,18 @@
 namespace SoliditySHA3Miner.NetworkInterface
 {
     public delegate void GetMiningParameterStatusEvent(INetworkInterface sender, bool success, MiningParameters miningParameters);
-
     public delegate void NewMessagePrefixEvent(INetworkInterface sender, string messagePrefix);
-
     public delegate void NewTargetEvent(INetworkInterface sender, string target);
+
+    public delegate void GetTotalHashrateEvent(INetworkInterface sender, ref ulong totalHashrate);
 
     public interface INetworkInterface : IDisposable
     {
         event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
-
         event NewMessagePrefixEvent OnNewMessagePrefixEvent;
-
         event NewTargetEvent OnNewTargetEvent;
+
+        event GetTotalHashrateEvent OnGetTotalHashrate;
 
         bool IsPool { get; }
         ulong SubmittedShares { get; }

@@ -367,6 +367,8 @@ namespace SoliditySHA3Miner.Miner
                 Solver.FoundNvAPI64(ref hasNvAPI64);
                 HasMonitoringAPI = hasNvAPI64;
 
+                NetworkInterface.OnGetTotalHashrate += NetworkInterface_OnGetTotalHashrate;
+
                 if (!HasMonitoringAPI) Program.Print("[WARN] NvAPI64 library not found.");
 
                 m_instance = Solver.GetInstance();
@@ -403,6 +405,21 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
+        private void NetworkInterface_OnGetTotalHashrate(NetworkInterface.INetworkInterface sender, ref ulong totalHashrate)
+        {
+            try
+            {
+                var hashrate = 0ul;
+                Solver.GetTotalHashRate(m_instance, ref hashrate);
+
+                totalHashrate += hashrate;
+            }
+            catch (Exception ex)
+            {
+                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+            }
+        }
+
         private void m_hashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             var hashrate = 0ul;
@@ -418,10 +435,7 @@ namespace SoliditySHA3Miner.Miner
                 }
             }
             Program.Print(hashString.ToString());
-
-            Solver.GetTotalHashRate(m_instance, ref hashrate);
-            Program.Print(string.Format("CUDA [INFO] Total Hashrate: {0} MH/s", hashrate / 1000000.0f));
-
+            
             if (HasMonitoringAPI)
             {
                 var coreClock = 0;

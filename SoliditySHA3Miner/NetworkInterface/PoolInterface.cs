@@ -30,10 +30,10 @@ namespace SoliditySHA3Miner.NetworkInterface
         private MiningParameters m_cacheParameters;
         
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
-
         public event NewMessagePrefixEvent OnNewMessagePrefixEvent;
-
         public event NewTargetEvent OnNewTargetEvent;
+
+        public event GetTotalHashrateEvent OnGetTotalHashrate;
 
         public bool IsPool => true;
         public ulong SubmittedShares { get; private set; }
@@ -144,7 +144,11 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         private void m_hashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Program.Print(string.Format("[INFO] Pool Effective Hashrate: {0} MH/s", GetEffectiveHashrate() / 1000000.0f));
+            var totalHashRate = 0ul;
+            OnGetTotalHashrate(this, ref totalHashRate);
+            Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s", totalHashRate / 1000000.0f));
+
+            Program.Print(string.Format("[INFO] Effective Hashrate: {0} MH/s", GetEffectiveHashrate() / 1000000.0f));
         }
 
         private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -216,7 +220,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             if (m_submitDateTimeList.Count > 1)
             {
-                var avgSolveTime = (ulong)((m_submitDateTimeList.Last() - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
+                var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
                 hashrate = Difficulty * EFFECTIVE_HASHRATE_CONST / avgSolveTime;
             }
 
