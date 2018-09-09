@@ -817,10 +817,10 @@ namespace SoliditySHA3Miner
                 }
                 else
                 {
-                    if (m_openCLMiner.HasAssignedDevices)
+                    if (m_openCLMiner != null && m_openCLMiner.HasAssignedDevices)
                         m_openCLMiner.StartMining(networkUpdateInterval, hashrateUpdateInterval);
 
-                    if (m_cudaMiner.HasAssignedDevices)
+                    if (m_cudaMiner != null && m_cudaMiner.HasAssignedDevices)
                         m_cudaMiner.StartMining(networkUpdateInterval, hashrateUpdateInterval);
                 }
 
