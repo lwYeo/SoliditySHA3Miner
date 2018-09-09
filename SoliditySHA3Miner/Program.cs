@@ -72,14 +72,18 @@ namespace SoliditySHA3Miner
 
         private static bool Handler(CtrlType sig)
         {
+            if (m_handler == null)
+                m_handler += new EventHandler(Handler);
+
             lock (m_handler)
             {
-                m_allMiners.AsParallel()
-                           .ForAll(miner =>
-                           {
-                               try { if (miner != null) miner.Dispose(); }
-                               catch (Exception ex) { Print(ex.Message); }
-                           });
+                if (m_allMiners != null)
+                    m_allMiners.AsParallel()
+                                .ForAll(miner =>
+                                {
+                                    try { if (miner != null) miner.Dispose(); }
+                                    catch (Exception ex) { Print(ex.Message); }
+                                });
 
                 if (m_waitCheckTimer != null) m_waitCheckTimer.Stop();
                 if (m_manualResetEvent != null) m_manualResetEvent.Set();
@@ -156,7 +160,7 @@ namespace SoliditySHA3Miner
         {
             return "\n" +
                 "*** " + GetApplicationName() + " " + GetApplicationVersion() + " beta by lwYeo@github (" + GetApplicationYear() + ") ***\n" +
-                "*** Built with .NET Core 2.1 SDK, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
+                "*** Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
                 "*** Include kernel from Mikers, Azlehria and LtTofu (Mag517)\n" +
                 "\n" +
                 "Donation addresses:\n" +
@@ -392,8 +396,6 @@ namespace SoliditySHA3Miner
             }
             else
             {
-                m_handler += new EventHandler(Handler);
-
                 AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
                 {
                     Handler(CtrlType.CTRL_CLOSE_EVENT);
@@ -439,7 +441,6 @@ namespace SoliditySHA3Miner
                     {
                         case "help":
                             PrintHelp();
-                            m_manualResetEvent.Set();
                             Environment.Exit(0);
                             break;
 
@@ -465,7 +466,6 @@ namespace SoliditySHA3Miner
 
                         case "listAmdDevices":
                             PrintAmdDevices();
-                            m_manualResetEvent.Set();
                             Environment.Exit(0);
                             break;
 
@@ -475,7 +475,6 @@ namespace SoliditySHA3Miner
 
                         case "listCudaDevices":
                             PrintCudaDevices();
-                            m_manualResetEvent.Set();
                             Environment.Exit(0);
                             break;
 
@@ -563,7 +562,6 @@ namespace SoliditySHA3Miner
                 catch (Exception)
                 {
                     Print("[ERROR] Failed parsing argument: " + arg);
-                    m_manualResetEvent.Set();
                     Environment.Exit(1);
                 }
             }
@@ -741,7 +739,6 @@ namespace SoliditySHA3Miner
                     catch (Exception)
                     {
                         Print("[ERROR] Failed parsing argument: " + arg);
-                        m_manualResetEvent.Set();
                         Environment.Exit(1);
                     }
                 }
@@ -801,7 +798,6 @@ namespace SoliditySHA3Miner
                 if (!m_allMiners.Any() || m_allMiners.All(m => !m.HasAssignedDevices))
                 {
                     Print("[ERROR] No miner assigned.");
-                    m_manualResetEvent.Set();
                     Environment.Exit(1);
                 }
 
@@ -839,7 +835,6 @@ namespace SoliditySHA3Miner
                 if (ex.InnerException != null)
                     Print(ex.InnerException.ToString());
 
-                m_manualResetEvent.Set();
                 Environment.Exit(1);
             }
 
