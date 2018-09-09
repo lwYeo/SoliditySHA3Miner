@@ -58,6 +58,9 @@
     <None Update="0xbtcSolo.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="install-deps.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="0xCATE.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
