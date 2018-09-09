@@ -248,8 +248,7 @@ namespace CPUSolver
 	{
 		for (uint32_t i{ 0 }; i < m_miningThreadCount; ++i) m_isThreadMining[i] = false;
 
-		using namespace std::chrono_literals;
-		std::this_thread::sleep_for(1s);
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 
 	void cpuSolver::pauseFinding(bool pauseFinding)

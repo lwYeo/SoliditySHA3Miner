@@ -217,7 +217,7 @@ namespace CUDASolver
 
 		device->mining = true;
 		device->hashCount.store(0ull);
-		device->hashStartTime.store(std::chrono::steady_clock::now() - std::chrono::milliseconds(500)); // reduce excessive high hashrate reporting at start
+		device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(500); // reduce excessive high hashrate reporting at start
 		do
 		{
 			while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }

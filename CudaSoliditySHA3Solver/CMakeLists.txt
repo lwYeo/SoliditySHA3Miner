@@ -42,7 +42,7 @@ endif()
 
 set(CUDA_NVCC_FLAGS
   ${CUDA_NVCC_FLAGS}
-  -std=c++14
+  -std=c++11
   -Xptxas=-v,-warn-spills
   -gencode arch=compute_30,code=sm_30
   -gencode arch=compute_32,code=sm_32
@@ -55,6 +55,10 @@ set(CUDA_NVCC_FLAGS
   -gencode arch=compute_62,code=sm_62
   -gencode arch=compute_70,code=sm_70
 )
+
+if(NOT MSVC)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+endif(NOT MSVC)
 
 ################ Files ################
 #   --   Add files to project.   --   #

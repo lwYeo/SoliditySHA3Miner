@@ -46,7 +46,7 @@ set(ADDITIONAL_LIBRARIES "")
 
 # gcc/g++ specific compile options
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-  set(COMPILER_FLAGS "${COMPILER_FLAGS} -std=c++17")
+  set(COMPILER_FLAGS "${COMPILER_FLAGS} -std=c++0x")
     
   # Note: "rt" is not present on mingw
   if(UNIX)

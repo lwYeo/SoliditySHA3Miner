@@ -27,13 +27,20 @@ namespace CUDASolver
 	int CudaSolver::getDeviceCount(std::string &errorMessage)
 	{
 		errorMessage = "";
-		int deviceCount;
+		int deviceCount = 0;
 		cudaError_t response = cudaGetDeviceCount(&deviceCount);
 
-		if (response == cudaError::cudaSuccess) return deviceCount;
-		else errorMessage = getCudaErrorString(response);
+		if (response != cudaError::cudaSuccess) errorMessage = getCudaErrorString(response);
+		else if (deviceCount < 1)
+		{
+			int runtimeVersion = 0;
+			response = cudaRuntimeGetVersion(&runtimeVersion);
 
-		return 0;
+			errorMessage = std::string("There are no available device(s) that support CUDA (requires: 9.2, current: "
+							+ std::to_string(runtimeVersion / 1000) + std::to_string((runtimeVersion % 100) / 10) + ")");
+		}
+
+		return deviceCount;
 	}
 
 	void CudaSolver::getDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *errorSize)
@@ -142,7 +149,7 @@ namespace CUDASolver
 			return false;
 		}
 
-		m_devices.push_back(std::make_unique<Device>(deviceID));
+		m_devices.push_back(std::unique_ptr<Device>(new Device(std::forward<const int>(deviceID))));
 		auto &assignDevice = m_devices.back();
 
 		assignDevice->name = deviceProp.name;
@@ -254,7 +261,7 @@ namespace CUDASolver
 		hexStringToBytes(s_address, m_miningMessage.structure.address);
 		m_miningMessage.structure.solution = m_solutionTemplate;
 
-		sponge_ut midState{ getMidState(m_miningMessage) };
+		sponge_ut midState = getMidState(m_miningMessage);
 
 		for (auto& device : m_devices)
 		{
@@ -754,7 +761,7 @@ namespace CUDASolver
 				if (device->hashCount.load() > INT64_MAX)
 				{
 					device->hashCount.store(0ull);
-					device->hashStartTime.store(std::chrono::steady_clock::now());
+					device->hashStartTime = std::chrono::steady_clock::now();
 				}
 			}
 

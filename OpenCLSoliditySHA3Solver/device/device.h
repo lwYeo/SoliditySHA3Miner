@@ -55,7 +55,7 @@ namespace OpenCLSolver
 
 		std::thread miningThread;
 		std::atomic<uint64_t> hashCount;
-		std::atomic<std::chrono::steady_clock::time_point> hashStartTime;
+		std::chrono::steady_clock::time_point hashStartTime;
 
 		std::string platformName;
 		std::string openCLVersion;

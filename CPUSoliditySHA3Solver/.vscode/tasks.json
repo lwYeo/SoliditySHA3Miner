@@ -4,9 +4,15 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Clean build directory",
+            "type": "shell",
+            "command": "rm -r build"
+        },
+        {
             "label": "Create build directory",
             "type": "shell",
-            "command": "mkdir -p build"
+            "command": "mkdir -p build",
+            "dependsOn": "Clean build directory"
         },
         {
             "label": "cmake CMakeLists.txt",

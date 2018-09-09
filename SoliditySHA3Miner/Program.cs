@@ -390,7 +390,7 @@ namespace SoliditySHA3Miner
                 m_handler += new EventHandler(Handler);
                 SetConsoleCtrlHandler(m_handler, true);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else
             {
                 m_handler += new EventHandler(Handler);
 
@@ -633,69 +633,89 @@ namespace SoliditySHA3Miner
                     }
                     else Print("[WARN] CUDA device not found.");
                 }
-
-                Miner.OpenCL.PreInitialize(allowIntel, out var openCLInitErrorMessage);
-
-                if (!string.IsNullOrWhiteSpace(openCLInitErrorMessage)) Print("[ERROR] " + openCLInitErrorMessage);
-                else
+                
+                if (allowAMD || allowIntel)
                 {
-                    if (allowIntel)
+                    try
                     {
-                        Print("[INFO] Assign all Intel(R) OpenCL devices.");
-                        var deviceCount = Miner.OpenCL.GetDeviceCount("Intel(R) OpenCL", out var openCLerrorMessage);
-                        if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Print("[WARN] " + openCLerrorMessage);
+                        Miner.OpenCL.PreInitialize(allowIntel, out var openCLInitErrorMessage);
+                        
+                        if (!string.IsNullOrWhiteSpace(openCLInitErrorMessage))
+                        {
+                            if (openCLInitErrorMessage.Contains("Unable to load shared library"))
+                                Print("[WARN] OpenCL not installed.");
+                            else
+                                Print("[ERROR] " + openCLInitErrorMessage);
+                        }
                         else
                         {
-                            var tempIntelList = new List<Miner.Device>();
-                            for (int i = 0; i < deviceCount; i++)
+                            if (allowIntel)
                             {
-                                var tempName = Miner.OpenCL.GetDeviceName("Intel(R) OpenCL", i, out var openCLdeviceErrorMessage);
-                                if (!string.IsNullOrWhiteSpace(openCLdeviceErrorMessage))
+                                Print("[INFO] Assign all Intel(R) OpenCL devices.");
+                                var deviceCount = Miner.OpenCL.GetDeviceCount("Intel(R) OpenCL", out var openCLerrorMessage);
+                                if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Print("[WARN] " + openCLerrorMessage);
+                                else
                                 {
-                                    Print("[WARN] " + openCLdeviceErrorMessage);
-                                    continue;
-                                }
+                                    var tempIntelList = new List<Miner.Device>();
+                                    for (int i = 0; i < deviceCount; i++)
+                                    {
+                                        var tempName = Miner.OpenCL.GetDeviceName("Intel(R) OpenCL", i, out var openCLdeviceErrorMessage);
+                                        if (!string.IsNullOrWhiteSpace(openCLdeviceErrorMessage))
+                                        {
+                                            Print("[WARN] " + openCLdeviceErrorMessage);
+                                            continue;
+                                        }
 
-                                tempIntelList.Add(new Miner.Device
-                                {
-                                    Type = "OpenCL",
-                                    Platform = "Intel(R) OpenCL",
-                                    DeviceID = i,
-                                    Name = tempName
-                                });
+                                        tempIntelList.Add(new Miner.Device
+                                        {
+                                            Type = "OpenCL",
+                                            Platform = "Intel(R) OpenCL",
+                                            DeviceID = i,
+                                            Name = tempName
+                                        });
+                                    }
+                                    intelDevices = tempIntelList.ToArray();
+                                }
                             }
-                            intelDevices = tempIntelList.ToArray();
+
+                            if (allowAMD && (amdDevices == null || !amdDevices.Any()) && args.All(a => !a.StartsWith("openclDevices")))
+                            {
+                                Print("[INFO] OpenCL device not specified, default assign all AMD APP devices.");
+
+                                var deviceCount = Miner.OpenCL.GetDeviceCount("AMD Accelerated Parallel Processing", out var openCLerrorMessage);
+                                if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Print("[WARN] " + openCLerrorMessage);
+                                else
+                                {
+                                    var tempAmdList = new List<Miner.Device>();
+                                    for (int i = 0; i < deviceCount; i++)
+                                    {
+                                        var tempName = Miner.OpenCL.GetDeviceName("AMD Accelerated Parallel Processing", i, out var openCLdeviceErrorMessage);
+                                        if (!string.IsNullOrWhiteSpace(openCLdeviceErrorMessage))
+                                        {
+                                            Print("[WARN] " + openCLdeviceErrorMessage);
+                                            continue;
+                                        }
+
+                                        tempAmdList.Add(new Miner.Device
+                                        {
+                                            Type = "OpenCL",
+                                            Platform = "AMD Accelerated Parallel Processing",
+                                            DeviceID = i,
+                                            Name = tempName
+                                        });
+                                    }
+                                    amdDevices = tempAmdList.ToArray();
+                                }
+                            }
                         }
                     }
-
-                    if (allowAMD && (amdDevices == null || !amdDevices.Any()) && args.All(a => !a.StartsWith("openclDevices")))
+                    catch (DllNotFoundException)
                     {
-                        Print("[INFO] OpenCL device not specified, default assign all AMD APP devices.");
-
-                        var deviceCount = Miner.OpenCL.GetDeviceCount("AMD Accelerated Parallel Processing", out var openCLerrorMessage);
-                        if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Print("[WARN] " + openCLerrorMessage);
-                        else
-                        {
-                            var tempAmdList = new List<Miner.Device>();
-                            for (int i = 0; i < deviceCount; i++)
-                            {
-                                var tempName = Miner.OpenCL.GetDeviceName("AMD Accelerated Parallel Processing", i, out var openCLdeviceErrorMessage);
-                                if (!string.IsNullOrWhiteSpace(openCLdeviceErrorMessage))
-                                {
-                                    Print("[WARN] " + openCLdeviceErrorMessage);
-                                    continue;
-                                }
-
-                                tempAmdList.Add(new Miner.Device
-                                {
-                                    Type = "OpenCL",
-                                    Platform = "AMD Accelerated Parallel Processing",
-                                    DeviceID = i,
-                                    Name = tempName
-                                });
-                            }
-                            amdDevices = tempAmdList.ToArray();
-                        }
+                        Print("[WARN] OpenCL not found.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Print(ex.ToString());
                     }
                 }
 
@@ -759,15 +779,22 @@ namespace SoliditySHA3Miner
                                            : (NetworkInterface.INetworkInterface)web3Interface;
 
                 if (cpuMode)
-                    m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, submitStale, pauseOnFailedScans);
+                {
+                    if (cpuDevices.Any())
+                        m_cpuMiner = new Miner.CPU(mainNetworkInterface, cpuDevices, submitStale, pauseOnFailedScans);
+                }
                 else
                 {
-                    m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, submitStale, pauseOnFailedScans);
-                    m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, intelDevices.Union(amdDevices).ToArray(), submitStale, pauseOnFailedScans);
+                    if (cudaDevices.Any())
+                        m_cudaMiner = new Miner.CUDA(mainNetworkInterface, cudaDevices, submitStale, pauseOnFailedScans);
+
+                    var openCLdevices = intelDevices.Union(amdDevices).ToArray();
+                    if (openCLdevices.Any())
+                        m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, openCLdevices, submitStale, pauseOnFailedScans);
                 }
                 m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner }.Where(m => m != null).ToArray();
 
-                if (m_allMiners.All(m => !m.HasAssignedDevices))
+                if (!m_allMiners.Any() || m_allMiners.All(m => !m.HasAssignedDevices))
                 {
                     Print("[ERROR] No miner assigned.");
                     m_manualResetEvent.Set();
@@ -807,7 +834,10 @@ namespace SoliditySHA3Miner
             }
             catch (Exception ex)
             {
-                Print("[ERROR] " + ex.Message);
+                Print("[ERROR] " + ex.ToString());
+                if (ex.InnerException != null)
+                    Print(ex.InnerException.ToString());
+
                 m_manualResetEvent.Set();
                 Environment.Exit(1);
             }

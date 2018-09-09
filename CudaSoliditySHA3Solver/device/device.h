@@ -29,7 +29,7 @@ namespace CUDASolver
 
 		std::thread miningThread;
 		std::atomic<uint64_t> hashCount;
-		std::atomic<std::chrono::steady_clock::time_point> hashStartTime;
+		std::chrono::steady_clock::time_point hashStartTime;
 
 		uint64_t* d_Solutions;
 		uint64_t* h_Solutions;

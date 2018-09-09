@@ -186,6 +186,6 @@ namespace CUDASolver
 	uint64_t Device::hashRate()
 	{
 		using namespace std::chrono;
-		return (uint64_t)((long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime.load()).count()));
+		return (uint64_t)((long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime).count()));
 	}
 }

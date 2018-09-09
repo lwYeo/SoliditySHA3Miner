@@ -374,7 +374,7 @@ namespace OpenCLSolver
 	uint64_t Device::hashRate()
 	{
 		using namespace std::chrono;
-		return (uint64_t)((long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime.load()).count()));
+		return (uint64_t)((long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime).count()));
 	}
 
 	bool Device::setKernelArgs(std::string& errorMessage, bool const isKingMaking)

@@ -1,4 +1,5 @@
 #include "openCLSolver.h"
+#include <iostream>
 
 namespace OpenCLSolver
 {
@@ -320,7 +321,7 @@ namespace OpenCLSolver
 		hexStringToBytes(s_address, m_miningMessage.structure.address);
 		m_miningMessage.structure.solution = m_solutionTemplate;
 
-		sponge_ut midState{ getMidState(m_miningMessage) };
+		sponge_ut midState = getMidState(m_miningMessage);
 
 		for (auto& device : m_devices)
 		{
@@ -773,7 +774,7 @@ namespace OpenCLSolver
 				if (device->hashCount.load() > INT64_MAX)
 				{
 					device->hashCount.store(0ull);
-					device->hashStartTime.store(std::chrono::steady_clock::now());
+					device->hashStartTime = std::chrono::steady_clock::now();
 				}
 			}
 
@@ -817,7 +818,7 @@ namespace OpenCLSolver
 
 		device->mining = true;
 		device->hashCount.store(0ull);
-		device->hashStartTime.store(std::chrono::steady_clock::now() - std::chrono::milliseconds(500)); // reduce excessive high hashrate reporting at start
+		device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(500); // reduce excessive high hashrate reporting at start
 
 		uint64_t workPosition[MAX_WORK_POSITION_STORE];
 		char *c_currentChallenge = (char *)malloc(s_challenge.size());
