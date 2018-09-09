@@ -215,6 +215,7 @@ namespace SoliditySHA3Miner.Miner
                 m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
                 m_hashPrintTimer.Start();
 
+                NetworkInterface.ResetEffectiveHashrate();
                 Solver.StartFinding(m_instance);
             }
             catch (Exception ex)
@@ -229,6 +230,9 @@ namespace SoliditySHA3Miner.Miner
             try
             {
                 m_hashPrintTimer.Stop();
+
+                NetworkInterface.ResetEffectiveHashrate();
+
                 Solver.StopFinding(m_instance);
             }
             catch (Exception ex)
@@ -291,7 +295,7 @@ namespace SoliditySHA3Miner.Miner
         {
             var hashrate = 0ul;
             var hashString = new StringBuilder();
-            hashString.Append("OpenCL [INFO] Hashrates:");
+            hashString.Append("CPU [INFO] Hashrates:");
 
             for (uint threadID = 0; threadID < Devices.Count(d => d.DeviceID > -1); threadID++)
             {
@@ -301,7 +305,7 @@ namespace SoliditySHA3Miner.Miner
             Program.Print(hashString.ToString());
 
             Solver.GetTotalHashRate(m_instance, ref hashrate);
-            Program.Print(string.Format("OpenCL [INFO] Total Hashrate: {0} MH/s", hashrate / 1000000.0f));
+            Program.Print(string.Format("CPU [INFO] Total Hashrate: {0} MH/s", hashrate / 1000000.0f));
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
         }

@@ -220,7 +220,13 @@ namespace CUDASolver
 		device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(500); // reduce excessive high hashrate reporting at start
 		do
 		{
-			while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
+			while (m_pause)
+			{
+				device->hashCount.store(0ull);
+				device->hashStartTime = std::chrono::steady_clock::now();
+
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			}
 
 			checkInputs(device, c_currentChallenge);
 

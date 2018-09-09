@@ -108,7 +108,7 @@ namespace SoliditySHA3Miner.API
                 HttpListenerResponse response = listener.GetContext().Response;
 
                 var api = new JsonAPI();
-                float divisor = 0;
+                float divisor = 1;
                 ulong totalHashRate = 0ul;
 
                 foreach (var miner in m_miners)
@@ -119,26 +119,26 @@ namespace SoliditySHA3Miner.API
                 {
                     divisor = 1000000000000;
                     api.HashRateUnit = "TH/s";
-                    api.TotalHashRate = totalHashRate / divisor;
                 }
                 else if (sTotalHashRate.Length > 9 + 1)
                 {
                     divisor = 1000000000;
                     api.HashRateUnit = "GH/s";
-                    api.TotalHashRate = totalHashRate / divisor;
                 }
                 else if (sTotalHashRate.Length > 6 + 1)
                 {
                     divisor = 1000000;
                     api.HashRateUnit = "MH/s";
-                    api.TotalHashRate = totalHashRate / divisor;
                 }
                 else if (sTotalHashRate.Length > 3 + 1)
                 {
                     divisor = 1000;
                     api.HashRateUnit = "KH/s";
-                    api.TotalHashRate = totalHashRate / divisor;
                 }
+
+                api.EffectiveHashRate = (float)m_miners.Select(m => m.NetworkInterface).
+                                                        FirstOrDefault(m => m != null)?.GetEffectiveHashrate() / divisor;
+                api.TotalHashRate = totalHashRate / divisor;
 
                 foreach (var miner in m_miners)
                 {
@@ -310,6 +310,7 @@ namespace SoliditySHA3Miner.API
         public class JsonAPI
         {
             public DateTime SystemDateTime => DateTime.Now;
+            public float EffectiveHashRate { get; set; }
             public float TotalHashRate { get; set; }
             public string HashRateUnit { get; set; }
             public List<Miner> Miners { get; set; }
