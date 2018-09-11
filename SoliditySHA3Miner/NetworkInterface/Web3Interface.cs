@@ -50,6 +50,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public ulong RejectedShares { get; private set; }
         public ulong Difficulty { get; private set; }
         public string DifficultyHex { get; private set; }
+        public int LastLatency { get; private set; }
 
         public bool IsChallengedSubmitted(string challenge) => m_submittedChallengeList.Contains(challenge);
 
@@ -60,6 +61,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             m_submittedChallengeList = new List<string>();
             m_submitDateTimeList = new List<DateTime>(MAX_SUBMIT_DTM_COUNT + 1);
             Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout = MAX_TIMEOUT * 1000;
+            LastLatency = -1;
 
             if (string.IsNullOrWhiteSpace(contractAddress))
             {
@@ -305,7 +307,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                         transactionID = m_web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encodedTx).Result;
 
-                        var resposeTime = (uint)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+                        LastLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
 
                         if (!string.IsNullOrWhiteSpace(transactionID))
                         {
@@ -315,7 +317,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                                 if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
                             }
 
-                            Task.Factory.StartNew(() => GetTransactionReciept(transactionID, fromAddress, gasLimit, userGas, resposeTime));
+                            Task.Factory.StartNew(() => GetTransactionReciept(transactionID, fromAddress, gasLimit, userGas, LastLatency));
                         }
                     }
                     catch (AggregateException ex)
@@ -355,7 +357,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
         }
 
-        private void GetTransactionReciept(string transactionID, string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas, uint responseTime)
+        private void GetTransactionReciept(string transactionID, string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas, int responseTime)
         {
             try
             {

@@ -41,6 +41,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public PoolInterface SecondaryPool { get; }
         public ulong Difficulty { get; private set; }
         public string DifficultyHex { get; private set; }
+        public int LastLatency { get; private set; }
 
         public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, int updateInterval, int hashratePrintInterval,
                              uint customDifficulity, HexBigInteger maxTarget, PoolInterface secondaryPool = null)
@@ -50,6 +51,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             m_customDifficulity = customDifficulity;
             m_maxTarget = maxTarget;
             m_updateInterval = updateInterval;
+            LastLatency = -1;
             SecondaryPool = secondaryPool;
 
             if (m_customDifficulity > 0)
@@ -255,8 +257,8 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 if (SecondaryPool.SubmitSolution(digest, fromAddress, challenge, difficulty, target, solution, sender))
                 {
-                    var submitDurationMS = (uint)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
-                    Program.Print(string.Format("[INFO] Submission roundtrip latency: {0}ms", submitDurationMS));
+                    LastLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+                    Program.Print(string.Format("[INFO] Submission roundtrip latency: {0}ms", LastLatency));
 
                     if (m_submitDateTimeList.Count >= MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
                     m_submitDateTimeList.Add(DateTime.Now);
@@ -286,7 +288,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                         var response = Utils.Json.InvokeJObjectRPC(s_PoolURL, submitShare);
 
-                        var responseDuration = (uint)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+                        LastLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
 
                         var result = response.SelectToken("$.result")?.Value<string>();
 
@@ -298,7 +300,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                                                     (minerAddress == DevFee.Address ? "Dev. fee share" : "Miner share"),
                                                     SubmittedShares,
                                                     (success ? "success" : "failed"),
-                                                    responseDuration));
+                                                    LastLatency));
 #if DEBUG
                         Program.Print(submitShare.ToString());
                         Program.Print(response.ToString());

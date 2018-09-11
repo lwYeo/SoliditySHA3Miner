@@ -162,6 +162,7 @@ namespace SoliditySHA3Miner.API
                                             DeviceID = device.DeviceID,
                                             ModelName = device.Name,
                                             HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                                            LatencyMS = miner.NetworkInterface.LastLatency,
                                             HasMonitoringAPI = miner.HasMonitoringAPI,
                                             SettingIntensity = device.Intensity
                                         };
@@ -216,6 +217,7 @@ namespace SoliditySHA3Miner.API
                                             DeviceID = device.DeviceID,
                                             ModelName = device.Name,
                                             HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                                            LatencyMS = miner.NetworkInterface.LastLatency,
                                             HasMonitoringAPI = miner.HasMonitoringAPI,
                                             Platform = device.Platform,
                                             SettingIntensity = device.Intensity
@@ -265,6 +267,7 @@ namespace SoliditySHA3Miner.API
                                         DeviceID = device.DeviceID,
                                         ModelName = device.Name,
                                         HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                                        LatencyMS = miner.NetworkInterface.LastLatency,
                                         HasMonitoringAPI = miner.HasMonitoringAPI,
 
                                         Platform = device.Platform,
@@ -281,6 +284,7 @@ namespace SoliditySHA3Miner.API
                                         HashRate = miner.GetHashrateByDevice(device.Platform, (device.Type == "CPU")
                                                                                      ? Array.IndexOf(miner.Devices, device)
                                                                                      : device.DeviceID) / divisor,
+                                        LatencyMS = miner.NetworkInterface.LastLatency,
                                         HasMonitoringAPI = miner.HasMonitoringAPI
                                     };
                                     break;
@@ -323,6 +327,7 @@ namespace SoliditySHA3Miner.API
                 public int DeviceID { get; set; }
                 public string ModelName { get; set; }
                 public float HashRate { get; set; }
+                public int LatencyMS { get; set; }
                 public bool HasMonitoringAPI { get; set; }
             }
 
