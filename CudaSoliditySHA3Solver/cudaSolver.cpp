@@ -47,7 +47,12 @@ namespace CUDASolver
 	{
 		std::string errMsg{ 0 };
 		*deviceCount = getDeviceCount(errMsg);
-		errorMessage = errMsg.c_str();
+		#ifdef __linux__
+		strcpy((char *)errorMessage, errMsg.c_str());
+		#else
+		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
+		#endif
+
 		*errorSize = (uint64_t)errMsg.length();
 	}
 
@@ -67,9 +72,16 @@ namespace CUDASolver
 	{
 		std::string errMsg{ 0 };
 		auto deviceNameStr = getDeviceName(deviceID, errMsg);
-		deviceName = deviceNameStr.c_str();
-		errorMessage = errMsg.c_str();
 
+		#ifdef __linux__
+		strcpy((char *)deviceName, deviceNameStr.c_str());
+		strcpy((char *)errorMessage, errMsg.c_str());
+		#else
+		strcpy_s((char *)deviceName, deviceNameStr.size() + 1, deviceNameStr.c_str());
+		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
+		#endif
+
+		*errorSize = (uint64_t)errMsg.length();
 		*nameSize = (uint64_t)deviceNameStr.length();
 		*errorSize = (uint64_t)errMsg.length();
 	}
