@@ -14,7 +14,7 @@ __host__ inline std::string __cudaSafeCall(cudaError err, const char *file, cons
 	if (cudaSuccess != err)
 		return "CUDA device ID [" + std::to_string(deviceID) + "] encountered an error: " + cudaGetErrorString(err);
 	else
-#endif !CUDA_ERROR_CHECK
+#endif //CUDA_ERROR_CHECK
 		return "";
 }
 
@@ -35,7 +35,7 @@ __host__ inline std::string __cudaSyncAndCheckError(const char *file, const int 
 		}
 		return "CUDA device ID [" + std::to_string(deviceID) + "] encountered an error: " + cudaErrors;
 	}
-#endif !CUDA_ERROR_CHECK
+#endif //CUDA_ERROR_CHECK
 
 	response = cudaDeviceSynchronize();
 	if (response != cudaSuccess)
