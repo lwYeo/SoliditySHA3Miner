@@ -11,9 +11,22 @@ namespace SoliditySHA3Miner.NetworkInterface
 {
     public class PoolInterface : INetworkInterface
     {
-        private const int MAX_SUBMIT_DTM_COUNT = 100;
-        // Derived from https://github.com/snissn/tokenpool/blob/master/lib/peer-interface.js#L327
+        /// <summary>
+        /// Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234
+        /// <para></para>
+        /// Then we can find difficulty [N] target = 2^234 / N
+        /// <para></para>
+        /// Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234
+        /// <para></para>
+        /// Which simplifies to # of hashes to find block difficulty [N] = N * 2^22
+        /// <para></para>
+        /// Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second
+        /// <para></para>
+        /// Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T
+        /// </summary>
         private readonly ulong EFFECTIVE_HASHRATE_CONST = (ulong)Math.Pow(2, 22);
+
+        private const int MAX_SUBMIT_DTM_COUNT = 50;
         private readonly List<DateTime> m_submitDateTimeList;
 
         private readonly string s_MinerAddress;
@@ -148,9 +161,8 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             var totalHashRate = 0ul;
             OnGetTotalHashrate(this, ref totalHashRate);
-            Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s", totalHashRate / 1000000.0f));
-
-            Program.Print(string.Format("[INFO] Effective Hashrate: {0} MH/s", GetEffectiveHashrate() / 1000000.0f));
+            Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s (Effective) / {1} MH/s (Local)",
+                                        GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
         }
 
         private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
