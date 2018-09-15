@@ -1,54 +1,52 @@
-#pragma unmanaged
-#include <iostream>
 #include <cuda_runtime.h>
+#include <iostream>
+#include <string>
 
 // Define this to turn on error checking
-//#define CUDA_ERROR_CHECK
+#define CUDA_ERROR_CHECK
 
-#define CudaSafeCall( err ) __cudaSafeCall( err, __FILE__, __LINE__, deviceID )
-#define CudaCheckError()    __cudaCheckError( __FILE__, __LINE__, deviceID )
+#define CudaSafeCall(err)		__cudaSafeCall(err, __FILE__, __LINE__, deviceID)
+#define CudaSyncAndCheckError()	__cudaSyncAndCheckError(__FILE__, __LINE__, deviceID)
 
-__host__ inline void __cudaSafeCall(cudaError err, const char *file, const int line, int deviceID)
+__host__ inline std::string __cudaSafeCall(cudaError err, const char *file, const int line, const int deviceID)
 {
 #ifdef CUDA_ERROR_CHECK
 	if (cudaSuccess != err)
-	{
-		std::cerr << "\nCUDA device ID: " << deviceID
-			<< " encountered an error in file '" << file
-			<< "' in line " << line
-			<< " : " << cudaGetErrorString(err) << ".\n";
-		exit(EXIT_FAILURE);
-	}
-#endif
-
-	return;
+		return "CUDA device ID [" + std::to_string(deviceID) + "] encountered an error: " + cudaGetErrorString(err);
+	else
+#endif !CUDA_ERROR_CHECK
+		return "";
 }
 
-__host__ inline void __cudaCheckError(const char *file, const int line, int deviceID)
+__host__ inline std::string __cudaSyncAndCheckError(const char *file, const int line, const int deviceID)
 {
+	cudaError_t response{ cudaSuccess };
+	std::string cudaErrors{ "" };
+
 #ifdef CUDA_ERROR_CHECK
-	cudaError err = cudaGetLastError();
-	if (cudaSuccess != err)
+	response = cudaGetLastError();
+	if (response != cudaSuccess)
 	{
-		std::cerr << "\nCUDA device ID: " << deviceID
-			<< " encountered an error in file '" << file
-			<< "' in line " << line
-			<< " : " << cudaGetErrorString(err) << ".\n";
-		exit(EXIT_FAILURE);
+		while (response != cudaSuccess)
+		{
+			if (!cudaErrors.empty()) cudaErrors += " <- ";
+			cudaErrors += cudaGetErrorString(response);
+			response = cudaGetLastError();
+		}
+		return "CUDA device ID [" + std::to_string(deviceID) + "] encountered an error: " + cudaErrors;
 	}
+#endif !CUDA_ERROR_CHECK
 
-	// More careful checking. However, this will affect performance.
-	// Comment away if needed.
-	err = cudaDeviceSynchronize();
-	if (cudaSuccess != err)
+	response = cudaDeviceSynchronize();
+	if (response != cudaSuccess)
 	{
-		std::cerr << "\nCUDA device ID: " << deviceID
-			<< " encountered an error after sync in file '" << file
-			<< "' in line " << line
-			<< " : " << cudaGetErrorString(err) << ".\n";
-		exit(EXIT_FAILURE);
+		while (response != cudaSuccess)
+		{
+			if (!cudaErrors.empty()) cudaErrors += " <- ";
+			cudaErrors += cudaGetErrorString(response);
+			response = cudaGetLastError();
+		}
+		return "CUDA device ID [" + std::to_string(deviceID) + "] encountered an error: " + cudaErrors;
 	}
-#endif
-
-	return;
+	return "";
 }

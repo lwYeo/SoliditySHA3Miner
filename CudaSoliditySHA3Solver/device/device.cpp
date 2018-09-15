@@ -167,8 +167,28 @@ namespace CUDASolver
 	{
 		if (m_lastCompute != computeVersion)
 		{
-			m_block.x = (computeVersion > 500) ? Device::MAX_TPB_500 : Device::MAX_TPB_350;
 			m_lastCompute = computeVersion;
+			switch (computeVersion)
+			{
+			case 520:
+			case 610:
+			case 700:
+			case 720:
+			case 750:
+				m_block.x = 1024u;
+				break;
+			case 300:
+			case 320:
+			case 350:
+			case 370:
+			case 500:
+			case 530:
+			case 600:
+			case 620:
+			default:
+				m_block.x = (computeVersion >= 800) ? 1024u : 384u;
+				break;
+			}
 		}
 		return m_block;
 	}

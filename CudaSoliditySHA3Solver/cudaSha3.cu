@@ -2,14 +2,11 @@
 #include "cudaSolver.h"
 
 /*
-Author: Mikers, Azlehria, optimized by lwYeo
-Date: March 4 - July, 2018 for 0xbitcoin dev
-
-Hashburner Enhancements for COSMiC: LtTofu (Mag517)
-Date: April 24, 2018
-
-based off of https://github.com/Dunhili/SHA3-gpu-brute-force-cracker/blob/master/sha3.cu
-
+* Author: Mikers, Azlehria, lwYeo
+* Date: March 4 - September 2018 for 0xbitcoin dev
+*
+* based off of https://github.com/Dunhili/SHA3-gpu-brute-force-cracker/blob/master/sha3.cu
+*
 * Author: Brian Bowden
 * Date: 5/12/14
 *
@@ -23,31 +20,14 @@ typedef union
 	uint8_t		uint8[UINT64_LENGTH];
 } nonce_t;
 
-__constant__ uint_fast8_t const MOD5[24] =
+__constant__ int const mod5[8] =
 {
-	0u, 1u, 2u, 3u, 4u,
-	0u, 1u, 2u, 3u, 4u,
-	0u, 1u, 2u, 3u, 4u,
-	0u, 1u, 2u, 3u, 4u,
-	0u, 1u, 2u, 3u
+	0, 1, 2, 3, 4,
+	0, 1, 2
 };
 
 __constant__ uint64_t d_midstate[25];
 __constant__ uint64_t d_target[1];
-
-__device__ __forceinline__ nonce_t ROTL64(nonce_t const input, uint32_t const offset)
-{
-	nonce_t output;
-	output.uint64 = (input.uint64 << offset) ^ (input.uint64 >> (64u - offset));
-	return output;
-}
-
-__device__ __forceinline__ nonce_t ROTR64(nonce_t const input, uint32_t const offset)
-{
-	nonce_t output;
-	output.uint64 = (input.uint64 >> offset) ^ (input.uint64 << (64u - offset));
-	return output;
-}
 
 __device__ __forceinline__ nonce_t bswap_64(nonce_t const input)
 {
@@ -62,12 +42,22 @@ __device__ __forceinline__ nonce_t bswap_64(nonce_t const input)
 __device__ __forceinline__ nonce_t xor5(nonce_t const a, nonce_t const b, nonce_t const c, nonce_t const d, nonce_t const e)
 {
 	nonce_t output;
+#if __CUDA_ARCH__ >= 500
+	asm("{"
+		"  lop3.b32 %0, %2, %4, %6, 0x96;"
+		"  lop3.b32 %1, %3, %5, %7, 0x96;"
+		"  lop3.b32 %0, %0, %8, %10, 0x96;"
+		"  lop3.b32 %1, %1, %9, %11, 0x96;"
+		"}" : "=r"(output.uint2.x), "=r"(output.uint2.y)
+		: "r"(a.uint2.x), "r"(a.uint2.y), "r"(b.uint2.x), "r"(b.uint2.y), "r"(c.uint2.x), "r"(c.uint2.y), "r"(d.uint2.x), "r"(d.uint2.y), "r"(e.uint2.x), "r"(e.uint2.y));
+#else
 	asm("{"
 		"  xor.b64 %0, %1, %2;"
 		"  xor.b64 %0, %0, %3;"
 		"  xor.b64 %0, %0, %4;"
 		"  xor.b64 %0, %0, %5;"
 		"}" : "=l"(output.uint64) : "l"(a.uint64), "l"(b.uint64), "l"(c.uint64), "l"(d.uint64), "l"(e.uint64));
+#endif
 	return output;
 }
 
@@ -104,50 +94,52 @@ __device__ __forceinline__ nonce_t chi(nonce_t const a, nonce_t const b, nonce_t
 	return output;
 }
 
-// shortcut to rotation by 32 (flip halves), then rotate left by `mag`
-__device__ __forceinline__ nonce_t ROTLfrom32(nonce_t rtdby32, uint32_t const magnitude)
+__device__ __forceinline__ nonce_t rotl(nonce_t input, uint32_t const offset)
 {
+#if __CUDA_ARCH__ >= 320
 	asm("{"
-		"    .reg .b32 hi, lo, scr, mag;"
-		"    mov.b64 {lo,hi}, %0;"						// halves reversed since rotl'd by 32
-		"    mov.b32 mag, %1;"
-		"    shf.l.wrap.b32 scr, lo, hi, mag;"
-		"    shf.l.wrap.b32 lo, hi, lo, mag;"
-		"    mov.b64 %0, {scr,lo};"
-		"}" : "+l"(rtdby32.uint64) : "r"(magnitude));	// see if this is faster w/ uint2 .x and .y for saving shf results out
-	return rtdby32;										// return rotation from the rotation by 32
+		"  .reg .b32 tmp;"
+		"  shf.l.wrap.b32 tmp, %1, %0, %2;"
+		"  shf.l.wrap.b32 %1, %0, %1, %2;"
+		"  mov.b32 %0, tmp;"
+		"}" : "+r"(input.uint2.x), "+r"(input.uint2.y) : "r"(offset));
+#else
+	input.uint64 = (input.uint64 << offset) ^ (input.uint64 >> (64u - offset));
+#endif
+	return input;
 }
 
-// shortcut to rotation by 32 (flip halves), then rotate right by `mag`
-__device__ __forceinline__ nonce_t ROTRfrom32(nonce_t rtdby32, uint32_t const magnitude)
+__device__ __forceinline__ nonce_t rotr(nonce_t input, uint32_t const offset)
 {
+#if __CUDA_ARCH__ >= 320
 	asm("{"
-		"    .reg .b32 hi, lo, scr, mag;"
-		"    mov.b64 {lo,hi}, %0;"						// halves reversed since rotl'd by 32
-		"    mov.b32 mag, %1;"
-		"    shf.r.wrap.b32 scr, hi, lo, mag;"
-		"    shf.r.wrap.b32 lo, lo, hi, mag;"
-		"    mov.b64 %0, {scr,lo};"
-		"}" : "+l"(rtdby32.uint64) : "r"(magnitude));	// see if this is faster w/ uint2 .x and .y for saving shf results out
-	return rtdby32;										// return rotation from the rotation by 32
+		"  .reg .b32 tmp;"
+		"  shf.r.wrap.b32 tmp, %0, %1, %2;"
+		"  shf.r.wrap.b32 %1, %1, %0, %2;"
+		"  mov.b32 %0, tmp;"
+		"}" : "+r"(input.uint2.x), "+r"(input.uint2.y) : "r"(offset));
+#else
+	input.uint64 = (input.uint64 >> offset) ^ (input.uint64 << (64u - offset));
+#endif
+	return input;
 }
 
-__global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restrict__ solutionCount, uint64_t const startPosition)
+__global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restrict__ solutionCount, uint64_t startPosition)
 {
 	nonce_t nonce, state[25], C[5], D[5], n[11];
-	nonce.uint64 = startPosition + (blockDim.x * blockIdx.x + threadIdx.x);
+	nonce.uint64 = blockDim.x * blockIdx.x + threadIdx.x + startPosition;
 
-	n[0] = ROTL64(nonce, 7);
-	n[1] = ROTL64(n[0], 1);
-	n[2] = ROTL64(n[1], 6);
-	n[3] = ROTL64(n[2], 2);
-	n[4] = ROTL64(n[3], 4);
-	n[5] = ROTL64(n[4], 7);
-	n[6] = ROTL64(n[5], 12);
-	n[7] = ROTL64(n[6], 5);
-	n[8] = ROTL64(n[7], 11);
-	n[9] = ROTL64(n[8], 7);
-	n[10] = ROTL64(n[9], 1);
+	n[0] = rotl(nonce, 7);
+	n[1] = rotl(n[0], 1);
+	n[2] = rotl(n[1], 6);
+	n[3] = rotl(n[2], 2);
+	n[4] = rotl(n[3], 4);
+	n[5] = rotl(n[4], 7);
+	n[6] = rotl(n[5], 12);
+	n[7] = rotl(n[6], 5);
+	n[8] = rotl(n[7], 11);
+	n[9] = rotl(n[8], 7);
+	n[10] = rotl(n[9], 1);
 
 	C[0].uint64 = d_midstate[0];
 	C[1].uint64 = d_midstate[1];
@@ -205,9 +197,9 @@ __global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restr
 	state[24] = chi(C[4], C[0], C[1]);
 
 #if __CUDA_ARCH__ >= 350
-#  pragma unroll
+#	pragma unroll
 #endif
-	for (uint_fast8_t i{ 1u }; i < 23u; ++i)
+	for (int i{ 1 }; i < 23; ++i)
 	{
 		C[1] = xor5(state[0], state[5], state[10], state[15], state[20]);
 		C[2] = xor5(state[1], state[6], state[11], state[16], state[21]);
@@ -216,67 +208,57 @@ __global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restr
 		C[0] = xor5(state[4], state[9], state[14], state[19], state[24]);
 
 #if __CUDA_ARCH__ >= 350
-		for (uint_fast8_t x{ 0u }; x < 5u; ++x)
+#	pragma unroll
+#endif
+		for (int x{ 0 }; x < 5; ++x)
 		{
-			D[x] = ROTL64(C[MOD5[x + 2]], 1);
+#if __CUDA_ARCH__ >= 350
+			D[x] = rotl(C[mod5[x + 2]], 1);
 			state[x] = xor3(state[x], D[x], C[x]);
 			state[x + 5] = xor3(state[x + 5], D[x], C[x]);
 			state[x + 10] = xor3(state[x + 10], D[x], C[x]);
 			state[x + 15] = xor3(state[x + 15], D[x], C[x]);
 			state[x + 20] = xor3(state[x + 20], D[x], C[x]);
-		}
 #else
-		for (uint_fast8_t x{ 0u }; x < 5u; ++x)
-		{
-			D[x].uint64 = ROTL64(C[MOD5[x + 2]], 1).uint64 ^ C[x].uint64;
+			D[x].uint64 = rotl(C[mod5[x + 2]], 1).uint64 ^ C[x].uint64;
 			state[x].uint64 = state[x].uint64 ^ D[x].uint64;
 			state[x + 5].uint64 = state[x + 5].uint64 ^ D[x].uint64;
 			state[x + 10].uint64 = state[x + 10].uint64 ^ D[x].uint64;
 			state[x + 15].uint64 = state[x + 15].uint64 ^ D[x].uint64;
 			state[x + 20].uint64 = state[x + 20].uint64 ^ D[x].uint64;
-		}
 #endif
+		}
 
 		C[0] = state[1];
-		state[1] = ROTR64(state[6], 20);
-		state[6] = ROTL64(state[9], 20);
-		state[9] = ROTR64(state[22], 3);
-		state[22] = ROTR64(state[14], 25);
-		state[14] = ROTL64(state[20], 18);
-		state[20] = ROTR64(state[2], 2);
-		state[2] = ROTR64(state[12], 21);
-		state[12] = ROTL64(state[13], 25);
-		state[13] = ROTL64(state[19], 8);
-		state[19] = ROTR64(state[23], 8);
-		state[23] = ROTR64(state[15], 23);
+		state[1] = rotr(state[6], 20);
+		state[6] = rotl(state[9], 20);
+		state[9] = rotr(state[22], 3);
+		state[22] = rotr(state[14], 25);
+		state[14] = rotl(state[20], 18);
+		state[20] = rotr(state[2], 2);
+		state[2] = rotr(state[12], 21);
+		state[12] = rotl(state[13], 25);
+		state[13] = rotl(state[19], 8);
+		state[19] = rotr(state[23], 8);
+		state[23] = rotr(state[15], 23);
+		state[15] = rotl(state[4], 27);
+		state[4] = rotl(state[24], 14);
+		state[24] = rotl(state[21], 2);
+		state[21] = rotr(state[8], 9);
+		state[8] = rotr(state[16], 19);
+		state[16] = rotr(state[5], 28);
+		state[5] = rotl(state[3], 28);
+		state[3] = rotl(state[18], 21);
+		state[18] = rotl(state[17], 15);
+		state[17] = rotl(state[11], 10);
+		state[11] = rotl(state[7], 6);
+		state[7] = rotl(state[10], 3);
+		state[10] = rotl(C[0], 1);
 
-#if __CUDA_ARCH__ >= 320
-		state[15] = ROTRfrom32(state[4], 5);
-#else
-		state[15] = ROTL64(state[4], 27);
+#if __CUDA_ARCH__ >= 350
+#	pragma unroll
 #endif
-
-		state[4] = ROTL64(state[24], 14);
-		state[24] = ROTL64(state[21], 2);
-		state[21] = ROTR64(state[8], 9);
-		state[8] = ROTR64(state[16], 19);
-
-#if __CUDA_ARCH__ >= 320
-		state[16] = ROTLfrom32(state[5], 4);
-		state[5] = ROTRfrom32(state[3], 4);
-#else
-		state[16] = ROTR64(state[5], 28);
-		state[5] = ROTL64(state[3], 28);
-#endif
-
-		state[3] = ROTL64(state[18], 21);
-		state[18] = ROTL64(state[17], 15);
-		state[17] = ROTL64(state[11], 10);
-		state[11] = ROTL64(state[7], 6);
-		state[7] = ROTL64(state[10], 3);
-		state[10] = ROTL64(C[0], 1);
-
-		for (uint_fast8_t x{ 0u }; x < 25u; x += 5u)
+		for (int x{ 0 }; x < 25; x += 5)
 		{
 			C[0] = state[x];
 			C[1] = state[x + 1];
@@ -299,15 +281,15 @@ __global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restr
 	C[4] = xor5(state[3], state[8], state[13], state[18], state[23]);
 	C[0] = xor5(state[4], state[9], state[14], state[19], state[24]);
 
-	D[0] = ROTL64(C[2], 1);
-	D[1] = ROTL64(C[3], 1);
-	D[2] = ROTL64(C[4], 1);
+	D[0] = rotl(C[2], 1);
+	D[1] = rotl(C[3], 1);
+	D[2] = rotl(C[4], 1);
 
 	state[0] = xor3(state[0], D[0], C[0]);
 	state[6] = xor3(state[6], D[1], C[1]);
 	state[12] = xor3(state[12], D[2], C[2]);
-	state[6] = ROTR64(state[6], 20);
-	state[12] = ROTR64(state[12], 21);
+	state[6] = rotr(state[6], 20);
+	state[12] = rotr(state[12], 21);
 
 	state[0].uint64 = chi(state[0], state[6], state[12]).uint64 ^ Keccak_f1600_RC[23];
 
@@ -339,13 +321,16 @@ namespace CUDASolver
 
 	void CudaSolver::findSolution(int const deviceID)
 	{
+		std::string errorMessage;
 		auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
 
 		if (!device->initialized) return;
 
 		while (!(device->isNewTarget || device->isNewMessage)) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
 
-		CudaSafeCall(cudaSetDevice(device->deviceID));
+		errorMessage = CudaSafeCall(cudaSetDevice(device->deviceID));
+		if (!errorMessage.empty())
+			onMessage(device->deviceID, "Error", errorMessage);
 
 		char *c_currentChallenge = (char *)malloc(s_challenge.size());
 		#ifdef __linux__
@@ -359,7 +344,7 @@ namespace CUDASolver
 
 		device->mining = true;
 		device->hashCount.store(0ull);
-		device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(500); // reduce excessive high hashrate reporting at start
+		device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(1000); // reduce excessive high hashrate reporting at start
 		do
 		{
 			while (m_pause)
@@ -374,21 +359,10 @@ namespace CUDASolver
 
 			hashMidstate<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
 
-			CudaCheckError();
-
-			cudaError_t response = cudaDeviceSynchronize();
-			if (response != cudaSuccess)
+			errorMessage = CudaSyncAndCheckError();
+			if (!errorMessage.empty())
 			{
-				std::string cudaErrors;
-				cudaError_t lastError = cudaGetLastError();
-				while (lastError != cudaSuccess)
-				{
-					if (!cudaErrors.empty()) cudaErrors += " <- ";
-					cudaErrors += cudaGetErrorString(lastError);
-					lastError = cudaGetLastError();
-				}
-				onMessage(device->deviceID, "Error", "Kernel launch failed: " + cudaErrors);
-
+				onMessage(device->deviceID, "Error", "Kernel launch failed: " + errorMessage);
 				device->mining = false;
 				break;
 			}
@@ -415,9 +389,15 @@ namespace CUDASolver
 		onMessage(device->deviceID, "Info", "Stop mining...");
 		device->hashCount.store(0ull);
 
-		CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
-		CudaSafeCall(cudaFreeHost(device->h_Solutions));
-		CudaSafeCall(cudaDeviceReset());
+		errorMessage = CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
+		if (!errorMessage.empty())
+			onMessage(device->deviceID, "Error", errorMessage);
+		errorMessage = CudaSafeCall(cudaFreeHost(device->h_Solutions));
+		if (!errorMessage.empty())
+			onMessage(device->deviceID, "Error", errorMessage);
+		errorMessage = CudaSafeCall(cudaDeviceReset());
+		if (!errorMessage.empty())
+			onMessage(device->deviceID, "Error", errorMessage);
 
 		device->initialized = false;
 		onMessage(device->deviceID, "Info", "Mining stopped.");

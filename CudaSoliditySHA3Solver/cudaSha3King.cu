@@ -197,13 +197,16 @@ namespace CUDASolver
 
 	void CudaSolver::findSolutionKing(int const deviceID)
 	{
+		std::string errorMessage;
 		auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
 
 		if (!device->initialized) return;
 
 		while (!(device->isNewTarget || device->isNewMessage)) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
 
-		CudaSafeCall(cudaSetDevice(device->deviceID));
+		errorMessage = CudaSafeCall(cudaSetDevice(device->deviceID));
+		if (!errorMessage.empty())
+			onMessage(device->deviceID, "Error", errorMessage);
 
 		char *c_currentChallenge = (char *)malloc(s_challenge.size());
 		#ifdef __linux__
@@ -232,21 +235,10 @@ namespace CUDASolver
 
 			hashMessage<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
 
-			CudaCheckError();
-
-			cudaError_t response = cudaDeviceSynchronize();
-			if (response != cudaSuccess)
+			errorMessage = CudaSyncAndCheckError();
+			if (!errorMessage.empty())
 			{
-				std::string cudaErrors;
-				cudaError_t lastError = cudaGetLastError();
-				while (lastError != cudaSuccess)
-				{
-					if (!cudaErrors.empty()) cudaErrors += " <- ";
-					cudaErrors += cudaGetErrorString(lastError);
-					lastError = cudaGetLastError();
-				}
-				onMessage(device->deviceID, "Error", "Kernel launch failed: " + cudaErrors);
-
+				onMessage(device->deviceID, "Error", "Kernel launch failed: " + errorMessage);
 				device->mining = false;
 				break;
 			}
@@ -273,9 +265,15 @@ namespace CUDASolver
 		onMessage(device->deviceID, "Info", "Stop mining...");
 		device->hashCount.store(0ull);
 
-		CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
-		CudaSafeCall(cudaFreeHost(device->h_Solutions));
-		CudaSafeCall(cudaDeviceReset());
+		errorMessage = CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
+		if (!errorMessage.empty())
+			onMessage(device->deviceID, "Error", errorMessage);
+		errorMessage = CudaSafeCall(cudaFreeHost(device->h_Solutions));
+		if (!errorMessage.empty())
+			onMessage(device->deviceID, "Error", errorMessage);
+		errorMessage = CudaSafeCall(cudaDeviceReset());
+		if (!errorMessage.empty())
+			onMessage(device->deviceID, "Error", errorMessage);
 
 		device->initialized = false;
 		onMessage(device->deviceID, "Info", "Mining stopped.");

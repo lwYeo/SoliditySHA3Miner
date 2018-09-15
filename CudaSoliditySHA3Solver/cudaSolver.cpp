@@ -185,7 +185,11 @@ namespace CUDASolver
 			}
 			else
 			{
-				if (deviceName.find("2080") != std::string::npos || deviceName.find("2070") != std::string::npos || deviceName.find("1080") != std::string::npos
+				if (deviceName.find("2080") != std::string::npos || deviceName.find("2070") != std::string::npos
+					|| deviceName.find("1080 TI") != std::string::npos || deviceName.find("1080TI") != std::string::npos)
+					defaultIntensity = 29.0f;
+
+				else if (deviceName.find("1080") != std::string::npos
 					|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
 					defaultIntensity = 29.01f;
 

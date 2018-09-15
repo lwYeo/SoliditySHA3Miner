@@ -10,14 +10,10 @@
 
 namespace CUDASolver
 {
-#define DEFALUT_INTENSITY 25.0f
+	constexpr float DEFALUT_INTENSITY{ 25.0f };
 
 	class Device
 	{
-	private:
-		static uint32_t constexpr MAX_TPB_500{ 1024u };
-		static uint32_t constexpr MAX_TPB_350{ 384u };
-
 	public:
 		int deviceID;
 		std::string name;
