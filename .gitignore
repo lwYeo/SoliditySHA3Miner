@@ -2,7 +2,6 @@
 obj/
 Debug/
 Release/
-Build/
 build/
 *.pdb
 *.asm
