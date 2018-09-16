@@ -614,9 +614,9 @@ namespace SoliditySHA3Miner
             {
                 if (allowCUDA && (cudaDevices == null || !cudaDevices.Any()) && args.All(a => !a.StartsWith("cudaDevice")))
                 {
-                    Print("[INFO] CUDA device not specified, default assign all CUDA devices.");
+                    Print("CUDA [INFO] Device not specified, default assign all CUDA devices.");
                     var cudaDeviceCount = Miner.CUDA.GetDeviceCount(out string cudaCountErrorMessage);
-                    if (!string.IsNullOrWhiteSpace(cudaCountErrorMessage)) Print(cudaCountErrorMessage);
+                    if (!string.IsNullOrWhiteSpace(cudaCountErrorMessage)) Print("CUDA [ERROR] " + cudaCountErrorMessage);
 
                     if (cudaDeviceCount > 0)
                     {
@@ -628,7 +628,7 @@ namespace SoliditySHA3Miner
                             cudaDevices[i].Name = Miner.CUDA.GetDeviceName(i, out string errorMessage);
                         }
                     }
-                    else Print("[WARN] CUDA device not found.");
+                    else Print("CUDA [WARN] Device not found.");
                 }
                 
                 if (allowAMD || allowIntel)
@@ -640,17 +640,17 @@ namespace SoliditySHA3Miner
                         if (!string.IsNullOrWhiteSpace(openCLInitErrorMessage))
                         {
                             if (openCLInitErrorMessage.Contains("Unable to load shared library"))
-                                Print("[WARN] OpenCL not installed.");
+                                Print("OpenCL [WARN] OpenCL not installed.");
                             else
-                                Print("[ERROR] " + openCLInitErrorMessage);
+                                Print("OpenCL [ERROR] " + openCLInitErrorMessage);
                         }
                         else
                         {
                             if (allowIntel)
                             {
-                                Print("[INFO] Assign all Intel(R) OpenCL devices.");
+                                Print("OpenCL [INFO] Assign all Intel(R) OpenCL devices.");
                                 var deviceCount = Miner.OpenCL.GetDeviceCount("Intel(R) OpenCL", out var openCLerrorMessage);
-                                if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Print("[WARN] " + openCLerrorMessage);
+                                if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Print("OpenCL [WARN] " + openCLerrorMessage);
                                 else
                                 {
                                     var tempIntelList = new List<Miner.Device>();
@@ -659,7 +659,7 @@ namespace SoliditySHA3Miner
                                         var tempName = Miner.OpenCL.GetDeviceName("Intel(R) OpenCL", i, out var openCLdeviceErrorMessage);
                                         if (!string.IsNullOrWhiteSpace(openCLdeviceErrorMessage))
                                         {
-                                            Print("[WARN] " + openCLdeviceErrorMessage);
+                                            Print("OpenCL [WARN] " + openCLdeviceErrorMessage);
                                             continue;
                                         }
 
@@ -677,10 +677,10 @@ namespace SoliditySHA3Miner
 
                             if (allowAMD && (amdDevices == null || !amdDevices.Any()) && args.All(a => !a.StartsWith("openclDevices")))
                             {
-                                Print("[INFO] OpenCL device not specified, default assign all AMD APP devices.");
+                                Print("OpenCL [INFO] Device not specified, default assign all AMD APP devices.");
 
                                 var deviceCount = Miner.OpenCL.GetDeviceCount("AMD Accelerated Parallel Processing", out var openCLerrorMessage);
-                                if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Print("[WARN] " + openCLerrorMessage);
+                                if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Print("OpenCL [WARN] " + openCLerrorMessage);
                                 else
                                 {
                                     var tempAmdList = new List<Miner.Device>();
@@ -689,7 +689,7 @@ namespace SoliditySHA3Miner
                                         var tempName = Miner.OpenCL.GetDeviceName("AMD Accelerated Parallel Processing", i, out var openCLdeviceErrorMessage);
                                         if (!string.IsNullOrWhiteSpace(openCLdeviceErrorMessage))
                                         {
-                                            Print("[WARN] " + openCLdeviceErrorMessage);
+                                            Print("OpenCL [WARN] " + openCLdeviceErrorMessage);
                                             continue;
                                         }
 
@@ -708,7 +708,7 @@ namespace SoliditySHA3Miner
                     }
                     catch (DllNotFoundException)
                     {
-                        Print("[WARN] OpenCL not found.");
+                        Print("OpenCL [WARN] OpenCL not found.");
                     }
                     catch (Exception ex)
                     {
