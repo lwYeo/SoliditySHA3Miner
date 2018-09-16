@@ -1,0 +1,27 @@
+### Before start mining on HiveOS
+
+1) Ensure CUDA 9.2 (Nvidia driver 396) is installed
+ (Referenced from https://medium.com/@overcookedpanda/installing-the-latest-nvidia-drivers-on-hiveos-fe302f214570)
+
+1a) Run the following commands (root/sudo required)
+ miner stop
+ killall xinit
+ mkdir /temp
+ export TMPDIR=/temp
+ cd /hive-drivers-pack/
+ wget http://us.download.nvidia.com/XFree86/Linux-x86_64/396.24/NVIDIA-Linux-x86_64-396.24.run
+ chmod +x NVIDIA-Linux-x86_64–396.24.run
+ ./NVIDIA-Linux-x86_64–396.24.run
+ 
+1b) #Select 'Yes' to all, then run the following commands (root/sudo required)
+ reboot
+ 
+1c) After reboot, run the following commands (root/sudo required)
+ apt-get update
+ apt-get install nvidia-settings -y
+ nvidia-xconfig --allow-empty-initial-configuration --enable-all-gpus --cool-bits=28 --separate-x-screens
+
+2) Go to the extracted miner folder and run the following command to install miner dependancy
+ su install-deps.sh
+
+3) Follow 'GuideForPoolMining.txt' or 'GuideForSoloMining.txt' for essential miner setup
