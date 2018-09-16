@@ -30,14 +30,14 @@ namespace CUDASolver
 		int deviceCount = 0;
 		cudaError_t response = cudaGetDeviceCount(&deviceCount);
 
-		if (response != cudaError::cudaSuccess) errorMessage = getCudaErrorString(response);
+		if (response != cudaError::cudaSuccess && response != cudaError::cudaErrorUnknown) errorMessage = getCudaErrorString(response);
 		else if (deviceCount < 1)
 		{
 			int runtimeVersion = 0;
 			response = cudaRuntimeGetVersion(&runtimeVersion);
 
 			errorMessage = std::string("There are no available device(s) that support CUDA (requires: 9.2, current: "
-							+ std::to_string(runtimeVersion / 1000) + std::to_string((runtimeVersion % 100) / 10) + ")");
+							+ std::to_string(runtimeVersion / 1000) + "." + std::to_string((runtimeVersion % 100) / 10) + ")");
 		}
 
 		return deviceCount;
