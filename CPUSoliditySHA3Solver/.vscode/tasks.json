@@ -6,7 +6,7 @@
         {
             "label": "Clean build directory",
             "type": "shell",
-            "command": "rm -r build"
+            "command": "rm -r -f build"
         },
         {
             "label": "Create build directory",
