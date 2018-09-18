@@ -80,9 +80,9 @@ namespace CUDASolver
 		instance->isSubmitStale = submitStale;
 	}
 
-	void AssignDevice(CudaSolver *instance, const int deviceID, float *intensity)
+	void AssignDevice(CudaSolver *instance, const int deviceID, unsigned int *pciBusID, float *intensity)
 	{
-		instance->assignDevice(deviceID, *intensity);
+		instance->assignDevice(deviceID, *pciBusID, *intensity);
 	}
 
 	void IsAssigned(CudaSolver *instance, bool *isAssigned)

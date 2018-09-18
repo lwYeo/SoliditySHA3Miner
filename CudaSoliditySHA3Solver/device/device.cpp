@@ -1,4 +1,5 @@
 #include "device.h"
+#include <string>
 
 namespace CUDASolver
 {
@@ -28,6 +29,11 @@ namespace CUDASolver
 			pciBusID = strtoul(std::string{ pciBusID_s }.substr(5, 2).c_str(), NULL, 16);
 			m_api.assignPciBusID(pciBusID);
 		}
+	}
+	
+	uint32_t Device::getPciBusID()
+	{
+		return (uint32_t)m_api.deviceBusID;
 	}
 
 	bool Device::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage)

@@ -97,7 +97,7 @@ namespace CUDASolver
 		void setMessageCallback(MessageCallback messageCallback);
 		void setSolutionCallback(SolutionCallback solutionCallback);
 
-		bool assignDevice(int const deviceID, float &intensity);
+		bool assignDevice(int const deviceID, uint32_t &pciBusID, float &intensity);
 		bool isAssigned();
 		bool isAnyInitialised();
 		bool isMining();

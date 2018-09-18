@@ -146,7 +146,7 @@ namespace CUDASolver
 		m_solutionCallback = solutionCallback;
 	}
 
-	bool CudaSolver::assignDevice(int const deviceID, float &intensity)
+	bool CudaSolver::assignDevice(int const deviceID, uint32_t &pciBusID, float &intensity)
 	{
 		onMessage(deviceID, "Info", "Assigning device...");
 
@@ -167,6 +167,7 @@ namespace CUDASolver
 		assignDevice->name = deviceProp.name;
 		assignDevice->computeVersion = deviceProp.major * 100 + deviceProp.minor * 10;
 
+		pciBusID = assignDevice->getPciBusID();
 		std::string deviceName{ assignDevice->name };
 		std::transform(deviceName.begin(), deviceName.end(), deviceName.begin(), ::toupper);
 

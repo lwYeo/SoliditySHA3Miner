@@ -277,7 +277,6 @@ private:
 	static NvU32												gpuCount;
 
 	NvPhysicalGpuHandle deviceHandle;
-	NvU32 deviceBusID;
 
 public:
 	static bool foundNvAPI64();
@@ -285,6 +284,7 @@ public:
 	static void initialize();
 	static void unload();
 
+	NvU32 deviceBusID;
 	void assignPciBusID(uint32_t pciBusID);
 
 	NvAPI_Status getErrorMessage(NvAPI_Status status, std::string *message);

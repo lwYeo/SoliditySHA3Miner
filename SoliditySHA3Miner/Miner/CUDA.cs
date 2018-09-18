@@ -68,7 +68,7 @@ namespace SoliditySHA3Miner.Miner
             public static extern void SetSubmitStale(IntPtr instance, bool submitStale);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void AssignDevice(IntPtr instance, int deviceID, ref float intensity);
+            public static extern void AssignDevice(IntPtr instance, int deviceID, ref uint pciBusID, ref float intensity);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void IsAssigned(IntPtr instance, ref bool isAssigned);
@@ -236,6 +236,8 @@ namespace SoliditySHA3Miner.Miner
 
         public bool HasMonitoringAPI { get; private set; }
 
+        public bool UseNvSMI { get; private set; }
+
         public bool IsAnyInitialised
         {
             get
@@ -365,11 +367,18 @@ namespace SoliditySHA3Miner.Miner
 
                 var hasNvAPI64 = false;
                 Solver.FoundNvAPI64(ref hasNvAPI64);
-                HasMonitoringAPI = hasNvAPI64;
+
+                if (!hasNvAPI64) Program.Print("CUDA [WARN] NvAPI64 library not found.");
+                
+                UseNvSMI = API.NvSMI.FoundNvSMI();
+
+                if (!UseNvSMI) Program.Print("CUDA [WARN] NvSMI not found.");
+
+                HasMonitoringAPI = hasNvAPI64 | UseNvSMI;
+
+                if (!HasMonitoringAPI) Program.Print("CUDA [WARN] GPU monitoring not available.");
 
                 NetworkInterface.OnGetTotalHashrate += NetworkInterface_OnGetTotalHashrate;
-
-                if (!HasMonitoringAPI) Program.Print("[WARN] NvAPI64 library not found.");
 
                 m_instance = Solver.GetInstance();
                 unsafe
@@ -397,7 +406,7 @@ namespace SoliditySHA3Miner.Miner
 
                 for (int i = 0; i < Devices.Length; i++)
                     if (Devices[i].DeviceID > -1)
-                        Solver.AssignDevice(m_instance, Devices[i].DeviceID, ref Devices[i].Intensity);
+                        Solver.AssignDevice(m_instance, Devices[i].DeviceID, ref Devices[i].PciBusID, ref Devices[i].Intensity);
             }
             catch (Exception ex)
             {
@@ -449,7 +458,10 @@ namespace SoliditySHA3Miner.Miner
                 foreach (var device in Devices)
                     if (device.DeviceID > -1)
                     {
-                        Solver.GetDeviceCurrentCoreClock(m_instance, device.DeviceID, ref coreClock);
+                        if (UseNvSMI)
+                            coreClock = API.NvSMI.GetDeviceCurrentCoreClock(device.PciBusID);
+                        else
+                            Solver.GetDeviceCurrentCoreClock(m_instance, device.DeviceID, ref coreClock);
                         coreClockString.AppendFormat(" {0}MHz", coreClock);
                     }
                 Program.Print(coreClockString.ToString());
@@ -458,20 +470,26 @@ namespace SoliditySHA3Miner.Miner
                 foreach (var device in Devices)
                     if (device.DeviceID > -1)
                     {
-                        Solver.GetDeviceCurrentTemperature(m_instance, device.DeviceID, ref temperature);
+                        if (UseNvSMI)
+                            temperature = API.NvSMI.GetDeviceCurrentTemperature(device.PciBusID);
+                        else
+                            Solver.GetDeviceCurrentTemperature(m_instance, device.DeviceID, ref temperature);
                         temperatureString.AppendFormat(" {0}C", temperature);
                     }
                 Program.Print(temperatureString.ToString());
-
-                fanTachometerRpmString.Append("CUDA [INFO] Fan tachometers:");
-                foreach (var device in Devices)
-                    if (device.DeviceID > -1)
+                
+                if (!UseNvSMI)
+                {
+                    fanTachometerRpmString.Append("CUDA [INFO] Fan tachometers:");
+                    foreach (var device in Devices)
                         if (device.DeviceID > -1)
-                        {
-                            Solver.GetDeviceCurrentFanTachometerRPM(m_instance, device.DeviceID, ref tachometerRPM);
-                            fanTachometerRpmString.AppendFormat(" {0}RPM", tachometerRPM);
-                        }
-                Program.Print(fanTachometerRpmString.ToString());
+                            if (device.DeviceID > -1)
+                            {
+                                Solver.GetDeviceCurrentFanTachometerRPM(m_instance, device.DeviceID, ref tachometerRPM);
+                                fanTachometerRpmString.AppendFormat(" {0}RPM", tachometerRPM);
+                            }
+                    Program.Print(fanTachometerRpmString.ToString());
+                }
             }
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);

@@ -55,6 +55,7 @@ namespace CUDASolver
 
 	public:
 		Device(int deviceID);
+		uint32_t getPciBusID();
 
 		bool getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage);
 		bool getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage);

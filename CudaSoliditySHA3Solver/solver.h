@@ -43,7 +43,7 @@ namespace CUDASolver
 
 		EXPORT void __CDECL__ SetSubmitStale(CudaSolver *instance, const bool submitStale);
 
-		EXPORT void __CDECL__ AssignDevice(CudaSolver *instance, const int deviceID, float *intensity);
+		EXPORT void __CDECL__ AssignDevice(CudaSolver *instance, const int deviceID, unsigned int *pciBusID, float *intensity);
 
 		EXPORT void __CDECL__ IsAssigned(CudaSolver *instance, bool *isAssigned);
 
