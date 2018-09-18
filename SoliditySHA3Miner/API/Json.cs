@@ -138,7 +138,17 @@ namespace SoliditySHA3Miner.API
 
                 api.EffectiveHashRate = (float)m_miners.Select(m => m.NetworkInterface).
                                                         FirstOrDefault(m => m != null)?.GetEffectiveHashrate() / divisor;
+
                 api.TotalHashRate = totalHashRate / divisor;
+                
+                api.LatencyMS = (int)m_miners.Select(m => m.NetworkInterface).
+                                              FirstOrDefault(m => m != null)?.LastLatency;
+
+                api.Uptime = (long)(DateTime.Now - Program.LaunchTime).TotalSeconds;
+
+                api.RejectedShares = m_miners.Select(m => m.NetworkInterface).Distinct().Sum(i => (long)(i.RejectedShares));
+
+                api.AcceptedShares = m_miners.Select(m => m.NetworkInterface).Distinct().Sum(i => (long)(i.SubmittedShares)) - api.RejectedShares;
 
                 foreach (var miner in m_miners)
                 {
@@ -162,7 +172,6 @@ namespace SoliditySHA3Miner.API
                                             DeviceID = device.DeviceID,
                                             ModelName = device.Name,
                                             HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
-                                            LatencyMS = miner.NetworkInterface.LastLatency,
                                             HasMonitoringAPI = miner.HasMonitoringAPI,
                                             SettingIntensity = device.Intensity
                                         };
@@ -255,7 +264,6 @@ namespace SoliditySHA3Miner.API
                                             DeviceID = device.DeviceID,
                                             ModelName = device.Name,
                                             HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
-                                            LatencyMS = miner.NetworkInterface.LastLatency,
                                             HasMonitoringAPI = miner.HasMonitoringAPI,
                                             Platform = device.Platform,
                                             SettingIntensity = device.Intensity
@@ -305,7 +313,6 @@ namespace SoliditySHA3Miner.API
                                         DeviceID = device.DeviceID,
                                         ModelName = device.Name,
                                         HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
-                                        LatencyMS = miner.NetworkInterface.LastLatency,
                                         HasMonitoringAPI = miner.HasMonitoringAPI,
 
                                         Platform = device.Platform,
@@ -322,7 +329,6 @@ namespace SoliditySHA3Miner.API
                                         HashRate = miner.GetHashrateByDevice(device.Platform, (device.Type == "CPU")
                                                                                      ? Array.IndexOf(miner.Devices, device)
                                                                                      : device.DeviceID) / divisor,
-                                        LatencyMS = miner.NetworkInterface.LastLatency,
                                         HasMonitoringAPI = miner.HasMonitoringAPI
                                     };
                                     break;
@@ -355,6 +361,10 @@ namespace SoliditySHA3Miner.API
             public float EffectiveHashRate { get; set; }
             public float TotalHashRate { get; set; }
             public string HashRateUnit { get; set; }
+            public int LatencyMS { get; set; }
+            public long Uptime { get; set; }
+            public long AcceptedShares { get; set; }
+            public long RejectedShares { get; set; }
             public List<Miner> Miners { get; set; }
 
             public JsonAPI() => Miners = new List<Miner>();
@@ -365,7 +375,6 @@ namespace SoliditySHA3Miner.API
                 public int DeviceID { get; set; }
                 public string ModelName { get; set; }
                 public float HashRate { get; set; }
-                public int LatencyMS { get; set; }
                 public bool HasMonitoringAPI { get; set; }
             }
 
