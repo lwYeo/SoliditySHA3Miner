@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 rm -f packages-microsoft-prod.deb
 
 wget https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb

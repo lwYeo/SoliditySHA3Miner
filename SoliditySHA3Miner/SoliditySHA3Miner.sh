@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 command -v dotnet >/dev/null 2>&1 ||
 {
  echo >&2 ".NET Core is not found or not installed,"
@@ -5,4 +7,7 @@ command -v dotnet >/dev/null 2>&1 ||
  read -p "Press any key to continue...";
  exit 1;
 }
-dotnet SoliditySHA3Miner.dll
+while : ; do
+  dotnet SoliditySHA3Miner.dll;
+  [[ $? -eq 22 ]] || break
+done

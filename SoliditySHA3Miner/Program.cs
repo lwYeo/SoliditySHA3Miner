@@ -124,10 +124,12 @@ namespace SoliditySHA3Miner
                 Console.WriteLine(message);
 
                 if (message.Contains("Mining stopped")) m_manualResetEvent.Set();
+                if (message.Contains("Kernel launch failed")) m_isKernelLaunchFailed = true;
             });
         }
 
         private static ManualResetEvent m_manualResetEvent = new ManualResetEvent(false);
+        private static bool m_isKernelLaunchFailed;
         private static System.Timers.Timer m_waitCheckTimer;
         private static Miner.CPU m_cpuMiner;
         private static Miner.CUDA m_cudaMiner;
@@ -330,6 +332,11 @@ namespace SoliditySHA3Miner
 
             API.Ccminer.StopListening();
             m_waitCheckTimer.Stop();
+
+            if (m_isKernelLaunchFailed)
+                Environment.Exit(22);
+            else
+                Environment.Exit(0);
         }
     }
 }

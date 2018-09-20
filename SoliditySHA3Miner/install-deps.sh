@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 rm -f packages-microsoft-prod.deb
 
 version=$(lsb_release -sr)

@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 command -v dotnet >/dev/null 2>&1 ||
 {
  echo >&2 ".NET Core is not found or not installed,"
