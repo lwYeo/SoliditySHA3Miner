@@ -10,5 +10,9 @@ echo download and install from https://www.microsoft.com/net/download/windows/ru
 goto end
 
 :dotNetFound
+:startMiner
 dotnet SoliditySHA3Miner.dll
+if %errorlevel% EQU 22 (
+  goto startMiner
+)
 pause
