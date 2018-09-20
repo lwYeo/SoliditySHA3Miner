@@ -33,7 +33,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly ulong EFFECTIVE_HASHRATE_CONST = (ulong)Math.Pow(2, 22);
 
         private const int MAX_TIMEOUT = 10;
-        private const string DEFAULT_WEB3_API = Defaults.InfuraAPI_mainnet;
+        private const string DEFAULT_WEB3_API = Config.Defaults.InfuraAPI_mainnet;
         private const int MAX_SUBMIT_DTM_COUNT = 50;
         private readonly List<DateTime> m_submitDateTimeList;
 
@@ -79,7 +79,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (string.IsNullOrWhiteSpace(contractAddress))
             {
                 Program.Print("[INFO] Contract address not specified, default 0xBTC");
-                contractAddress = Defaults.Contract0xBTC_mainnet;
+                contractAddress = Config.Defaults.Contract0xBTC_mainnet;
             }
 
             var addressUtil = new AddressUtil();

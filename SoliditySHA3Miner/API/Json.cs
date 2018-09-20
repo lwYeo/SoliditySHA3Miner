@@ -35,7 +35,7 @@ namespace SoliditySHA3Miner.API
             if (string.IsNullOrWhiteSpace(httpBind))
             {
                 Program.Print("[INFO] minerJsonAPI is null or empty, using default...");
-                httpBind = Defaults.JsonAPIPath;
+                httpBind = Config.Defaults.JsonAPIPath;
             }
             else if (apiBind == "0")
             {
@@ -64,7 +64,7 @@ namespace SoliditySHA3Miner.API
                 try { socket.Bind(new IPEndPoint(ipAddress, port)); }
                 catch (Exception)
                 {
-                    Program.Print("[ERROR] JSON-API failed to bind to: " + (string.IsNullOrEmpty(apiBind) ? Defaults.JsonAPIPath : apiBind));
+                    Program.Print("[ERROR] JSON-API failed to bind to: " + (string.IsNullOrEmpty(apiBind) ? Config.Defaults.JsonAPIPath : apiBind));
                     return;
                 }
             };

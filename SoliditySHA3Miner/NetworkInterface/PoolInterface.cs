@@ -31,7 +31,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         private readonly string s_MinerAddress;
         private readonly string s_PoolURL;
-        private readonly uint m_customDifficulity;
+        private readonly ulong m_customDifficulity;
         private readonly HexBigInteger m_maxTarget;
         private readonly int m_maxScanRetry;
         private readonly int m_updateInterval;
@@ -57,7 +57,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public int LastLatency { get; private set; }
 
         public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, int updateInterval, int hashratePrintInterval,
-                             uint customDifficulity, HexBigInteger maxTarget, PoolInterface secondaryPool = null)
+                             ulong customDifficulity, HexBigInteger maxTarget, PoolInterface secondaryPool = null)
         {
             m_retryCount = 0;
             m_maxScanRetry = maxScanRetry;
