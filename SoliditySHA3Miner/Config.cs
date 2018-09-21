@@ -189,7 +189,7 @@ namespace SoliditySHA3Miner
 
         private static void SetAmdIntensities(string[] sAmdIntensities, ref Miner.Device[] amdDevices)
         {
-            if (amdDevices == null || !amdDevices.Any()) return;
+            if (amdDevices == null || !amdDevices.Any() || sAmdIntensities == null) return;
 
             if (sAmdIntensities.Length > 1)
                 for (int i = 0; i < sAmdIntensities.Length; i++)
@@ -201,7 +201,7 @@ namespace SoliditySHA3Miner
 
         private static void SetIntelIntensities(string[] sIntelIntensities, ref Miner.Device[] IntelDevices)
         {
-            if (IntelDevices == null || !IntelDevices.Any()) return;
+            if (IntelDevices == null || !IntelDevices.Any() || sIntelIntensities == null) return;
 
             if (sIntelIntensities.Length > 1)
                 for (int i = 0; i < sIntelIntensities.Length; i++)
@@ -249,7 +249,7 @@ namespace SoliditySHA3Miner
 
         private static void SetCudaIntensities(string[] sCudaIntensities, ref Miner.Device[] cudaDevices)
         {
-            if (cudaDevices == null || !cudaDevices.Any()) return;
+            if (cudaDevices == null || !cudaDevices.Any() || sCudaIntensities == null) return;
 
             if (sCudaIntensities.Length > 1)
                 for (int i = 0; i < sCudaIntensities.Length; i++)
@@ -440,16 +440,19 @@ namespace SoliditySHA3Miner
                             switch (arg.Split('=')[0])
                             {
                                 case "intelIntensity":
+                                    if (arg.EndsWith('=')) break;
                                     var intelDevices = config.intelDevices;
                                     SetIntelIntensities(arg.Split('=')[1].Split(','), ref intelDevices);
                                     break;
 
                                 case "amdIntensity":
+                                    if (arg.EndsWith('=')) break;
                                     var amdDevices = config.amdDevices;
                                     SetAmdIntensities(arg.Split('=')[1].Split(','), ref amdDevices);
                                     break;
 
                                 case "cudaIntensity":
+                                    if (arg.EndsWith('=')) break;
                                     var cudaDevices = config.cudaDevices;
                                     SetCudaIntensities(arg.Split('=')[1].Split(','), ref cudaDevices);
                                     break;

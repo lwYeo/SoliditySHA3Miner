@@ -225,7 +225,7 @@ namespace SoliditySHA3Miner
             }
             
             var config = Config;
-            Config.ParseArgumentsToConfig(args, ref config);
+            if (!Config.ParseArgumentsToConfig(args, ref config)) Environment.Exit(1);
 
             if (!Utils.Json.SerializeToFile(Config, GetAppConfigPath()))
                 Print(string.Format("[ERROR] Failed to write config file at {0}", GetAppConfigPath()));
