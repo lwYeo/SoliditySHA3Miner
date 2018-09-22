@@ -110,6 +110,7 @@ namespace SoliditySHA3Miner.Miner
         public string Type;
         public string Platform;
         public int DeviceID;
+        public uint PciBusID;
         public string Name;
         public float Intensity;
     }

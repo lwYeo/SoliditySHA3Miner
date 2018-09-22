@@ -1,4 +1,5 @@
 #include "device.h"
+#include <string>
 
 namespace CUDASolver
 {
@@ -23,11 +24,16 @@ namespace CUDASolver
 		m_lastIntensity{ 0.0F }
 	{
 		char pciBusID_s[13];
-		if (cudaDeviceGetPCIBusId(pciBusID_s, 13, deviceID) == NVAPI_OK)
+		if (cudaDeviceGetPCIBusId(pciBusID_s, 13, deviceID) == (cudaError_t)NVAPI_OK)
 		{
 			pciBusID = strtoul(std::string{ pciBusID_s }.substr(5, 2).c_str(), NULL, 16);
 			m_api.assignPciBusID(pciBusID);
 		}
+	}
+	
+	uint32_t Device::getPciBusID()
+	{
+		return (uint32_t)m_api.deviceBusID;
 	}
 
 	bool Device::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage)
@@ -167,8 +173,28 @@ namespace CUDASolver
 	{
 		if (m_lastCompute != computeVersion)
 		{
-			m_block.x = (computeVersion > 500) ? Device::MAX_TPB_500 : Device::MAX_TPB_350;
 			m_lastCompute = computeVersion;
+			switch (computeVersion)
+			{
+			case 520:
+			case 610:
+			case 700:
+			case 720:
+			case 750:
+				m_block.x = 1024u;
+				break;
+			case 300:
+			case 320:
+			case 350:
+			case 370:
+			case 500:
+			case 530:
+			case 600:
+			case 620:
+			default:
+				m_block.x = (computeVersion >= 800) ? 1024u : 384u;
+				break;
+			}
 		}
 		return m_block;
 	}
@@ -186,6 +212,6 @@ namespace CUDASolver
 	uint64_t Device::hashRate()
 	{
 		using namespace std::chrono;
-		return (uint64_t)((long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime.load()).count()));
+		return (uint64_t)((long double)hashCount.load() / (duration_cast<seconds>(steady_clock::now() - hashStartTime).count()));
 	}
 }

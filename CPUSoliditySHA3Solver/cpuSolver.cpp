@@ -55,14 +55,26 @@ namespace CPUSolver
 	{
 		const char *delim = (const char *)",";
 		char *s_threads = (char *)malloc(threads.size());
-		strcpy_s(s_threads, threads.size() + 1, threads.c_str());
 		char *nextToken;
+		#ifdef __linux__
+		std::strcpy(s_threads, threads.c_str());
+
+		char *token = strtok_r(s_threads, delim, &nextToken);
+		while (token != NULL)
+		{
+			m_miningThreadCount++;
+			token = strtok_r(NULL, delim, &nextToken);
+		}
+		#else
+		strcpy_s(s_threads, threads.size() + 1, threads.c_str());
+
 		char *token = strtok_s(s_threads, delim, &nextToken);
 		while (token != NULL)
 		{
 			m_miningThreadCount++;
 			token = strtok_s(NULL, delim, &nextToken);
 		}
+		#endif
 		m_miningThreadAffinities = new uint32_t[m_miningThreadCount];
 		m_threadHashes = new uint64_t[m_miningThreadCount];
 		m_isThreadMining = new bool[m_miningThreadCount];
@@ -70,9 +82,15 @@ namespace CPUSolver
 		memset(m_isThreadMining, 0, sizeof(bool) * m_miningThreadCount);
 
 		uint32_t threadElement{ 0 };
+		#ifdef __linux__
+		strcpy(s_threads, threads.c_str());
+		nextToken = nullptr;
+		token = strtok_r(s_threads, delim, &nextToken);
+		#else
 		strcpy_s(s_threads, threads.size() + 1, threads.c_str());
 		nextToken = nullptr;
 		token = strtok_s(s_threads, delim, &nextToken);
+		#endif
 		while (token != NULL)
 		{
 			uint32_t threadID;
@@ -86,7 +104,11 @@ namespace CPUSolver
 			std::memcpy(&threadID, &tempThreadID, UINT32_LENGTH);
 
 			m_miningThreadAffinities[threadElement] = threadID;
+			#ifdef __linux__
+			token = strtok_r(NULL, delim, &nextToken);
+			#else
 			token = strtok_s(NULL, delim, &nextToken);
+			#endif
 			threadElement++;
 		}
 	}
@@ -226,8 +248,7 @@ namespace CPUSolver
 	{
 		for (uint32_t i{ 0 }; i < m_miningThreadCount; ++i) m_isThreadMining[i] = false;
 
-		using namespace std::chrono_literals;
-		std::this_thread::sleep_for(1s);
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 
 	void cpuSolver::pauseFinding(bool pauseFinding)
@@ -315,11 +336,21 @@ namespace CPUSolver
 		}
 	}
 
-#	include <Windows.h>
+	#ifdef __linux__
+	#include <sched.h>
+	bool cpuSolver::setCurrentThreadAffinity(uint32_t const affinityMask)
+	{
+		cpu_set_t mask_set{ 0 };
+		CPU_SET(affinityMask, &mask_set);
+		return (sched_setaffinity(0, sizeof(cpu_set_t), &mask_set) == 0);
+	}
+	#else
+	#include <Windows.h>
 	bool cpuSolver::setCurrentThreadAffinity(uint32_t const affinityMask)
 	{
 		return (bool)SetThreadAffinityMask(GetCurrentThread(), 1ull << affinityMask);
 	}
+	#endif
 
 	void cpuSolver::findSolution(uint32_t const threadID, uint32_t const affinityMask)
 	{
@@ -350,12 +381,22 @@ namespace CPUSolver
 
 			while (m_isThreadMining[threadID])
 			{
-				while (m_pause) { std::this_thread::sleep_for(std::chrono::milliseconds(500)); }
+				while (m_pause)
+				{
+					m_threadHashes[threadID] = 0ull;
+					m_hashStartTime[threadID] = std::chrono::steady_clock::now();
+
+					std::this_thread::sleep_for(std::chrono::milliseconds(500));
+				}
 
 				if (currentChallenge != s_challenge)
 				{
 					char *c_currentChallenge = (char *)malloc(s_challenge.size());
+					#ifdef __linux__
+					strcpy(c_currentChallenge, s_challenge.c_str());
+					#else
 					strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+					#endif
 					currentChallenge = std::string{ c_currentChallenge };
 				}
 
@@ -384,10 +425,7 @@ namespace CPUSolver
 				{
 					std::thread t{ &cpuSolver::onSolution, this, currentSolution, digest, currentChallenge };
 					t.detach();
-				}
 
-				if (m_threadHashes[threadID] > INT64_MAX)
-				{
 					m_threadHashes[threadID] = 0ull;
 					m_hashStartTime[threadID] = std::chrono::steady_clock::now();
 				}

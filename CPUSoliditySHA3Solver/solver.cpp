@@ -14,16 +14,6 @@ namespace CPUSolver
 		std::memcpy((void *)solutionTemplate, newTemplateStr, UINT256_LENGTH * 2 + 2);
 	}
 
-	void DisposeInstance(cpuSolver *instance) noexcept
-	{
-		try
-		{
-			instance->~cpuSolver();
-			free(instance);
-		}
-		catch (...) {}
-	}
-
 	GetKingAddressCallback SetOnGetKingAddressHandler(cpuSolver *instance, GetKingAddressCallback getKingAddressCallback)
 	{
 		instance->m_getKingAddressCallback = getKingAddressCallback;
@@ -70,6 +60,16 @@ namespace CPUSolver
 	{
 		try { return new cpuSolver(threads); }
 		catch (...) { return nullptr; }
+	}
+
+	void DisposeInstance(cpuSolver *instance) noexcept
+	{
+		try
+		{
+			instance->~cpuSolver();
+			free(instance);
+		}
+		catch (...) {}
 	}
 
 	void SetSubmitStale(cpuSolver *instance, const bool submitStale)

@@ -1,5 +1,5 @@
 #include "cudaErrorCheck.cu"
-#include "CudaSolver.h"
+#include "cudaSolver.h"
 
 namespace CUDASolver
 {
@@ -27,20 +27,32 @@ namespace CUDASolver
 	int CudaSolver::getDeviceCount(std::string &errorMessage)
 	{
 		errorMessage = "";
-		int deviceCount;
+		int deviceCount = 0;
 		cudaError_t response = cudaGetDeviceCount(&deviceCount);
 
-		if (response == cudaError::cudaSuccess) return deviceCount;
-		else errorMessage = getCudaErrorString(response);
+		if (response != cudaError::cudaSuccess && response != cudaError::cudaErrorUnknown) errorMessage = getCudaErrorString(response);
+		else if (deviceCount < 1)
+		{
+			int runtimeVersion = 0;
+			response = cudaRuntimeGetVersion(&runtimeVersion);
 
-		return 0;
+			errorMessage = std::string("There are no available device(s) that support CUDA (requires: 9.2, current: "
+							+ std::to_string(runtimeVersion / 1000) + "." + std::to_string((runtimeVersion % 100) / 10) + ")");
+		}
+
+		return deviceCount;
 	}
 
 	void CudaSolver::getDeviceCount(int *deviceCount, const char *errorMessage, uint64_t *errorSize)
 	{
 		std::string errMsg{ 0 };
 		*deviceCount = getDeviceCount(errMsg);
-		errorMessage = errMsg.c_str();
+		#ifdef __linux__
+		strcpy((char *)errorMessage, errMsg.c_str());
+		#else
+		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
+		#endif
+
 		*errorSize = (uint64_t)errMsg.length();
 	}
 
@@ -60,9 +72,16 @@ namespace CUDASolver
 	{
 		std::string errMsg{ 0 };
 		auto deviceNameStr = getDeviceName(deviceID, errMsg);
-		deviceName = deviceNameStr.c_str();
-		errorMessage = errMsg.c_str();
 
+		#ifdef __linux__
+		strcpy((char *)deviceName, deviceNameStr.c_str());
+		strcpy((char *)errorMessage, errMsg.c_str());
+		#else
+		strcpy_s((char *)deviceName, deviceNameStr.size() + 1, deviceNameStr.c_str());
+		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
+		#endif
+
+		*errorSize = (uint64_t)errMsg.length();
 		*nameSize = (uint64_t)deviceNameStr.length();
 		*errorSize = (uint64_t)errMsg.length();
 	}
@@ -127,7 +146,7 @@ namespace CUDASolver
 		m_solutionCallback = solutionCallback;
 	}
 
-	bool CudaSolver::assignDevice(int const deviceID, float &intensity)
+	bool CudaSolver::assignDevice(int const deviceID, uint32_t &pciBusID, float &intensity)
 	{
 		onMessage(deviceID, "Info", "Assigning device...");
 
@@ -142,12 +161,13 @@ namespace CUDASolver
 			return false;
 		}
 
-		m_devices.push_back(std::make_unique<Device>(deviceID));
+		m_devices.push_back(std::unique_ptr<Device>(new Device(std::forward<const int>(deviceID))));
 		auto &assignDevice = m_devices.back();
 
 		assignDevice->name = deviceProp.name;
 		assignDevice->computeVersion = deviceProp.major * 100 + deviceProp.minor * 10;
 
+		pciBusID = assignDevice->getPciBusID();
 		std::string deviceName{ assignDevice->name };
 		std::transform(deviceName.begin(), deviceName.end(), deviceName.begin(), ::toupper);
 
@@ -178,7 +198,11 @@ namespace CUDASolver
 			}
 			else
 			{
-				if (deviceName.find("2080") != std::string::npos || deviceName.find("2070") != std::string::npos || deviceName.find("1080") != std::string::npos
+				if (deviceName.find("2080") != std::string::npos || deviceName.find("2070") != std::string::npos
+					|| deviceName.find("1080 TI") != std::string::npos || deviceName.find("1080TI") != std::string::npos)
+					defaultIntensity = 29.0f;
+
+				else if (deviceName.find("1080") != std::string::npos
 					|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
 					defaultIntensity = 29.01f;
 
@@ -254,7 +278,7 @@ namespace CUDASolver
 		hexStringToBytes(s_address, m_miningMessage.structure.address);
 		m_miningMessage.structure.solution = m_solutionTemplate;
 
-		sponge_ut midState{ getMidState(m_miningMessage) };
+		sponge_ut midState = getMidState(m_miningMessage);
 
 		for (auto& device : m_devices)
 		{
@@ -749,14 +773,8 @@ namespace CUDASolver
 			uint64_t lastPosition;
 			getWorkPosition(lastPosition);
 
-			for (auto& device : m_devices)
-			{
-				if (device->hashCount.load() > INT64_MAX)
-				{
-					device->hashCount.store(0ull);
-					device->hashStartTime.store(std::chrono::steady_clock::now());
-				}
-			}
+			device->hashCount.store(0ull);
+			device->hashStartTime = std::chrono::steady_clock::now();
 
 			if (device->isNewTarget)
 			{
@@ -773,7 +791,11 @@ namespace CUDASolver
 				else
 					pushMessage(device);
 
+				#ifdef __linux__
+				strcpy(currentChallenge, s_challenge.c_str());
+				#else
 				strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
+				#endif
 			}
 		}
 	}

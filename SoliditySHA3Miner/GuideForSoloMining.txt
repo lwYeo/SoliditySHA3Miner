@@ -2,9 +2,9 @@
 
 1) Ensure that you have sufficient ETH stored in your mining address (ETH is required to mint tokens).
 
-2) Clone 0xbtcSolo.bat file and open the editor for the cloned file.
+2) Clone 0xbtcSolo.bat/0xbtcSolo.sh file and open the editor for the cloned file.
 
-3) You only need to edit the 4th line for launch parameters.
+3) You only need to edit the line that starts with 'dotnet' for launch parameters.
 
 4) Below are the following arguments that may/need to be changed :
 
@@ -40,7 +40,7 @@
   * It is your own responsibility to keep your private ETH account safe.
   * One suggestion is to create a disposable ETH mining account to mine with then transfer the tokens to your private account later.
 
-5) Save and run the '.bat' file you have newly created.
+5) Save and (run the '.bat' file)/(sh the '.sh' file) you have newly created.
 
 ### Notes
 

@@ -2,7 +2,7 @@
 obj/
 Debug/
 Release/
-Build/
+build/
 *.pdb
 *.asm
 *.vcxproj.user

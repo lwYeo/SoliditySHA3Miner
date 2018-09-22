@@ -28,7 +28,7 @@ namespace SoliditySHA3Miner.API
             if (string.IsNullOrWhiteSpace(apiBind))
             {
                 Program.Print("[INFO] minerCcminerAPI is null or empty, using default...");
-                apiBind = Defaults.CcminerAPIPath;
+                apiBind = Config.Defaults.CcminerAPIPath;
             }
             else if (apiBind == "0")
             {

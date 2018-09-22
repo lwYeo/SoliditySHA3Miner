@@ -1,12 +1,38 @@
 #include "adl_api.h"
 
-#pragma unmanaged
+#ifdef __linux__ // equivalent functions in linux
+
+const char *TEXT(const char *name)
+{
+	return name;
+}
+
+void *LoadLibrary(const char *name)
+{
+	return dlopen(name, RTLD_LAZY|RTLD_GLOBAL);
+}
+
+void *GetProcAddress(void *pLibrary, const char *name)
+{
+    return dlsym(pLibrary, name);
+}
+
+int FreeLibrary(void *handle)
+{
+	return dlclose(handle);
+}
+
+#endif
 
 // --------------------------------------------------------------------
 // Static
 // --------------------------------------------------------------------
 
+#ifdef __linux__
+void *ADL_API::hDLL{ NULL };
+#else
 HINSTANCE ADL_API::hDLL{ NULL };
+#endif
 
 ADL_API::ADL_MAIN_CONTROL_CREATE				ADL_API::ADL_Main_Control_Create{ NULL };
 ADL_API::ADL_MAIN_CONTROL_DESTROY				ADL_API::ADL_Main_Control_Destroy{ NULL };
@@ -39,13 +65,13 @@ bool ADL_API::foundAdlApi()
 void ADL_API::initialize()
 {
 	hDLL = LoadLibrary(TEXT(ADL64_API));
-	if (hDLL == NULL) throw std::exception("Failed to initialize ADL64_API.");
+	if (hDLL == NULL) throw std::runtime_error("Failed to initialize ADL64_API.");
 
 	ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE)GetProcAddress(hDLL, "ADL_Main_Control_Create");
 	ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY)GetProcAddress(hDLL, "ADL_Main_Control_Destroy");
 
 	if (NULL == ADL_Main_Control_Create || NULL == ADL_Main_Control_Destroy)
-		throw std::exception("Failed to get ADL function pointers.");
+		throw std::runtime_error("Failed to get ADL function pointers.");
 
 	ADL_Adapter_NumberOfAdapters_Get = (ADL_ADAPTER_NUMBEROFADAPTERS_GET)GetProcAddress(hDLL, "ADL_Adapter_NumberOfAdapters_Get");
 	ADL_Adapter_AdapterInfo_Get = (ADL_ADAPTER_ADAPTERINFO_GET)GetProcAddress(hDLL, "ADL_Adapter_AdapterInfo_Get");
@@ -59,15 +85,15 @@ void ADL_API::initialize()
 	ADL2_Overdrive_Caps = (ADL2_OVERDRIVE_CAPS)GetProcAddress(hDLL, "ADL2_Overdrive_Caps");
 
 	if (ADL_Main_Control_Create(ADL_Main_Memory_Alloc, 1) != ADL_OK)
-		throw std::exception("Failed to initialize nested ADL2 context.");
+		throw std::runtime_error("Failed to initialize nested ADL2 context.");
 
 	if (ADL_Adapter_NumberOfAdapters_Get(&numberOfAdapters) != ADL_OK)
-		throw std::exception("Cannot get the number of adapters!\n");
+		throw std::runtime_error("Cannot get the number of adapters!\n");
 
 	if (0 < numberOfAdapters)
 	{
 		lpAdapterInfo = (LPAdapterInfo)malloc(sizeof(AdapterInfo) * numberOfAdapters);
-		memset(lpAdapterInfo, '\0', sizeof(AdapterInfo) * numberOfAdapters);
+		std::memset(lpAdapterInfo, '\0', sizeof(AdapterInfo) * numberOfAdapters);
 
 		ADL_Adapter_AdapterInfo_Get(lpAdapterInfo, sizeof(AdapterInfo) * numberOfAdapters);
 	}
@@ -110,9 +136,9 @@ bool ADL_API::getOverDriveNCapabilities(ADLODNCapabilities *capabilities, std::s
 void ADL_API::assignPciBusID(int adapterBusID)
 {
 	m_context = NULL;
-	m_enabled = NULL;
-	m_version = NULL;
-	m_supported = NULL;
+	m_enabled = 0;
+	m_version = 0;
+	m_supported = 0;
 	this->m_adapterBusID = adapterBusID;
 
 	for (int i = 0; i < numberOfAdapters; ++i)
@@ -132,7 +158,7 @@ bool ADL_API::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessag
 
 	int bufSize{ -1 };
 	void* performanceLevelsBuffer{ NULL };
-	ADLODNCapabilities overdriveCapabilities{ NULL };
+	ADLODNCapabilities overdriveCapabilities{ 0 };
 	ADLODNPerformanceLevels *odPerformanceLevels{ NULL };
 
 	try
@@ -178,7 +204,7 @@ bool ADL_API::getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMe
 
 	int bufSize{ -1 };
 	void* performanceLevelsBuffer{ NULL };
-	ADLODNCapabilities overdriveCapabilities{ NULL };
+	ADLODNCapabilities overdriveCapabilities{ 0 };
 	ADLODNPerformanceLevels *odPerformanceLevels{ NULL };
 
 	try
@@ -223,7 +249,7 @@ bool ADL_API::getSettingPowerLimit(int *powerLimit, std::string *errorMessage)
 {
 	*powerLimit = INT32_MIN;
 
-	ADLODNPowerLimitSetting odNPowerControl{ NULL };
+	ADLODNPowerLimitSetting odNPowerControl{ 0 };
 
 	if (!checkVersion(errorMessage)) return false;
 
@@ -241,7 +267,7 @@ bool ADL_API::getSettingThermalLimit(int *thermalLimit, std::string *errorMessag
 {
 	*thermalLimit = INT32_MIN;
 
-	ADLODNPowerLimitSetting odNPowerControl{ NULL };
+	ADLODNPowerLimitSetting odNPowerControl{ 0 };
 
 	if (!checkVersion(errorMessage)) return false;
 
@@ -259,8 +285,8 @@ bool ADL_API::getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage
 {
 	*fanLevel = -1;
 
-	ADLODNCapabilities overdriveCapabilities{ NULL };
-	ADLODNFanControl odNFanControl{ NULL };
+	ADLODNCapabilities overdriveCapabilities{ 0 };
+	ADLODNFanControl odNFanControl{ 0 };
 
 	if (!checkVersion(errorMessage)) return false;
 
@@ -281,7 +307,7 @@ bool ADL_API::getCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorM
 {
 	*tachometerRPM = -1;
 
-	ADLODNFanControl odNFanControl{ NULL };
+	ADLODNFanControl odNFanControl{ 0 };
 
 	if (!checkVersion(errorMessage)) return false;
 
@@ -314,7 +340,7 @@ bool ADL_API::getCurrentCoreClock(int *coreClock, std::string *errorMessage)
 {
 	*coreClock = -1;
 
-	ADLODNPerformanceStatus odNPerformanceStatus{ NULL };
+	ADLODNPerformanceStatus odNPerformanceStatus{ 0 };
 
 	if (ADL2_OverdriveN_PerformanceStatus_Get(m_context, m_adapterInfo.iAdapterIndex, &odNPerformanceStatus) == ADL_OK)
 	{
@@ -330,7 +356,7 @@ bool ADL_API::getCurrentMemoryClock(int *memoryClock, std::string *errorMessage)
 {
 	*memoryClock = -1;
 
-	ADLODNPerformanceStatus odNPerformanceStatus{ NULL };
+	ADLODNPerformanceStatus odNPerformanceStatus{ 0 };
 
 	if (ADL2_OverdriveN_PerformanceStatus_Get(m_context, m_adapterInfo.iAdapterIndex, &odNPerformanceStatus) == ADL_OK)
 	{
@@ -346,7 +372,7 @@ bool ADL_API::getCurrentUtilizationPercent(int *utilization, std::string *errorM
 {
 	*utilization = -1;
 
-	ADLODNPerformanceStatus odNPerformanceStatus{ NULL };
+	ADLODNPerformanceStatus odNPerformanceStatus{ 0 };
 
 	if (ADL2_OverdriveN_PerformanceStatus_Get(m_context, m_adapterInfo.iAdapterIndex, &odNPerformanceStatus) == ADL_OK)
 	{

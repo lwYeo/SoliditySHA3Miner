@@ -5,85 +5,93 @@
 
 #include "openCLSolver.h"
 
+#ifdef __linux__
+#	define EXPORT
+#	define __CDECL__
+#else
+#	define EXPORT _declspec(dllexport)
+#	define __CDECL__ __cdecl
+#endif
+
 namespace OpenCLSolver
 {
 	extern "C"
 	{
-		__declspec(dllexport) void __cdecl FoundADL_API(bool *hasADL_API);
+		EXPORT void __CDECL__ FoundADL_API(bool *hasADL_API);
 
-		__declspec(dllexport) void __cdecl PreInitialize(bool allowIntel, const char *errorMessge, uint64_t *errorSize);
+		EXPORT void __CDECL__ PreInitialize(bool allowIntel, const char *errorMessge, uint64_t *errorSize);
 
-		__declspec(dllexport) void __cdecl GetPlatformNames(const char *platformNames);
+		EXPORT void __CDECL__ GetPlatformNames(const char *platformNames);
 
-		__declspec(dllexport) void __cdecl GetDeviceCount(const char *platformName, int *deviceCount, const char *errorMessage, uint64_t *errorSize);
+		EXPORT void __CDECL__ GetDeviceCount(const char *platformName, int *deviceCount, const char *errorMessage, uint64_t *errorSize);
 
-		__declspec(dllexport) void __cdecl GetDeviceName(const char *platformName, int deviceEnum, const char *deviceName, uint64_t *nameSize, const char *errorMessage, uint64_t *errorSize);
+		EXPORT void __CDECL__ GetDeviceName(const char *platformName, int deviceEnum, const char *deviceName, uint64_t *nameSize, const char *errorMessage, uint64_t *errorSize);
 
-		__declspec(dllexport) openCLSolver *__cdecl GetInstance() noexcept;
+		EXPORT openCLSolver *__CDECL__ GetInstance() noexcept;
 
-		__declspec(dllexport) void __cdecl DisposeInstance(openCLSolver *instance) noexcept;
+		EXPORT void __CDECL__ DisposeInstance(openCLSolver *instance) noexcept;
 
-		__declspec(dllexport) GetKingAddressCallback __cdecl SetOnGetKingAddressHandler(openCLSolver *instance, GetKingAddressCallback getKingAddressCallback);
+		EXPORT GetKingAddressCallback __CDECL__ SetOnGetKingAddressHandler(openCLSolver *instance, GetKingAddressCallback getKingAddressCallback);
 
-		__declspec(dllexport) GetSolutionTemplateCallback __cdecl SetOnGetSolutionTemplateHandler(openCLSolver *instance, GetSolutionTemplateCallback getSolutionTemplateCallback);
+		EXPORT GetSolutionTemplateCallback __CDECL__ SetOnGetSolutionTemplateHandler(openCLSolver *instance, GetSolutionTemplateCallback getSolutionTemplateCallback);
 
-		__declspec(dllexport) GetWorkPositionCallback __cdecl SetOnGetWorkPositionHandler(openCLSolver *instance, GetWorkPositionCallback getWorkPositionCallback);
+		EXPORT GetWorkPositionCallback __CDECL__ SetOnGetWorkPositionHandler(openCLSolver *instance, GetWorkPositionCallback getWorkPositionCallback);
 
-		__declspec(dllexport) ResetWorkPositionCallback __cdecl SetOnResetWorkPositionHandler(openCLSolver *instance, ResetWorkPositionCallback resetWorkPositionCallback);
+		EXPORT ResetWorkPositionCallback __CDECL__ SetOnResetWorkPositionHandler(openCLSolver *instance, ResetWorkPositionCallback resetWorkPositionCallback);
 
-		__declspec(dllexport) IncrementWorkPositionCallback __cdecl SetOnIncrementWorkPositionHandler(openCLSolver *instance, IncrementWorkPositionCallback incrementWorkPositionCallback);
+		EXPORT IncrementWorkPositionCallback __CDECL__ SetOnIncrementWorkPositionHandler(openCLSolver *instance, IncrementWorkPositionCallback incrementWorkPositionCallback);
 
-		__declspec(dllexport) MessageCallback __cdecl SetOnMessageHandler(openCLSolver *instance, MessageCallback messageCallback);
+		EXPORT MessageCallback __CDECL__ SetOnMessageHandler(openCLSolver *instance, MessageCallback messageCallback);
 
-		__declspec(dllexport) SolutionCallback __cdecl SetOnSolutionHandler(openCLSolver *instance, SolutionCallback solutionCallback);
+		EXPORT SolutionCallback __CDECL__ SetOnSolutionHandler(openCLSolver *instance, SolutionCallback solutionCallback);
 
-		__declspec(dllexport) void __cdecl SetSubmitStale(openCLSolver *instance, const bool submitStale);
+		EXPORT void __CDECL__ SetSubmitStale(openCLSolver *instance, const bool submitStale);
 
-		__declspec(dllexport) void __cdecl AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity);
+		EXPORT void __CDECL__ AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity);
 
-		__declspec(dllexport) void __cdecl IsAssigned(openCLSolver *instance, bool *isAssigned);
+		EXPORT void __CDECL__ IsAssigned(openCLSolver *instance, bool *isAssigned);
 
-		__declspec(dllexport) void __cdecl IsAnyInitialised(openCLSolver *instance, bool *isAnyInitialised);
+		EXPORT void __CDECL__ IsAnyInitialised(openCLSolver *instance, bool *isAnyInitialised);
 
-		__declspec(dllexport) void __cdecl IsMining(openCLSolver *instance, bool *isMining);
+		EXPORT void __CDECL__ IsMining(openCLSolver *instance, bool *isMining);
 
-		__declspec(dllexport) void __cdecl IsPaused(openCLSolver *instance, bool *isPaused);
+		EXPORT void __CDECL__ IsPaused(openCLSolver *instance, bool *isPaused);
 
-		__declspec(dllexport) void __cdecl GetInstanceDeviceName(openCLSolver *instance, const char *platformName, const int deviceEnum, const char *deviceName, uint64_t *nameSize);
+		EXPORT void __CDECL__ GetInstanceDeviceName(openCLSolver *instance, const char *platformName, const int deviceEnum, const char *deviceName, uint64_t *nameSize);
 
-		__declspec(dllexport) void __cdecl GetHashRateByDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, uint64_t *hashRate);
+		EXPORT void __CDECL__ GetHashRateByDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, uint64_t *hashRate);
 
-		__declspec(dllexport) void __cdecl GetTotalHashRate(openCLSolver *instance, uint64_t *totalHashRate);
+		EXPORT void __CDECL__ GetTotalHashRate(openCLSolver *instance, uint64_t *totalHashRate);
 
-		__declspec(dllexport) void __cdecl UpdatePrefix(openCLSolver *instance, const char *prefix);
+		EXPORT void __CDECL__ UpdatePrefix(openCLSolver *instance, const char *prefix);
 
-		__declspec(dllexport) void __cdecl UpdateTarget(openCLSolver *instance, const char *target);
+		EXPORT void __CDECL__ UpdateTarget(openCLSolver *instance, const char *target);
 
-		__declspec(dllexport) void __cdecl PauseFinding(openCLSolver *instance, const bool pause);
+		EXPORT void __CDECL__ PauseFinding(openCLSolver *instance, const bool pause);
 
-		__declspec(dllexport) void __cdecl StartFinding(openCLSolver *instance);
+		EXPORT void __CDECL__ StartFinding(openCLSolver *instance);
 
-		__declspec(dllexport) void __cdecl StopFinding(openCLSolver *instance);
+		EXPORT void __CDECL__ StopFinding(openCLSolver *instance);
 
-		__declspec(dllexport) void __cdecl GetDeviceSettingMaxCoreClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *coreClock);
+		EXPORT void __CDECL__ GetDeviceSettingMaxCoreClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *coreClock);
 
-		__declspec(dllexport) void __cdecl GetDeviceSettingMaxMemoryClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *memoryClock);
+		EXPORT void __CDECL__ GetDeviceSettingMaxMemoryClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *memoryClock);
 
-		__declspec(dllexport) void __cdecl GetDeviceSettingPowerLimit(openCLSolver *instance, const char *platformName, const int deviceEnum, int *powerLimit);
+		EXPORT void __CDECL__ GetDeviceSettingPowerLimit(openCLSolver *instance, const char *platformName, const int deviceEnum, int *powerLimit);
 
-		__declspec(dllexport) void __cdecl GetDeviceSettingThermalLimit(openCLSolver *instance, const char *platformName, const int deviceEnum, int *thermalLimit);
+		EXPORT void __CDECL__ GetDeviceSettingThermalLimit(openCLSolver *instance, const char *platformName, const int deviceEnum, int *thermalLimit);
 
-		__declspec(dllexport) void __cdecl GetDeviceSettingFanLevelPercent(openCLSolver *instance, const char *platformName, const int deviceEnum, int *fanLevel);
+		EXPORT void __CDECL__ GetDeviceSettingFanLevelPercent(openCLSolver *instance, const char *platformName, const int deviceEnum, int *fanLevel);
 
-		__declspec(dllexport) void __cdecl GetDeviceCurrentFanTachometerRPM(openCLSolver *instance, const char *platformName, const int deviceEnum, int *tachometerRPM);
+		EXPORT void __CDECL__ GetDeviceCurrentFanTachometerRPM(openCLSolver *instance, const char *platformName, const int deviceEnum, int *tachometerRPM);
 
-		__declspec(dllexport) void __cdecl GetDeviceCurrentTemperature(openCLSolver *instance, const char *platformName, const int deviceEnum, int *temperature);
+		EXPORT void __CDECL__ GetDeviceCurrentTemperature(openCLSolver *instance, const char *platformName, const int deviceEnum, int *temperature);
 
-		__declspec(dllexport) void __cdecl GetDeviceCurrentCoreClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *coreClock);
+		EXPORT void __CDECL__ GetDeviceCurrentCoreClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *coreClock);
 
-		__declspec(dllexport) void __cdecl GetDeviceCurrentMemoryClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *memoryClock);
+		EXPORT void __CDECL__ GetDeviceCurrentMemoryClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *memoryClock);
 
-		__declspec(dllexport) void __cdecl GetDeviceCurrentUtilizationPercent(openCLSolver *instance, const char *platformName, const int deviceEnum, int *utiliztion);
+		EXPORT void __CDECL__ GetDeviceCurrentUtilizationPercent(openCLSolver *instance, const char *platformName, const int deviceEnum, int *utiliztion);
 	}
 }
 

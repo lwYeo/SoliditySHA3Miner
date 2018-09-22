@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <Version>2.0.0</Version>
+    <Version>1.100.1</Version>
     <Authors>lwYeo</Authors>
     <Company>lwYeo</Company>
     <PackageLicenseUrl>https://github.com/lwYeo/SoliditySHA3Miner/blob/master/LICENSE</PackageLicenseUrl>
@@ -19,6 +19,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <DefineConstants />
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DebugType Condition="'$(Configuration)'=='Release'">None</DebugType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -42,10 +46,34 @@
     <None Update="0xbtc.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="0xbtcPool-ethOS-screen.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="0xbtcPool-ethOS.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="0xbtcPool.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="0xbtcSolo.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="0xbtcPool.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="0xbtcSolo.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="GuideForEthOS.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="GuideForHiveOS.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="install-deps.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="install-deps-ethOS.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="0xCATE.abi">
@@ -75,10 +103,19 @@
     <None Update="SKO.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="SoliditySHA3Miner.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SoliditySHA3Miner.conf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="SoliditySHA3Miner.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)Build\$(ConfigurationName)\*.dll&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)Build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)Build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.cl&quot; &quot;$(SolutionDir)Build\$(ConfigurationName)\*.cl&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.abi&quot; &quot;$(SolutionDir)Build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.txt&quot; &quot;$(SolutionDir)Build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.bat&quot; &quot;$(SolutionDir)Build\$(ConfigurationName)\*.bat&quot;" />
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(OS)' == 'Windows_NT' ">
+    <Exec Command="if not exist &quot;$(SolutionDir)Build\$(ConfigurationName)\&quot; mkdir &quot;$(SolutionDir)build\$(ConfigurationName)\&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.abi&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.bat&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.bat&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.conf&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.conf&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.sh&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.sh&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.cl&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.cl&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.dll&quot;" />
   </Target>
 
 </Project>

@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-Debug",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/SoliditySHA3Miner.csproj",
+                "-o",
+                "${workspaceRoot}/build/Debug/"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build-Release",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/SoliditySHA3Miner.csproj",
+                "-c",
+                "Release",
+                "-o",
+                "${workspaceRoot}/build/Release/"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

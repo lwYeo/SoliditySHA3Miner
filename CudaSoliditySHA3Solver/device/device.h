@@ -2,21 +2,18 @@
 
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cuda_runtime.h>
 #include <thread>
 #include "nv_api.h"
-#include "..\types.h"
+#include "../types.h"
 
 namespace CUDASolver
 {
-#define DEFALUT_INTENSITY 25.0f
+	constexpr float DEFALUT_INTENSITY{ 25.0f };
 
 	class Device
 	{
-	private:
-		static uint32_t constexpr MAX_TPB_500{ 1024u };
-		static uint32_t constexpr MAX_TPB_350{ 384u };
-
 	public:
 		int deviceID;
 		std::string name;
@@ -28,7 +25,7 @@ namespace CUDASolver
 
 		std::thread miningThread;
 		std::atomic<uint64_t> hashCount;
-		std::atomic<std::chrono::steady_clock::time_point> hashStartTime;
+		std::chrono::steady_clock::time_point hashStartTime;
 
 		uint64_t* d_Solutions;
 		uint64_t* h_Solutions;
@@ -58,6 +55,7 @@ namespace CUDASolver
 
 	public:
 		Device(int deviceID);
+		uint32_t getPciBusID();
 
 		bool getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage);
 		bool getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage);

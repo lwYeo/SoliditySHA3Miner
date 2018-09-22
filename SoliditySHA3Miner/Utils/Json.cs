@@ -18,6 +18,8 @@ namespace SoliditySHA3Miner.Utils
         private static object _Object3 = new object();
         private static object _Object4 = new object();
         private static object _Object5 = new object();
+        private static object _Object6 = new object();
+        private static object _Object7 = new object();
 
         public static readonly JsonSerializerSettings BaseClassFirstSettings =
             new JsonSerializerSettings { ContractResolver = BaseFirstContractResolver.Instance };
@@ -86,6 +88,41 @@ namespace SoliditySHA3Miner.Utils
                 }
                 catch { }
                 return jObject;
+            }
+        }
+
+        public static T DeserializeFromFile<T>(string filePath)
+        {
+            lock(_Object6)
+            {
+                string sJSON = File.ReadAllText(filePath);
+                T jObject = (T)Activator.CreateInstance(typeof(T));
+                try
+                {
+                    jObject = JsonConvert.DeserializeObject<T>(sJSON);
+                }
+                catch { }
+                return jObject;
+            }
+        }
+
+        public static bool SerializeToFile(object jObject, string filePath, JsonSerializerSettings settings = null)
+        {
+            lock(_Object7)
+            {
+                try
+                {
+                    if (File.Exists(filePath)) File.Delete(filePath);
+                    
+                    File.WriteAllText(filePath, (settings == null) ?
+                        JsonConvert.SerializeObject(jObject, Formatting.Indented) :
+                        JsonConvert.SerializeObject(jObject, Formatting.Indented, settings));
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
 

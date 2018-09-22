@@ -1,6 +1,8 @@
 ﻿using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Timers;
@@ -9,23 +11,42 @@ namespace SoliditySHA3Miner.NetworkInterface
 {
     public class PoolInterface : INetworkInterface
     {
+        /// <summary>
+        /// Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234
+        /// <para></para>
+        /// Then we can find difficulty [N] target = 2^234 / N
+        /// <para></para>
+        /// Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234
+        /// <para></para>
+        /// Which simplifies to # of hashes to find block difficulty [N] = N * 2^22
+        /// <para></para>
+        /// Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second
+        /// <para></para>
+        /// Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T
+        /// </summary>
+        private readonly ulong EFFECTIVE_HASHRATE_CONST = (ulong)Math.Pow(2, 22);
+
+        private const int MAX_SUBMIT_DTM_COUNT = 50;
+        private readonly List<DateTime> m_submitDateTimeList;
+
         private readonly string s_MinerAddress;
         private readonly string s_PoolURL;
-        private readonly uint m_customDifficulity;
+        private readonly ulong m_customDifficulity;
         private readonly HexBigInteger m_maxTarget;
         private readonly int m_maxScanRetry;
         private readonly int m_updateInterval;
         private Timer m_updateMinerTimer;
+        private Timer m_hashPrintTimer;
         private bool m_runFailover;
         private int m_retryCount;
         private MiningParameters m_lastParameters;
         private MiningParameters m_cacheParameters;
-
+        
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
-
         public event NewMessagePrefixEvent OnNewMessagePrefixEvent;
-
         public event NewTargetEvent OnNewTargetEvent;
+
+        public event GetTotalHashrateEvent OnGetTotalHashrate;
 
         public bool IsPool => true;
         public ulong SubmittedShares { get; private set; }
@@ -33,15 +54,17 @@ namespace SoliditySHA3Miner.NetworkInterface
         public PoolInterface SecondaryPool { get; }
         public ulong Difficulty { get; private set; }
         public string DifficultyHex { get; private set; }
+        public int LastLatency { get; private set; }
 
-        public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, int updateInterval, uint customDifficulity,
-                             HexBigInteger maxTarget, PoolInterface secondaryPool = null)
+        public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, int updateInterval, int hashratePrintInterval,
+                             ulong customDifficulity, HexBigInteger maxTarget, PoolInterface secondaryPool = null)
         {
             m_retryCount = 0;
             m_maxScanRetry = maxScanRetry;
             m_customDifficulity = customDifficulity;
             m_maxTarget = maxTarget;
             m_updateInterval = updateInterval;
+            LastLatency = -1;
             SecondaryPool = secondaryPool;
 
             if (m_customDifficulity > 0)
@@ -51,6 +74,15 @@ namespace SoliditySHA3Miner.NetworkInterface
             s_PoolURL = poolURL;
             SubmittedShares = 0ul;
             RejectedShares = 0ul;
+
+            m_submitDateTimeList = new List<DateTime>(MAX_SUBMIT_DTM_COUNT + 1);
+
+            if (hashratePrintInterval > 0)
+            {
+                m_hashPrintTimer = new Timer(hashratePrintInterval);
+                m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
+                m_hashPrintTimer.Start();
+            }
         }
 
         public void Dispose()
@@ -125,6 +157,14 @@ namespace SoliditySHA3Miner.NetworkInterface
             return null;
         }
 
+        private void m_hashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            var totalHashRate = 0ul;
+            OnGetTotalHashrate(this, ref totalHashRate);
+            Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s (Effective) / {1} MH/s (Local)",
+                                        GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
+        }
+
         private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             try
@@ -188,6 +228,25 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
         }
 
+        public ulong GetEffectiveHashrate()
+        {
+            var hashrate = 0ul;
+
+            if (m_submitDateTimeList.Count > 1)
+            {
+                var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
+                hashrate = Difficulty * EFFECTIVE_HASHRATE_CONST / avgSolveTime;
+            }
+
+            return hashrate;
+        }
+
+        public void ResetEffectiveHashrate()
+        {
+            m_submitDateTimeList.Clear();
+            m_submitDateTimeList.Add(DateTime.Now);
+        }
+
         public void UpdateMiningParameters()
         {
             m_updateMinerTimer_Elapsed(this, null);
@@ -200,15 +259,24 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
         }
 
-        public void SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, Miner.IMiner sender)
+        public bool SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, Miner.IMiner sender)
         {
+            if (string.IsNullOrWhiteSpace(solution) || solution == "0x") return false;
+
+            var startSubmitDateTime = DateTime.Now;
+
             if (m_runFailover)
             {
-                ((INetworkInterface)SecondaryPool).SubmitSolution(digest, fromAddress, challenge, difficulty, target, solution, sender);
-                return;
-            }
+                if (SecondaryPool.SubmitSolution(digest, fromAddress, challenge, difficulty, target, solution, sender))
+                {
+                    LastLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+                    Program.Print(string.Format("[INFO] Submission roundtrip latency: {0}ms", LastLatency));
 
-            if (string.IsNullOrWhiteSpace(solution) || solution == "0x") return;
+                    if (m_submitDateTimeList.Count >= MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
+                    m_submitDateTimeList.Add(DateTime.Now);
+                }
+                return false;
+            }
 
             difficulty = new HexBigInteger(difficulty).Value.ToString(); // change from hex to base 10 numerics
 
@@ -231,16 +299,20 @@ namespace SoliditySHA3Miner.NetworkInterface
                                                        m_customDifficulity > 0 ? "true" : "false", Miner.Work.GetKingAddressString());
 
                         var response = Utils.Json.InvokeJObjectRPC(s_PoolURL, submitShare);
+
+                        LastLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+
                         var result = response.SelectToken("$.result")?.Value<string>();
 
                         success = (result ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
                         if (!success) RejectedShares++;
                         SubmittedShares++;
 
-                        Program.Print(string.Format("[INFO] {0} [{1}] submitted: {2}",
+                        Program.Print(string.Format("[INFO] {0} [{1}] submitted: {2} ({3}ms)",
                                                     (minerAddress == DevFee.Address ? "Dev. fee share" : "Miner share"),
                                                     SubmittedShares,
-                                                    (success ? "success" : "failed")));
+                                                    (success ? "success" : "failed"),
+                                                    LastLatency));
 #if DEBUG
                         Program.Print(submitShare.ToString());
                         Program.Print(response.ToString());
@@ -257,7 +329,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
             } while (!submitted && retryCount < maxRetries);
 
-            if (!success) UpdateMiningParameters();
+            if (success)
+            {
+                if (m_submitDateTimeList.Count > MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
+                m_submitDateTimeList.Add(DateTime.Now);
+            }
+            else UpdateMiningParameters();
+
+            return success;
         }
     }
 }

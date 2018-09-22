@@ -1,8 +1,9 @@
 ### How to start Pool mining using SoliditySHA3Miner
 
-1) Clone 0xbtcPool.bat file and open the editor for the cloned file.
+1) Clone 0xbtcPool.bat/0xbtcPool.sh file and open the editor for the cloned file.
+  * For ethOS, refer to 0xbtcPool-ethOS.sh/0xbtcPool-ethOS-screen.sh
 
-2) You only need to edit the 4th line for launch parameters.
+2) You only need to edit the line that starts with 'dotnet' for launch parameters.
 
 3) Below are the following arguments that may/need to be changed :
 
@@ -42,7 +43,7 @@
   * If omitted, you are donating 100% to the developer.
   * Replace the value with your own mining Ethereum address (42 characters long including '0x' prefix, case-sensitive).
 
-4) Save and run the '.bat' file you have newly created.
+4) Save and (run the '.bat' file)/(sh the '.sh' file) you have newly created.
 
 ### Notes
 

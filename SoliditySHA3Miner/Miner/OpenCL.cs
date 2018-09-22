@@ -306,6 +306,7 @@ namespace SoliditySHA3Miner.Miner
                 m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
                 m_hashPrintTimer.Start();
 
+                NetworkInterface.ResetEffectiveHashrate();
                 Solver.StartFinding(m_instance);
             }
             catch (Exception ex)
@@ -320,6 +321,8 @@ namespace SoliditySHA3Miner.Miner
             try
             {
                 m_hashPrintTimer.Stop();
+
+                NetworkInterface.ResetEffectiveHashrate();
 
                 Solver.StopFinding(m_instance);
             }
@@ -385,6 +388,8 @@ namespace SoliditySHA3Miner.Miner
                 Solver.FoundADL_API(ref hasADL_API);
                 HasMonitoringAPI = hasADL_API;
 
+                NetworkInterface.OnGetTotalHashrate += NetworkInterface_OnGetTotalHashrate;
+
                 if (!HasMonitoringAPI) Program.Print("[WARN] ADL library not found.");
 
                 m_instance = Solver.GetInstance();
@@ -434,6 +439,21 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
+        private void NetworkInterface_OnGetTotalHashrate(NetworkInterface.INetworkInterface sender, ref ulong totalHashrate)
+        {
+            try
+            {
+                var hashrate = 0ul;
+                Solver.GetTotalHashRate(m_instance, ref hashrate);
+
+                totalHashrate += hashrate;
+            }
+            catch (Exception ex)
+            {
+                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+            }
+        }
+
         private void m_hashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             var hashrate = 0ul;
@@ -449,10 +469,7 @@ namespace SoliditySHA3Miner.Miner
                 }
             }
             Program.Print(hashString.ToString());
-
-            Solver.GetTotalHashRate(m_instance, ref hashrate);
-            Program.Print(string.Format("OpenCL [INFO] Total Hashrate: {0} MH/s", hashrate / 1000000.0f));
-
+            
             if (HasMonitoringAPI)
             {
                 var coreClock = 0;
