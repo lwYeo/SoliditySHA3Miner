@@ -370,9 +370,11 @@ namespace SoliditySHA3Miner.Miner
 
                 if (!hasNvAPI64) Program.Print("CUDA [WARN] NvAPI64 library not found.");
                 
-                UseNvSMI = API.NvSMI.FoundNvSMI();
+                var foundNvSMI = API.NvSMI.FoundNvSMI();
 
-                if (!UseNvSMI) Program.Print("CUDA [WARN] NvSMI not found.");
+                if (!foundNvSMI) Program.Print("CUDA [WARN] NvSMI not found.");
+
+                UseNvSMI = !hasNvAPI64 && foundNvSMI;
 
                 HasMonitoringAPI = hasNvAPI64 | UseNvSMI;
 
