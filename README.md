@@ -1,15 +1,17 @@
 # SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
-Current latest public release version: [1.3.0.0](https://github.com/lwYeo/SoliditySHA3Miner/releases/tag/1.3.0.0)
+Current latest public release version: [2.0.0](https://github.com/lwYeo/SoliditySHA3Miner/releases/tag/2.0.0)
 
-Built with C#.NET 4.7.1, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL) (Windows 10 64-bits)
+Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
 
-- .NET 4.7.1 can be downloaded from [https://microsoft.com/en-us/download/details.aspx?id=56116]
+Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)
+
+- .NET Core 2.1 can be downloaded from [https://www.microsoft.com/net/download]
 
 - VC++ 2017 can be downloaded from [https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads]
 
-- CUDA 9.2 requires a minimum nVidia driver version of 396.xx [https://nvidia.com/drivers/results/134068]
+- CUDA 9.2 requires a minimum nVidia driver version of 396 [https://nvidia.com/drivers/results/134068]
 
 ### Releases can be found [here](https://github.com/lwYeo/SoliditySHA3Miner/releases).
 
@@ -17,8 +19,6 @@ Built with C#.NET 4.7.1, VC++ 2017, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK
 ## LICENSE
 
 SoliditySHA3Miner is licensed under the [MIT license](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/LICENSE).
-
-Include CUDA kernel from Mikers, Azlehria and LtTofu (Mag517)
 
 Libraries are included in the Software under the following license terms:
 
@@ -117,6 +117,10 @@ Options:
 
 ### NOTES
 
+For HiveOS, refer to [GuideForHiveOS.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForHiveOS.txt) on how to get started.
+
+For EthOS, refer to [GuideForEthOS.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForEthOS.txt) on how to get started.
+
 Do refer to [GuideForPoolMining.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForPoolMining.txt) and [GuideForSoloMining.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForSoloMining.txt) on how to get started.
 
 Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
@@ -152,6 +156,8 @@ LtTofu/Mag517
 Infernal Toast
 
 0x1d00ffff
+
+TwenteMining
 
 Mikers
 

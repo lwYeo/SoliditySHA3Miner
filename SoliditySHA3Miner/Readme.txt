@@ -1,16 +1,16 @@
 ﻿SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
-Current latest public release version: 1.3.0.0
+Current latest public release version: 2.0.0
+Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
 
-Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5,, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)
-.NET 4.7.1 can be downloaded from https://microsoft.com/en-us/download/details.aspx?id=56116
+Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)
+.NET Core 2.1 can be downloaded from https://www.microsoft.com/net/download
 VC++ 2017 can be downloaded from https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads
-CUDA 9.2 requires a minimum nVidia driver version of 396.xx [https://www.nvidia.com/drivers/beta]
+CUDA 9.2 requires a minimum nVidia driver version of 396 [https://www.nvidia.com/drivers/beta]
 
 LICENSE
 SoliditySHA3Miner is licensed under the MIT license.
-Include CUDA kernel from Mikers, Azlehria and LtTofu (Mag517)
 Libraries are included in the Software under the following license terms:
 - Satoshi Nakamoto and The Bitcoin Core developers (uint256) https://github.com/bitcoin/bitcoin/blob/master/COPYING
 - libkeccak-tiny https://github.com/coruus/keccak-tiny/
@@ -61,6 +61,8 @@ Options:
   devFee                  Set developer fee in percentage (default: 2%, minimum: 1.5%)
 
 NOTES
+For HiveOS, refer to 'GuideForHiveOS.txt' on how to get started.
+For EthOS, refer to 'GuideForEthOS.txt' on how to get started.
 Do refer to 'GuideForPoolMining.txt' and 'GuideForSoloMining.txt' on how to get started.
 Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
 A sample CLI launch parameter can be found in the ".bat" file found together with this miner, please refer to it if you need help.
@@ -82,6 +84,7 @@ LtTofu/Mag517
 Infernal Toast
 0x1d00ffff
 Mikers
+TwenteMining
 Ghorge
 BRob
 Sly

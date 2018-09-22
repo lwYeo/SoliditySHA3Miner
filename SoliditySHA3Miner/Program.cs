@@ -140,7 +140,7 @@ namespace SoliditySHA3Miner
         private static string GetHeader()
         {
             return "\n" +
-                "*** " + GetApplicationName() + " " + GetApplicationVersion() + " beta by lwYeo@github (" + GetApplicationYear() + ") ***\n" +
+                "*** " + GetApplicationName() + " " + GetApplicationVersion() + " by lwYeo@github (" + GetApplicationYear() + ") ***\n" +
                 "*** Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
                 "\n" +
                 "Donation addresses:\n" +
@@ -203,7 +203,7 @@ namespace SoliditySHA3Miner
             }
 
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            Console.Title = string.Format("{0} {1} beta by lwYeo@github ({2})", GetApplicationName(), GetApplicationVersion(), GetApplicationYear());
+            Console.Title = string.Format("{0} {1} by lwYeo@github ({2})", GetApplicationName(), GetApplicationVersion(), GetApplicationYear());
 
             Print(GetHeader(), excludePrefix: true);
 
