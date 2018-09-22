@@ -124,7 +124,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_transferMethod = m_contract.GetFunction("transfer");
 
                 m_gasToMine = gasToMine;
-                Program.Print(string.Format("[INFO] Gas to mine:", m_gasToMine));
+                Program.Print(string.Format("[INFO] Gas to mine: {0}", m_gasToMine));
 
                 m_hashPrintTimer = new Timer(hashratePrintInterval);
                 m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
@@ -138,15 +138,27 @@ namespace SoliditySHA3Miner.NetworkInterface
             m_submittedChallengeList.TrimExcess();
         }
 
+        public void OverrideMaxTarget(HexBigInteger maxTarget)
+        {
+            if (maxTarget.Value > 0u)
+            {
+                Program.Print("[INFO] Override maximum difficulty: " + maxTarget.HexValue);
+                m_maxTarget = maxTarget;
+            }
+            else { m_maxTarget = GetMaxTarget(); }
+        }
+
         public HexBigInteger GetMaxTarget()
         {
+            if (m_maxTarget != null && m_maxTarget.Value > 0u)
+                return m_maxTarget;
+
             Program.Print("[INFO] Checking maximum difficulity from network...");
             while (true)
             {
                 try
                 {
-                    m_maxTarget = new HexBigInteger(m_contract.GetFunction("_MAXIMUM_TARGET").CallAsync<BigInteger>().Result);
-                    return m_maxTarget;
+                    return new HexBigInteger(m_contract.GetFunction("_MAXIMUM_TARGET").CallAsync<BigInteger>().Result);
                 }
                 catch (AggregateException ex)
                 {
@@ -215,12 +227,19 @@ namespace SoliditySHA3Miner.NetworkInterface
                     Program.Print(string.Format("[INFO] New difficulity detected ({0})...", miningParameters.MiningDifficulty.Value));
                     Difficulty = Convert.ToUInt64(miningParameters.MiningDifficulty.Value.ToString());
 
-                    var calculatedTarget = m_maxTarget.Value / Difficulty;
-                    if (calculatedTarget != miningParameters.MiningTarget.Value)
+                    // Actual difficulty should have decimals
+                    var calculatedDifficulty = Math.Exp(BigInteger.Log(m_maxTarget.Value) - BigInteger.Log(miningParameters.MiningTarget.Value));
+
+                    if ((ulong)calculatedDifficulty != Difficulty) // Only replace if the integer portion is different
                     {
-                        var newTarget = calculatedTarget.ToString();
-                        Program.Print(string.Format("[INFO] Update target {0}...", newTarget));
-                        OnNewTargetEvent(this, newTarget);
+                        Difficulty = (ulong)calculatedDifficulty;
+
+                        var expValue = BitConverter.GetBytes(decimal.GetBits((decimal)calculatedDifficulty)[3])[2];
+
+                        var calculatedTarget = m_maxTarget.Value * (ulong)Math.Pow(10, expValue) / (ulong)(calculatedDifficulty * Math.Pow(10, expValue));
+                        
+                        Program.Print(string.Format("[INFO] Update target {0}...", Utils.Numerics.BigIntegerToByte32HexString(calculatedTarget)));
+                        OnNewTargetEvent(this, Utils.Numerics.BigIntegerToByte32HexString(calculatedTarget));
                     }
                 }
 

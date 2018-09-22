@@ -241,29 +241,27 @@ namespace SoliditySHA3Miner
                 var web3Interface = new NetworkInterface.Web3Interface(Config.web3api, Config.contractAddress, Config.minerAddress, Config.privateKey, Config.gasToMine,
                                                                        Config.abiFile, Config.networkUpdateInterval, Config.hashrateUpdateInterval);
 
-                HexBigInteger tempMaxTarget = null;
-                if (Config.overrideMaxTarget.Value > 0u)
-                {
-                    Print("[INFO] Override maximum difficulty: " + Config.overrideMaxTarget.HexValue);
-                    tempMaxTarget = Config.overrideMaxTarget;
-                }
-                else tempMaxTarget = web3Interface.GetMaxTarget();
+                web3Interface.OverrideMaxTarget(Config.overrideMaxTarget);
 
                 if (Config.customDifficulty > 0)
                     Print("[INFO] Custom difficulity: " + Config.customDifficulty.ToString());
 
-                var secondaryPoolInterface = string.IsNullOrWhiteSpace(Config.secondaryPool)
-                                           ? null
-                                           : new NetworkInterface.PoolInterface(Config.minerAddress, Config.secondaryPool, Config.maxScanRetry, -1, -1,
-                                                                                Config.customDifficulty, tempMaxTarget);
+                NetworkInterface.INetworkInterface mainNetworkInterface = null;
+                var isSoloMining = !(string.IsNullOrWhiteSpace(Config.privateKey));
 
-                var primaryPoolInterface = new NetworkInterface.PoolInterface(Config.minerAddress, Config.primaryPool, Config.maxScanRetry,
-                                                                              Config.networkUpdateInterval, Config.hashrateUpdateInterval,
-                                                                              Config.customDifficulty, tempMaxTarget, secondaryPoolInterface);
+                if (isSoloMining) { mainNetworkInterface = web3Interface; }
+                else
+                {
+                    var secondaryPoolInterface = string.IsNullOrWhiteSpace(Config.secondaryPool)
+                                               ? null
+                                               : new NetworkInterface.PoolInterface(Config.minerAddress, Config.secondaryPool, Config.maxScanRetry,
+                                                                                    -1, -1, Config.customDifficulty, web3Interface.GetMaxTarget());
 
-                var mainNetworkInterface = (string.IsNullOrWhiteSpace(Config.privateKey))
-                                           ? primaryPoolInterface
-                                           : (NetworkInterface.INetworkInterface)web3Interface;
+                    var primaryPoolInterface = new NetworkInterface.PoolInterface(Config.minerAddress, Config.primaryPool, Config.maxScanRetry,
+                                                                                  Config.networkUpdateInterval, Config.hashrateUpdateInterval,
+                                                                                  Config.customDifficulty, web3Interface.GetMaxTarget(), secondaryPoolInterface);
+                    mainNetworkInterface = primaryPoolInterface;
+                }
 
                 if (Config.cpuMode)
                 {
