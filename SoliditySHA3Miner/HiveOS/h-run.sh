@@ -17,19 +17,19 @@ function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$
 function install_deps() {
   . install-deps.sh
 
-  # below is the temp fix for the following issue as of version 0.5-74
+  # below is the temp fix for the following issue as of version 0.5-74, not required from 0.5-75 onwards.
   # /usr/lib/x86_64-linux-gnu/libcurl.so.4: version `CURL_OPENSSL_4' not found (required by curl)
-  if [[ $(lsb_release -sr) == "18.04" ]]; then
-    apt-get install libtool m4 automake -y
-    git clone https://github.com/curl/curl.git
-    cd curl
-    ./buildconf
-    ./configure --disable-shared
-    make
-    make install
-    cd ..
-    rm -r -f curl
-  fi
+  #if [[ $(lsb_release -sr) == "18.04" ]]; then
+  #  apt-get install libtool m4 automake -y
+  #  git clone https://github.com/curl/curl.git
+  #  cd curl
+  #  ./buildconf
+  #  ./configure --disable-shared
+  #  make
+  #  make install
+  #  cd ..
+  #  rm -r -f curl
+  #fi
 }
 
 command -v dotnet >/dev/null 2>&1 || {
