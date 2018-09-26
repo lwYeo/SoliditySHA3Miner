@@ -49,7 +49,6 @@ namespace SoliditySHA3Miner.NetworkInterface
         private Timer m_updateMinerTimer;
         private Timer m_hashPrintTimer;
         private MiningParameters m_lastParameters;
-        private MiningParameters m_cacheParameters;
         private HexBigInteger m_maxTarget;
         
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
@@ -181,9 +180,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             Program.Print("[INFO] Checking latest parameters from network...");
 
-            m_cacheParameters = MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
-
-            return m_cacheParameters;
+            return MiningParameters.GetSoloMiningParameters(m_contract, m_minerAddress);
         }
 
         private void m_hashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)

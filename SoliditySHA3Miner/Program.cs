@@ -1,10 +1,7 @@
-﻿using Nethereum.Hex.HexTypes;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -20,7 +17,7 @@ namespace SoliditySHA3Miner
 
         public static float UserPercent
         {
-            get => (m_UserPercent < MinimumPercent) ? Percent : m_UserPercent;
+            get => (m_UserPercent < MinimumPercent) ? MinimumPercent : m_UserPercent;
             set => m_UserPercent = value;
         }
 
@@ -123,13 +120,15 @@ namespace SoliditySHA3Miner
 
                 Console.WriteLine(message);
 
-                if (message.Contains("Mining stopped")) m_manualResetEvent.Set();
-                if (message.Contains("Kernel launch failed")) m_isKernelLaunchFailed = true;
+                if (message.Contains("Kernel launch failed"))
+                {
+                    Task.Delay(5000);
+                    Environment.Exit(22);
+                }
             });
         }
 
         private static ManualResetEvent m_manualResetEvent = new ManualResetEvent(false);
-        private static bool m_isKernelLaunchFailed;
         private static System.Timers.Timer m_waitCheckTimer;
         private static Miner.CPU m_cpuMiner;
         private static Miner.CUDA m_cudaMiner;
@@ -255,11 +254,11 @@ namespace SoliditySHA3Miner
                     var secondaryPoolInterface = string.IsNullOrWhiteSpace(Config.secondaryPool)
                                                ? null
                                                : new NetworkInterface.PoolInterface(Config.minerAddress, Config.secondaryPool, Config.maxScanRetry,
-                                                                                    -1, -1, Config.customDifficulty, web3Interface.GetMaxTarget());
+                                                                                    -1, -1, Config.customDifficulty, true, web3Interface.GetMaxTarget());
 
                     var primaryPoolInterface = new NetworkInterface.PoolInterface(Config.minerAddress, Config.primaryPool, Config.maxScanRetry,
                                                                                   Config.networkUpdateInterval, Config.hashrateUpdateInterval,
-                                                                                  Config.customDifficulty, web3Interface.GetMaxTarget(), secondaryPoolInterface);
+                                                                                  Config.customDifficulty, false, web3Interface.GetMaxTarget(), secondaryPoolInterface);
                     mainNetworkInterface = primaryPoolInterface;
                 }
 
@@ -270,11 +269,12 @@ namespace SoliditySHA3Miner
                 }
                 else
                 {
-                    if (Config.cudaDevices.Any())
+                    if (Config.allowCUDA && Config.cudaDevices.Any())
                         m_cudaMiner = new Miner.CUDA(mainNetworkInterface, Config.cudaDevices, Config.submitStale, Config.pauseOnFailedScans);
 
                     var openCLdevices = Config.intelDevices.Union(Config.amdDevices).ToArray();
-                    if (openCLdevices.Any())
+                    
+                    if ((Config.allowAMD || Config.allowIntel) && openCLdevices.Any())
                         m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, openCLdevices, Config.submitStale, Config.pauseOnFailedScans);
                 }
                 m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner }.Where(m => m != null).ToArray();
@@ -331,10 +331,7 @@ namespace SoliditySHA3Miner
             API.Ccminer.StopListening();
             m_waitCheckTimer.Stop();
 
-            if (m_isKernelLaunchFailed)
-                Environment.Exit(22);
-            else
-                Environment.Exit(0);
+            Environment.Exit(0);
         }
     }
 }

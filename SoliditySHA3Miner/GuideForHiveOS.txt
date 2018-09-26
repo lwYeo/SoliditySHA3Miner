@@ -1,7 +1,7 @@
 ### Before start mining on HiveOS
 
 1) For NVIDIA cards, ensure CUDA 9.2 (NVIDIA driver 396) is installed
-  * Selfupgrade HiveOS to latest version (0.5-75 onwards)
+  * Selfupgrade HiveOS to latest version (0.5-76 onwards)
 
 2) Add new "Custom" miner to "Flight Sheet" (Coin: ETH, select your wallet but DO NOT select a pool yet)
 
@@ -10,7 +10,7 @@
 4) Inside "Setup Miner Config": 
 
 4a) Enter the following in "Installation URL"
-  https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.0.0/SoliditySHA3Miner-2.0.0.tar.gz
+  https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.0.0/SoliditySHA3Miner-2.0.1.tar.gz
 
 4b) "Miner name" will be auto populated, you may leave it as is
 

@@ -1,7 +1,7 @@
 # SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
-Current latest public release version: [2.0.0](https://github.com/lwYeo/SoliditySHA3Miner/releases/tag/2.0.0)
+Current latest public release version: [2.0.1](https://github.com/lwYeo/SoliditySHA3Miner/releases/tag/2.0.0)
 
 Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
 
@@ -11,7 +11,7 @@ Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits,
 
 - VC++ 2017 can be downloaded from [https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads]
 
-- CUDA 9.2 requires a minimum nVidia driver version of 396 [https://nvidia.com/drivers/results/134068]
+- CUDA 9.2 requires a minimum nVidia driver version of 396 [https://www.nvidia.com/drivers/beta]
 
 ### Releases can be found [here](https://github.com/lwYeo/SoliditySHA3Miner/releases).
 
@@ -82,9 +82,9 @@ Options:
 	
     customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)
 	
-    maxScanRetry            Number of retries to scan for new work (default: 5)
+    maxScanRetry            Number of retries to scan for new work (default: 3)
 	
-    pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)
+    pauseOnFailedScans      Pauses mining after number of connection fails, including secondary and retries (default: 3)
 	
     submitStale             Submit stale jobs, may create more rejected shares (default: false)
 	

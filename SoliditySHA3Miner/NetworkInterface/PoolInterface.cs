@@ -35,12 +35,12 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly HexBigInteger m_maxTarget;
         private readonly int m_maxScanRetry;
         private readonly int m_updateInterval;
+        private bool m_isGetMiningParameters;
         private Timer m_updateMinerTimer;
         private Timer m_hashPrintTimer;
         private bool m_runFailover;
         private int m_retryCount;
         private MiningParameters m_lastParameters;
-        private MiningParameters m_cacheParameters;
         
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
         public event NewMessagePrefixEvent OnNewMessagePrefixEvent;
@@ -49,6 +49,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public event GetTotalHashrateEvent OnGetTotalHashrate;
 
         public bool IsPool => true;
+        public bool IsSecondaryPool { get; }
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
         public PoolInterface SecondaryPool { get; }
@@ -57,15 +58,17 @@ namespace SoliditySHA3Miner.NetworkInterface
         public int LastLatency { get; private set; }
 
         public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, int updateInterval, int hashratePrintInterval,
-                             ulong customDifficulity, HexBigInteger maxTarget, PoolInterface secondaryPool = null)
+                             ulong customDifficulity, bool isSecondary, HexBigInteger maxTarget, PoolInterface secondaryPool = null)
         {
             m_retryCount = 0;
             m_maxScanRetry = maxScanRetry;
             m_customDifficulity = customDifficulity;
             m_maxTarget = maxTarget;
             m_updateInterval = updateInterval;
+            m_isGetMiningParameters = false;
             LastLatency = -1;
             SecondaryPool = secondaryPool;
+            IsSecondaryPool = isSecondary;
 
             if (m_customDifficulity > 0)
                 Difficulty = m_customDifficulity;
@@ -112,7 +115,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public MiningParameters GetMiningParameters()
         {
-            Program.Print("[INFO] Checking latest parameters from pool...");
+            Program.Print(string.Format("[INFO] Checking latest parameters from {0} pool...", IsSecondaryPool ? "secondary" : "primary"));
 
             var getPoolEthAddress = GetPoolParameter("getPoolEthAddress");
             var getPoolChallengeNumber = GetPoolParameter("getChallengeNumber");
@@ -122,20 +125,15 @@ namespace SoliditySHA3Miner.NetworkInterface
             bool success = true;
             try
             {
-                m_cacheParameters = MiningParameters.GetPoolMiningParameters(s_PoolURL, getPoolEthAddress, getPoolChallengeNumber,
-                                                                             getPoolMinimumShareDifficulty, getPoolMinimumShareTarget);
-
-                return m_cacheParameters;
+                return MiningParameters.GetPoolMiningParameters(s_PoolURL, getPoolEthAddress, getPoolChallengeNumber,
+                                                                getPoolMinimumShareDifficulty, getPoolMinimumShareTarget);
             }
             catch (AggregateException ex)
             {
                 success = false;
                 m_retryCount++;
 
-                string errorMsg = ex.Message;
-                foreach (var iEx in ex.InnerExceptions) errorMsg += ("\n " + iEx.Message);
-
-                Program.Print("[ERROR] " + errorMsg);
+                Program.Print("[ERROR] " + ex.Message);
             }
             catch (Exception ex)
             {
@@ -146,13 +144,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                 if (ex.InnerException != null) errorMsg += ("\n " + ex.InnerException.Message);
                 Program.Print("[ERROR] " + errorMsg);
             }
+            finally { if (success) m_runFailover = false; }
 
-            if (!success && SecondaryPool != null && m_retryCount >= m_maxScanRetry)
+            var runFailover = (!success && SecondaryPool != null && m_maxScanRetry > -1 && m_retryCount >= m_maxScanRetry);
+            try
             {
-                m_runFailover = true;
-                Program.Print("[INFO] Checking mining parameters from secondary pool...");
-                return SecondaryPool.GetMiningParameters();
+                if (runFailover) return SecondaryPool.GetMiningParameters(); 
             }
+            finally { m_runFailover = runFailover; }
 
             return null;
         }
@@ -167,8 +166,10 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (m_isGetMiningParameters) return;
             try
             {
+                m_isGetMiningParameters = true;
                 var miningParameters = GetMiningParameters();
                 if (miningParameters == null)
                 {
@@ -226,6 +227,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 Program.Print(string.Format("[ERROR] {0}", ex.Message));
             }
+            finally { m_isGetMiningParameters = false; }
         }
 
         public ulong GetEffectiveHashrate()
@@ -308,9 +310,10 @@ namespace SoliditySHA3Miner.NetworkInterface
                         if (!success) RejectedShares++;
                         SubmittedShares++;
 
-                        Program.Print(string.Format("[INFO] {0} [{1}] submitted: {2} ({3}ms)",
+                        Program.Print(string.Format("[INFO] {0} [{1}] submitted to {2} pool: {3} ({4}ms)",
                                                     (minerAddress == DevFee.Address ? "Dev. fee share" : "Miner share"),
                                                     SubmittedShares,
+                                                    IsSecondaryPool ? "secondary" : "primary",
                                                     (success ? "success" : "failed"),
                                                     LastLatency));
 #if DEBUG

@@ -1,7 +1,7 @@
 ﻿SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
-Current latest public release version: 2.0.0
+Current latest public release version: 2.0.1
 Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
 
 Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)
@@ -43,8 +43,8 @@ Options:
   minerCcminerAPI         'IP:port' for the ccminer-style API (default: 127.0.0.1:4068), 0 disabled
   overrideMaxTarget       (Pool only) Use maximum target and skips query from web3
   customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)
-  maxScanRetry            Number of retries to scan for new work (default: 5)
-  pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)
+  maxScanRetry            Number of retries to scan for new work (default: 3)
+  pauseOnFailedScans      Pauses mining after number of connection fails, including secondary and retries (default: 3)
   submitStale             Submit stale jobs, may create more rejected shares (default: false)
   abiFile                 Token abi in a file (default: '0xbtc.abi' in the same folder as this miner)
   web3api                 User-defined web3 provider URL (default: Infura mainnet provider)

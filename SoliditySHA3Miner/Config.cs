@@ -430,8 +430,8 @@ namespace SoliditySHA3Miner
                 }
                 else
                 {
-                    CheckAMDConfig(args, ref config);
-                    CheckCUDAConfig(args, ref config);
+                    if (config.allowAMD || config.allowIntel) CheckAMDConfig(args, ref config);
+                    if (config.allowCUDA) CheckCUDAConfig(args, ref config);
 
                     foreach (var arg in args)
                     {
@@ -440,19 +440,19 @@ namespace SoliditySHA3Miner
                             switch (arg.Split('=')[0])
                             {
                                 case "intelIntensity":
-                                    if (arg.EndsWith('=')) break;
+                                    if (!config.allowIntel || arg.EndsWith('=')) break;
                                     var intelDevices = config.intelDevices;
                                     SetIntelIntensities(arg.Split('=')[1].Split(','), ref intelDevices);
                                     break;
 
                                 case "amdIntensity":
-                                    if (arg.EndsWith('=')) break;
+                                    if (!config.allowAMD || arg.EndsWith('=')) break;
                                     var amdDevices = config.amdDevices;
                                     SetAmdIntensities(arg.Split('=')[1].Split(','), ref amdDevices);
                                     break;
 
                                 case "cudaIntensity":
-                                    if (arg.EndsWith('=')) break;
+                                    if (!config.allowCUDA || arg.EndsWith('=')) break;
                                     var cudaDevices = config.cudaDevices;
                                     SetCudaIntensities(arg.Split('=')[1].Split(','), ref cudaDevices);
                                     break;
@@ -635,7 +635,7 @@ namespace SoliditySHA3Miner
 
             public const bool SubmitStale = false;
             public const float GasToMine = 5.0f;
-            public const int MaxScanRetry = 5;
+            public const int MaxScanRetry = 3;
             public const int PauseOnFailedScan = 3;
             public const int NetworkUpdateInterval = 15000;
             public const int HashrateUpdateInterval = 30000;
