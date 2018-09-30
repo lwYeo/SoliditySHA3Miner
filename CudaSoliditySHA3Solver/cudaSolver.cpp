@@ -81,7 +81,6 @@ namespace CUDASolver
 		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
 		#endif
 
-		*errorSize = (uint64_t)errMsg.length();
 		*nameSize = (uint64_t)deviceNameStr.length();
 		*errorSize = (uint64_t)errMsg.length();
 	}

@@ -34,10 +34,17 @@ namespace OpenCLSolver
 	{
 		std::string errMsg{ 0 };
 		auto devName = openCLSolver::getDeviceName(platformName, deviceEnum, errMsg);
-		deviceName = devName.c_str();
 
-		errorMessage = errMsg.c_str();
-		*errorSize = errMsg.length();
+		#ifdef __linux__
+		strcpy((char *)deviceName, devName.c_str());
+		strcpy((char *)errorMessage, errMsg.c_str());
+		#else
+		strcpy_s((char *)deviceName, devName.size() + 1, devName.c_str());
+		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
+		#endif
+		
+		*nameSize = (uint64_t)devName.length();
+		*errorSize = (uint64_t)errMsg.length();
 	}
 
 	openCLSolver *GetInstance() noexcept

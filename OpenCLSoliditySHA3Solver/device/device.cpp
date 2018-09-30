@@ -275,11 +275,15 @@ namespace OpenCLSolver
 				if (topology.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD)
 				{
 					pciBusID = (int)topology.pcie.bus;
-					m_api.assignPciBusID(pciBusID);
 
-					std::string realName;
-					m_api.getAdapterName(&realName);
-					if (!realName.empty()) name = realName;
+					if (ADL_API::foundAdlApi())
+					{
+						m_api.assignPciBusID(pciBusID);
+
+						std::string realName;
+						m_api.getAdapterName(&realName);
+						if (!realName.empty()) name = realName;
+					}
 				}
 		}
 
