@@ -224,7 +224,7 @@ namespace OpenCLSolver
 		return m_pause;
 	}
 
-	bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float &intensity, uint &pciBusID, const char *deviceName, uint64_t *nameSize)
+	bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float &intensity, unsigned int &pciBusID, const char *deviceName, uint64_t *nameSize)
 	{
 		getKingAddress(&m_kingAddress);
 		m_isKingMaking = (!isAddressEmpty(m_kingAddress));
@@ -265,7 +265,7 @@ namespace OpenCLSolver
 					#ifdef __linux__
 					std::memcpy((void *)deviceName, assignDevice->name.c_str(), assignDevice->name.length());
 					#else
-					std::memcpy_s((void *)deviceName, *nameSize, assignDevice->name.c_str(), assignDevice->name.length());
+					memcpy_s((void *)deviceName, *nameSize, assignDevice->name.c_str(), assignDevice->name.length());
 					#endif
 
 					onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device codename (" + assignDevice->name + ")...");

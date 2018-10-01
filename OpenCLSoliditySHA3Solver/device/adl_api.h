@@ -75,7 +75,7 @@ public:
 	static void initialize();
 	static void unload();
 
-	void assignPciBusID(uint adapterBusID);
+	void assignPciBusID(unsigned int adapterBusID);
 	void getAdapterName(std::string *adapterName);
 
 	bool getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage);

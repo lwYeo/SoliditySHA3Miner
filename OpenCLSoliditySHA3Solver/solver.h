@@ -47,7 +47,7 @@ namespace OpenCLSolver
 
 		EXPORT void __CDECL__ SetSubmitStale(openCLSolver *instance, const bool submitStale);
 
-		EXPORT void __CDECL__ AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity, uint *pciBusID, const char *deviceName, uint64_t *nameSize);
+		EXPORT void __CDECL__ AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity, unsigned int *pciBusID, const char *deviceName, uint64_t *nameSize);
 
 		EXPORT void __CDECL__ IsAssigned(openCLSolver *instance, bool *isAssigned);
 

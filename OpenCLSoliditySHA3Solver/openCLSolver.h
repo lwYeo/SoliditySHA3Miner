@@ -86,7 +86,7 @@ namespace OpenCLSolver
 		bool isAnyInitialised();
 		bool isMining();
 		bool isPaused();
-		bool assignDevice(std::string platformName, int deviceEnum, float &intensity, uint &pciBusID, const char *deviceName, uint64_t *nameSize);
+		bool assignDevice(std::string platformName, int deviceEnum, float &intensity, unsigned int &pciBusID, const char *deviceName, uint64_t *nameSize);
 
 		void updatePrefix(std::string const prefix);
 		void updateTarget(std::string const target);

@@ -133,7 +133,7 @@ bool ADL_API::getOverDriveNCapabilities(ADLODNCapabilities *capabilities, std::s
 // Public
 // --------------------------------------------------------------------
 
-void ADL_API::assignPciBusID(uint adapterBusID)
+void ADL_API::assignPciBusID(unsigned int adapterBusID)
 {
 	m_context = NULL;
 	m_enabled = 0;

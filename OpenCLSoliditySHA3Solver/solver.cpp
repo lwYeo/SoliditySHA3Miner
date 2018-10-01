@@ -110,7 +110,7 @@ namespace OpenCLSolver
 		instance->isSubmitStale = submitStale;
 	}
 
-	void AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity, uint *pciBusID, const char *deviceName, uint64_t *nameSize)
+	void AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity, unsigned int *pciBusID, const char *deviceName, uint64_t *nameSize)
 	{
 		instance->assignDevice(platformName, deviceEnum, *intensity, *pciBusID, deviceName, nameSize);
 	}

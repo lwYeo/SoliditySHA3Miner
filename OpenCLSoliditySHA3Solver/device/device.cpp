@@ -274,7 +274,7 @@ namespace OpenCLSolver
 			if (status == CL_SUCCESS)
 				if (topology.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD)
 				{
-					pciBusID = (uint)topology.pcie.bus;
+					pciBusID = (unsigned int)topology.pcie.bus;
 
 					if (ADL_API::foundAdlApi())
 					{

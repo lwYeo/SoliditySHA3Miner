@@ -44,7 +44,7 @@ namespace OpenCLSolver
 
 	public:
 		int deviceEnum;
-		uint pciBusID;
+		unsigned int pciBusID;
 		cl_device_id deviceID;
 		cl_device_type deviceType;
 		cl_platform_id platformID;
