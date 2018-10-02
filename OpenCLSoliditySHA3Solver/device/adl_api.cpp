@@ -133,7 +133,7 @@ bool ADL_API::getOverDriveNCapabilities(ADLODNCapabilities *capabilities, std::s
 // Public
 // --------------------------------------------------------------------
 
-void ADL_API::assignPciBusID(int adapterBusID)
+void ADL_API::assignPciBusID(uint adapterBusID)
 {
 	m_context = NULL;
 	m_enabled = 0;
@@ -142,7 +142,7 @@ void ADL_API::assignPciBusID(int adapterBusID)
 	this->m_adapterBusID = adapterBusID;
 
 	for (int i = 0; i < numberOfAdapters; ++i)
-		if (lpAdapterInfo[i].iBusNumber == adapterBusID) m_adapterInfo = lpAdapterInfo[i];
+		if (lpAdapterInfo[i].iBusNumber == (int)adapterBusID) m_adapterInfo = lpAdapterInfo[i];
 
 	ADL2_Overdrive_Caps(m_context, m_adapterInfo.iAdapterIndex, &m_supported, &m_enabled, &m_version);
 }

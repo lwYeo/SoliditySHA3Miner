@@ -224,7 +224,7 @@ namespace OpenCLSolver
 		return m_pause;
 	}
 
-	bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float &intensity)
+	bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float &intensity, uint &pciBusID, const char *deviceName, uint64_t *nameSize)
 	{
 		getKingAddress(&m_kingAddress);
 		m_isKingMaking = (!isAddressEmpty(m_kingAddress));
@@ -260,8 +260,15 @@ namespace OpenCLSolver
 
 					auto &assignDevice = m_devices.back();
 					intensity = assignDevice->userDefinedIntensity;
+					pciBusID = assignDevice->pciBusID;
 
-					onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device (" + assignDevice->name + ")...");
+					#ifdef __linux__
+					std::memcpy((void *)deviceName, assignDevice->name.c_str(), assignDevice->name.length());
+					#else
+					std::memcpy_s((void *)deviceName, *nameSize, assignDevice->name.c_str(), assignDevice->name.length());
+					#endif
+
+					onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device codename (" + assignDevice->name + ")...");
 					onMessage(platformName.c_str(), deviceEnum, "Info", "Intensity: " + std::to_string(assignDevice->userDefinedIntensity));
 
 					if (assignDevice->isAPP() && foundAdlApi())
@@ -372,15 +379,6 @@ namespace OpenCLSolver
 				return device->hashRate();
 
 		return 0ull;
-	}
-
-	std::string openCLSolver::getDeviceName(std::string platformName, int deviceEnum)
-	{
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				return device->getName();
-
-		return "unknown " + platformName + " " + std::to_string(deviceEnum);
 	}
 
 	int openCLSolver::getDeviceSettingMaxCoreClock(std::string platformName, int deviceEnum)

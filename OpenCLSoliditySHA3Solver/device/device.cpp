@@ -214,7 +214,7 @@ namespace OpenCLSolver
 		mining{ false },
 		platformID{ devPlatformID },
 		userDefinedIntensity{ userDefIntensity },
-		pciBusID{ -1 }
+		pciBusID{ 0 }
 	{
 		char charBuffer[1024];
 		size_t sizeBuffer[3];
@@ -274,7 +274,7 @@ namespace OpenCLSolver
 			if (status == CL_SUCCESS)
 				if (topology.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD)
 				{
-					pciBusID = (int)topology.pcie.bus;
+					pciBusID = (uint)topology.pcie.bus;
 
 					if (ADL_API::foundAdlApi())
 					{

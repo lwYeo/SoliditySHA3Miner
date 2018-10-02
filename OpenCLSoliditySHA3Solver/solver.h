@@ -47,7 +47,7 @@ namespace OpenCLSolver
 
 		EXPORT void __CDECL__ SetSubmitStale(openCLSolver *instance, const bool submitStale);
 
-		EXPORT void __CDECL__ AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity);
+		EXPORT void __CDECL__ AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity, uint *pciBusID, const char *deviceName, uint64_t *nameSize);
 
 		EXPORT void __CDECL__ IsAssigned(openCLSolver *instance, bool *isAssigned);
 
@@ -56,8 +56,6 @@ namespace OpenCLSolver
 		EXPORT void __CDECL__ IsMining(openCLSolver *instance, bool *isMining);
 
 		EXPORT void __CDECL__ IsPaused(openCLSolver *instance, bool *isPaused);
-
-		EXPORT void __CDECL__ GetInstanceDeviceName(openCLSolver *instance, const char *platformName, const int deviceEnum, const char *deviceName, uint64_t *nameSize);
 
 		EXPORT void __CDECL__ GetHashRateByDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, uint64_t *hashRate);
 

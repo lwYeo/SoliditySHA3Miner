@@ -86,15 +86,13 @@ namespace OpenCLSolver
 		bool isAnyInitialised();
 		bool isMining();
 		bool isPaused();
-		bool assignDevice(std::string platformName, int deviceEnum, float &intensity);
+		bool assignDevice(std::string platformName, int deviceEnum, float &intensity, uint &pciBusID, const char *deviceName, uint64_t *nameSize);
 
 		void updatePrefix(std::string const prefix);
 		void updateTarget(std::string const target);
 
 		uint64_t getTotalHashRate();
 		uint64_t getHashRateByDevice(std::string platformName, int const deviceEnum);
-
-		std::string getDeviceName(std::string platformName, int deviceEnum);
 
 		int getDeviceSettingMaxCoreClock(std::string platformName, int deviceEnum);
 		int getDeviceSettingMaxMemoryClock(std::string platformName, int deviceEnum);

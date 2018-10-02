@@ -74,7 +74,7 @@ namespace SoliditySHA3Miner.Miner
             public static extern void SetSubmitStale(IntPtr instance, bool submitStale);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void AssignDevice(IntPtr instance, StringBuilder platformName, int deviceEnum, ref float intensity);
+            public static extern void AssignDevice(IntPtr instance, StringBuilder platformName, int deviceEnum, ref float intensity, ref uint pciBusID, StringBuilder deviceName, ref ulong nameSize);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void IsAssigned(IntPtr instance, ref bool isAssigned);
@@ -87,9 +87,6 @@ namespace SoliditySHA3Miner.Miner
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void IsPaused(IntPtr instance, ref bool isPaused);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void GetInstanceDeviceName(IntPtr instance, StringBuilder platformName, int deviceEnum, StringBuilder deviceName, ref ulong nameSize);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void GetHashRateByDevice(IntPtr instance, StringBuilder platformName, int deviceEnum, ref ulong hashRate);
@@ -257,6 +254,8 @@ namespace SoliditySHA3Miner.Miner
 
         public bool HasMonitoringAPI { get; private set; }
 
+        public bool UseLinuxQuery { get; private set; }
+
         public bool IsAnyInitialised
         {
             get
@@ -311,7 +310,7 @@ namespace SoliditySHA3Miner.Miner
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                Program.Print(string.Format("OpenCL [ERROR] {0}", ex.Message));
                 StopMining();
             }
         }
@@ -328,7 +327,7 @@ namespace SoliditySHA3Miner.Miner
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                Program.Print(string.Format("OpenCL [ERROR] {0}", ex.Message));
             }
         }
 
@@ -369,7 +368,7 @@ namespace SoliditySHA3Miner.Miner
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                Program.Print(string.Format("OpenCL [ERROR] {0}", ex.Message));
             }
         }
 
@@ -386,11 +385,19 @@ namespace SoliditySHA3Miner.Miner
 
                 var hasADL_API = false;
                 Solver.FoundADL_API(ref hasADL_API);
-                HasMonitoringAPI = hasADL_API;
+                if (!hasADL_API) Program.Print("OpenCL [WARN] ADL library not found.");
+
+                if (!hasADL_API && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    UseLinuxQuery = API.AmdLinuxQuery.QuerySuccess();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !UseLinuxQuery)
+                    Program.Print("OpenCL [WARN] Unable to find AMD devices in Linux kernel.");
+
+                HasMonitoringAPI = hasADL_API || UseLinuxQuery;
 
                 NetworkInterface.OnGetTotalHashrate += NetworkInterface_OnGetTotalHashrate;
 
-                if (!HasMonitoringAPI) Program.Print("[WARN] ADL library not found.");
+                if (!HasMonitoringAPI) Program.Print("OpenCL [WARN] GPU monitoring not available.");
 
                 m_instance = Solver.GetInstance();
                 unsafe
@@ -412,11 +419,10 @@ namespace SoliditySHA3Miner.Miner
 
                 if (devices.All(d => d.DeviceID == -1))
                 {
-                    Program.Print("[INFO] OpenCL device not set.");
+                    Program.Print("OpenCL [INFO] Device not set.");
                     return;
                 }
 
-                var errMsg = new StringBuilder(1024);
                 var deviceName = new StringBuilder(256);
                 var deviceNameSize = 0ul;
 
@@ -424,18 +430,21 @@ namespace SoliditySHA3Miner.Miner
                     if (Devices[i].DeviceID > -1)
                     {
                         deviceName.Clear();
-                        Solver.AssignDevice(m_instance, new StringBuilder(Devices[i].Platform), Devices[i].DeviceID, ref Devices[i].Intensity);
-                        Solver.GetInstanceDeviceName(m_instance, new StringBuilder(Devices[i].Platform), Devices[i].DeviceID, deviceName, ref deviceNameSize);
-
-                        if (errMsg.Length > 0)
-                            m_instance_OnMessage(new StringBuilder(Devices[i].Platform), Devices[i].DeviceID, new StringBuilder("ERROR"), errMsg);
-                        else
+                        Solver.AssignDevice(m_instance, new StringBuilder(Devices[i].Platform), Devices[i].DeviceID,
+                                            ref Devices[i].Intensity, ref Devices[i].PciBusID, deviceName, ref deviceNameSize);
+                        if (!UseLinuxQuery)
                             Devices[i].Name = deviceName.ToString();
+                        else
+                        {
+                            Devices[i].Name = API.AmdLinuxQuery.GetDeviceRealName(Devices[i].PciBusID, deviceName.ToString());
+                            Program.Print(string.Format("{0} (OpenCL) ID: {1} [INFO] Assigned OpenCL device ({2})",
+                                                        Devices[i].Platform, Devices[i].DeviceID, Devices[i].Name));
+                        }
                     }
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                Program.Print(string.Format("OpenCL [ERROR] {0}", ex.Message));
             }
         }
 
@@ -450,7 +459,7 @@ namespace SoliditySHA3Miner.Miner
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                Program.Print(string.Format("OpenCL [ERROR] {0}", ex.Message));
             }
         }
 
@@ -483,7 +492,11 @@ namespace SoliditySHA3Miner.Miner
                 foreach (var device in Devices)
                     if (device.DeviceID > -1)
                     {
-                        Solver.GetDeviceCurrentCoreClock(m_instance, new StringBuilder(device.Platform), device.DeviceID, ref coreClock);
+                        if (UseLinuxQuery)
+                            coreClock = API.AmdLinuxQuery.GetDeviceCurrentCoreClock(device.PciBusID);
+                        else
+                            Solver.GetDeviceCurrentCoreClock(m_instance, new StringBuilder(device.Platform), device.DeviceID, ref coreClock);
+
                         coreClockString.AppendFormat(" {0}MHz", coreClock);
                     }
                 Program.Print(coreClockString.ToString());
@@ -492,7 +505,11 @@ namespace SoliditySHA3Miner.Miner
                 foreach (var device in Devices)
                     if (device.DeviceID > -1)
                     {
-                        Solver.GetDeviceCurrentTemperature(m_instance, new StringBuilder(device.Platform), device.DeviceID, ref temperature);
+                        if (UseLinuxQuery)
+                            temperature = API.AmdLinuxQuery.GetDeviceCurrentTemperature(device.PciBusID);
+                        else
+                            Solver.GetDeviceCurrentTemperature(m_instance, new StringBuilder(device.Platform), device.DeviceID, ref temperature);
+
                         temperatureString.AppendFormat(" {0}C", temperature);
                     }
                 Program.Print(temperatureString.ToString());
@@ -500,11 +517,14 @@ namespace SoliditySHA3Miner.Miner
                 fanTachometerRpmString.Append("OpenCL [INFO] Fan tachometers:");
                 foreach (var device in Devices)
                     if (device.DeviceID > -1)
-                        if (device.DeviceID > -1)
-                        {
+                    {
+                        if (UseLinuxQuery)
+                            tachometerRPM = API.AmdLinuxQuery.GetDeviceCurrentFanTachometerRPM(device.PciBusID);
+                        else
                             Solver.GetDeviceCurrentFanTachometerRPM(m_instance, new StringBuilder(device.Platform), device.DeviceID, ref tachometerRPM);
-                            fanTachometerRpmString.AppendFormat(" {0}RPM", tachometerRPM);
-                        }
+
+                        fanTachometerRpmString.AppendFormat(" {0}RPM", tachometerRPM);
+                    }
                 Program.Print(fanTachometerRpmString.ToString());
             }
 
@@ -554,7 +574,7 @@ namespace SoliditySHA3Miner.Miner
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                Program.Print(string.Format("OpenCL [ERROR] {0}", ex.Message));
             }
         }
 
@@ -567,7 +587,7 @@ namespace SoliditySHA3Miner.Miner
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                Program.Print(string.Format("OpenCL [ERROR] {0}", ex.Message));
             }
         }
 
@@ -610,7 +630,7 @@ namespace SoliditySHA3Miner.Miner
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                Program.Print(string.Format("OpenCL [ERROR] {0}", ex.Message));
             }
         }
 

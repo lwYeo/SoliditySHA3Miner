@@ -44,6 +44,7 @@ namespace OpenCLSolver
 
 	public:
 		int deviceEnum;
+		uint pciBusID;
 		cl_device_id deviceID;
 		cl_device_type deviceType;
 		cl_platform_id platformID;
@@ -99,7 +100,6 @@ namespace OpenCLSolver
 		uint32_t kernelWaitSleepDuration;
 
 	private:
-		int pciBusID;
 		ADL_API m_api;
 		uint32_t computeCapability;
 

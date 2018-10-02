@@ -110,9 +110,9 @@ namespace OpenCLSolver
 		instance->isSubmitStale = submitStale;
 	}
 
-	void AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity)
+	void AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity, uint *pciBusID, const char *deviceName, uint64_t *nameSize)
 	{
-		instance->assignDevice(platformName, deviceEnum, *intensity);
+		instance->assignDevice(platformName, deviceEnum, *intensity, *pciBusID, deviceName, nameSize);
 	}
 
 	void IsAssigned(openCLSolver *instance, bool *isAssigned)
@@ -133,16 +133,6 @@ namespace OpenCLSolver
 	void IsPaused(openCLSolver *instance, bool *isPaused)
 	{
 		*isPaused = instance->isPaused();
-	}
-
-	void GetInstanceDeviceName(openCLSolver *instance, const char *platformName, const int deviceEnum, const char *deviceName, uint64_t *nameSize)
-	{
-		auto devName = instance->getDeviceName(platformName, deviceEnum);
-		const char *deviceNameStr = devName.c_str();
-
-		std::memcpy((void *)deviceName, deviceNameStr, devName.length());
-		std::memset((void *)&deviceName[devName.length()], '\0', 1ull);
-		*nameSize = devName.length();
 	}
 
 	void GetHashRateByDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, uint64_t *hashRate)

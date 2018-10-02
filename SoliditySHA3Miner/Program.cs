@@ -276,6 +276,9 @@ namespace SoliditySHA3Miner
                     
                     if ((Config.allowAMD || Config.allowIntel) && openCLdevices.Any())
                         m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, openCLdevices, Config.submitStale, Config.pauseOnFailedScans);
+
+                    Config.intelDevices = openCLdevices.Where(d => d.Platform.ToUpperInvariant().Contains("INTEL")).ToArray();
+                    Config.amdDevices = openCLdevices.Where(d => d.Platform.Contains("AMD Accelerated Parallel Processing")).ToArray();
                 }
                 m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner }.Where(m => m != null).ToArray();
 
@@ -284,7 +287,7 @@ namespace SoliditySHA3Miner
                     Console.WriteLine("[ERROR] No miner assigned.");
                     Environment.Exit(1);
                 }
-       
+
                 if (!Utils.Json.SerializeToFile(Config, GetAppConfigPath())) // Write again to update GPU intensity etc.
                     Print(string.Format("[ERROR] Failed to write config file at {0}", GetAppConfigPath()));
 
