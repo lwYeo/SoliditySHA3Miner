@@ -263,9 +263,9 @@ namespace OpenCLSolver
 					pciBusID = assignDevice->pciBusID;
 
 					#ifdef __linux__
-					std::memcpy((void *)deviceName, assignDevice->name.c_str(), assignDevice->name.length());
+					strcpy(deviceName, assignDevice->name.c_str(), assignDevice->name.length());
 					#else
-					memcpy_s((void *)deviceName, *nameSize, assignDevice->name.c_str(), assignDevice->name.length());
+					strcpy_s((char *)deviceName, assignDevice->name.size() + 1, assignDevice->name.c_str());
 					#endif
 
 					onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device codename (" + assignDevice->name + ")...");
