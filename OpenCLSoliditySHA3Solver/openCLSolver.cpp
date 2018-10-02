@@ -263,7 +263,7 @@ namespace OpenCLSolver
 					pciBusID = assignDevice->pciBusID;
 
 					#ifdef __linux__
-					strcpy(deviceName, assignDevice->name.c_str(), assignDevice->name.length());
+					strcpy((char *)deviceName, assignDevice->name.c_str());
 					#else
 					strcpy_s((char *)deviceName, assignDevice->name.size() + 1, assignDevice->name.c_str());
 					#endif
