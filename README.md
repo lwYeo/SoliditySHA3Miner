@@ -1,7 +1,7 @@
 # SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
-Current latest public release version: [2.0.1](https://github.com/lwYeo/SoliditySHA3Miner/releases/tag/2.0.0)
+Current latest public release version: [2.0.2](https://github.com/lwYeo/SoliditySHA3Miner/releases/latest)
 
 Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
 
