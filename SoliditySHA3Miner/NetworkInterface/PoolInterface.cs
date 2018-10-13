@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Timers;
@@ -164,8 +165,44 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 if (success)
                 {
-                    Latency = (int)(DateTime.Now - startTime).TotalSeconds;
                     m_runFailover = false;
+                    var tempLatency = (int)(DateTime.Now - startTime).TotalMilliseconds;
+                    try
+                    {
+                        using (var ping = new Ping())
+                        {
+                            var poolURL = s_PoolURL.Contains("://") ? s_PoolURL.Split("://")[1] : s_PoolURL;
+                            try
+                            {
+                                var response = ping.Send(poolURL);
+                                if (response.RoundtripTime > 0)
+                                    tempLatency = (int)response.RoundtripTime;
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    poolURL = poolURL.Split('/').First();
+                                    var response = ping.Send(poolURL);
+                                    if (response.RoundtripTime > 0)
+                                        tempLatency = (int)response.RoundtripTime;
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        poolURL = poolURL.Split(':').First();
+                                        var response = ping.Send(poolURL);
+                                        if (response.RoundtripTime > 0)
+                                            tempLatency = (int)response.RoundtripTime;
+                                    }
+                                    catch { }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                    Latency = tempLatency;
                 }
             }
 

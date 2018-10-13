@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Timers;
@@ -197,7 +198,46 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
             finally
             {
-                if (success) Latency = (int)(DateTime.Now - startTime).TotalSeconds;
+                if (success)
+                {
+                    var tempLatency = (int)(DateTime.Now - startTime).TotalMilliseconds;
+                    try
+                    {
+                        using (var ping = new Ping())
+                        {
+                            var submitUrl = SubmitURL.Contains("://") ? SubmitURL.Split("://")[1] : SubmitURL;
+                            try
+                            {
+                                var response = ping.Send(submitUrl);
+                                if (response.RoundtripTime > 0)
+                                    tempLatency = (int)response.RoundtripTime;
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    submitUrl = submitUrl.Split('/').First();
+                                    var response = ping.Send(submitUrl);
+                                    if (response.RoundtripTime > 0)
+                                        tempLatency = (int)response.RoundtripTime;
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        submitUrl = submitUrl.Split(':').First();
+                                        var response = ping.Send(submitUrl);
+                                        if (response.RoundtripTime > 0)
+                                            tempLatency = (int)response.RoundtripTime;
+                                    }
+                                    catch { }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                    Latency = tempLatency;
+                }
             }
         }
 
