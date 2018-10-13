@@ -400,14 +400,14 @@ namespace SoliditySHA3Miner.Miner
 
                 Solver.SetSubmitStale(m_instance, isSubmitStale);
 
-                if (cudaDevices.All(d => d.DeviceID == -1))
+                if (!Program.AllowCUDA || cudaDevices.All(d => !d.AllowDevice))
                 {
                     Program.Print("[INFO] CUDA device not set.");
                     return;
                 }
 
                 for (int i = 0; i < Devices.Length; i++)
-                    if (Devices[i].DeviceID > -1)
+                    if (Devices[i].AllowDevice)
                         Solver.AssignDevice(m_instance, Devices[i].DeviceID, ref Devices[i].PciBusID, ref Devices[i].Intensity);
             }
             catch (Exception ex)
@@ -439,7 +439,7 @@ namespace SoliditySHA3Miner.Miner
 
             foreach (var device in Devices)
             {
-                if (device.DeviceID > -1)
+                if (device.AllowDevice)
                 {
                     Solver.GetHashRateByDeviceID(m_instance, (uint)device.DeviceID, ref hashrate);
                     hashString.AppendFormat(" {0} MH/s", hashrate / 1000000.0f);
@@ -458,7 +458,7 @@ namespace SoliditySHA3Miner.Miner
 
                 coreClockString.Append("CUDA [INFO] Core clocks:");
                 foreach (var device in Devices)
-                    if (device.DeviceID > -1)
+                    if (device.AllowDevice)
                     {
                         if (UseNvSMI)
                             coreClock = API.NvSMI.GetDeviceCurrentCoreClock(device.PciBusID);
@@ -470,7 +470,7 @@ namespace SoliditySHA3Miner.Miner
 
                 temperatureString.Append("CUDA [INFO] Temperatures:");
                 foreach (var device in Devices)
-                    if (device.DeviceID > -1)
+                    if (device.AllowDevice)
                     {
                         if (UseNvSMI)
                             temperature = API.NvSMI.GetDeviceCurrentTemperature(device.PciBusID);
@@ -484,12 +484,11 @@ namespace SoliditySHA3Miner.Miner
                 {
                     fanTachometerRpmString.Append("CUDA [INFO] Fan tachometers:");
                     foreach (var device in Devices)
-                        if (device.DeviceID > -1)
-                            if (device.DeviceID > -1)
-                            {
-                                Solver.GetDeviceCurrentFanTachometerRPM(m_instance, device.DeviceID, ref tachometerRPM);
-                                fanTachometerRpmString.AppendFormat(" {0}RPM", tachometerRPM);
-                            }
+                        if (device.AllowDevice)
+                        {
+                            Solver.GetDeviceCurrentFanTachometerRPM(m_instance, device.DeviceID, ref tachometerRPM);
+                            fanTachometerRpmString.AppendFormat(" {0}RPM", tachometerRPM);
+                        }
                     Program.Print(fanTachometerRpmString.ToString());
                 }
             }

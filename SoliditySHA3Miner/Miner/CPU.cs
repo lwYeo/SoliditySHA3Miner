@@ -130,7 +130,7 @@ namespace SoliditySHA3Miner.Miner
 
         public NetworkInterface.INetworkInterface NetworkInterface { get; }
 
-        public bool HasAssignedDevices => m_instance != null && m_instance.ToInt64() != 0 && Devices.Any(d => d.DeviceID > -1);
+        public bool HasAssignedDevices => m_instance != null && m_instance.ToInt64() != 0 && Devices.Any(d => d.AllowDevice);
 
         public bool HasMonitoringAPI => false;
 
@@ -255,7 +255,7 @@ namespace SoliditySHA3Miner.Miner
                 var devicesStr = string.Empty;
                 foreach (var device in Devices)
                 {
-                    if (device.DeviceID < 0) continue;
+                    if (!device.AllowDevice) continue;
 
                     if (!string.IsNullOrEmpty(devicesStr)) devicesStr += ',';
                     devicesStr += device.DeviceID.ToString("X64");
@@ -297,7 +297,7 @@ namespace SoliditySHA3Miner.Miner
             var hashString = new StringBuilder();
             hashString.Append("CPU [INFO] Hashrates:");
 
-            for (uint threadID = 0; threadID < Devices.Count(d => d.DeviceID > -1); threadID++)
+            for (uint threadID = 0; threadID < Devices.Count(d => d.AllowDevice); threadID++)
             {
                 Solver.GetHashRateByThreadID(m_instance, threadID, ref hashrate);
                 hashString.AppendFormat(" {0} MH/s", hashrate / 1000000.0f);

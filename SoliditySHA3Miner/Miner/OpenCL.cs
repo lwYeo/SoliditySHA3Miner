@@ -374,11 +374,11 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion IMiner
 
-        public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device[] devices, bool isSubmitStale, int pauseOnFailedScans)
+        public OpenCL(NetworkInterface.INetworkInterface networkInterface,
+                      Device[] intelDevices, Device[] amdDevices, bool isSubmitStale, int pauseOnFailedScans)
         {
             try
             {
-                Devices = devices;
                 NetworkInterface = networkInterface;
                 m_pauseOnFailedScan = pauseOnFailedScans;
                 m_failedScanCount = 0;
@@ -417,7 +417,7 @@ namespace SoliditySHA3Miner.Miner
 
                 Solver.SetSubmitStale(m_instance, isSubmitStale);
 
-                if (devices.All(d => d.DeviceID == -1))
+                if ((!Program.AllowIntel && !Program.AllowAMD) || (intelDevices.All(d => !d.AllowDevice) && amdDevices.All(d => !d.AllowDevice)))
                 {
                     Program.Print("OpenCL [INFO] Device not set.");
                     return;
@@ -426,21 +426,38 @@ namespace SoliditySHA3Miner.Miner
                 var deviceName = new StringBuilder(256);
                 var deviceNameSize = 0ul;
 
-                for (int i = 0; i < Devices.Length; i++)
-                    if (Devices[i].DeviceID > -1)
-                    {
-                        deviceName.Clear();
-                        Solver.AssignDevice(m_instance, new StringBuilder(Devices[i].Platform), Devices[i].DeviceID,
-                                            ref Devices[i].Intensity, ref Devices[i].PciBusID, deviceName, ref deviceNameSize);
-                        if (!UseLinuxQuery)
-                            Devices[i].Name = deviceName.ToString();
-                        else
+                if (Program.AllowIntel)
+                    for (int i = 0; i < intelDevices.Length; i++)
+                        if (intelDevices[i].AllowDevice)
                         {
-                            Devices[i].Name = API.AmdLinuxQuery.GetDeviceRealName(Devices[i].PciBusID, deviceName.ToString());
-                            Program.Print(string.Format("{0} (OpenCL) ID: {1} [INFO] Assigned OpenCL device ({2})",
-                                                        Devices[i].Platform, Devices[i].DeviceID, Devices[i].Name));
+                            Solver.AssignDevice(m_instance, new StringBuilder(intelDevices[i].Platform), intelDevices[i].DeviceID,
+                                                ref intelDevices[i].Intensity, ref intelDevices[i].PciBusID, deviceName, ref deviceNameSize);
                         }
-                    }
+
+                if (Program.AllowAMD)
+                    for (int i = 0; i < amdDevices.Length; i++)
+                        if (amdDevices[i].AllowDevice)
+                        {
+                            deviceName.Clear();
+                            Solver.AssignDevice(m_instance, new StringBuilder(amdDevices[i].Platform), amdDevices[i].DeviceID,
+                                                ref amdDevices[i].Intensity, ref amdDevices[i].PciBusID, deviceName, ref deviceNameSize);
+                            if (!UseLinuxQuery)
+                                amdDevices[i].Name = deviceName.ToString();
+                            else
+                            {
+                                amdDevices[i].Name = API.AmdLinuxQuery.GetDeviceRealName(amdDevices[i].PciBusID, deviceName.ToString());
+                                Program.Print(string.Format("{0} (OpenCL) ID: {1} [INFO] Assigned OpenCL device ({2})",
+                                                            amdDevices[i].Platform, amdDevices[i].DeviceID, amdDevices[i].Name));
+                            }
+                        }
+
+                if (Program.AllowIntel && Program.AllowAMD)
+                    Devices = intelDevices.Union(amdDevices).ToArray();
+                else if (Program.AllowIntel)
+                    Devices = intelDevices;
+                else if (Program.AllowAMD)
+                    Devices = amdDevices;
+
             }
             catch (Exception ex)
             {
@@ -471,7 +488,7 @@ namespace SoliditySHA3Miner.Miner
 
             foreach (var device in Devices)
             {
-                if (device.DeviceID > -1)
+                if (device.AllowDevice)
                 {
                     Solver.GetHashRateByDevice(m_instance, new StringBuilder(device.Platform), device.DeviceID, ref hashrate);
                     hashString.AppendFormat(" {0} MH/s", hashrate / 1000000.0f);
@@ -490,7 +507,7 @@ namespace SoliditySHA3Miner.Miner
 
                 coreClockString.Append("OpenCL [INFO] Core clocks:");
                 foreach (var device in Devices)
-                    if (device.DeviceID > -1)
+                    if (device.AllowDevice)
                     {
                         if (UseLinuxQuery)
                             coreClock = API.AmdLinuxQuery.GetDeviceCurrentCoreClock(device.PciBusID);
@@ -503,7 +520,7 @@ namespace SoliditySHA3Miner.Miner
 
                 temperatureString.Append("OpenCL [INFO] Temperatures:");
                 foreach (var device in Devices)
-                    if (device.DeviceID > -1)
+                    if (device.AllowDevice)
                     {
                         if (UseLinuxQuery)
                             temperature = API.AmdLinuxQuery.GetDeviceCurrentTemperature(device.PciBusID);
@@ -516,7 +533,7 @@ namespace SoliditySHA3Miner.Miner
 
                 fanTachometerRpmString.Append("OpenCL [INFO] Fan tachometers:");
                 foreach (var device in Devices)
-                    if (device.DeviceID > -1)
+                    if (device.AllowDevice)
                     {
                         if (UseLinuxQuery)
                             tachometerRPM = API.AmdLinuxQuery.GetDeviceCurrentFanTachometerRPM(device.PciBusID);

@@ -86,6 +86,12 @@ namespace SoliditySHA3Miner
 
         public static string GetAppConfigPath() => Path.Combine(AppDirPath, GetApplicationName() + ".conf");
 
+        public static bool AllowIntel { get; set; }
+
+        public static bool AllowAMD { get; set; }
+
+        public static bool AllowCUDA { get; set; }
+
         public static string GetCurrentTimestamp() => string.Format("{0:s}", DateTime.Now);
 
         public static void Print(string message, bool excludePrefix = false)
@@ -224,10 +230,7 @@ namespace SoliditySHA3Miner
             Print(GetHeader(), excludePrefix: true);
             
             if (!Config.ParseArgumentsToConfig(args)) Environment.Exit(1);
-
-            if (!Utils.Json.SerializeToFile(Config, GetAppConfigPath()))
-                Print(string.Format("[ERROR] Failed to write config file at {0}", GetAppConfigPath()));
-
+            
             try
             {
                 Config.networkUpdateInterval = Config.networkUpdateInterval < 1000 ? Config.Defaults.NetworkUpdateInterval : Config.networkUpdateInterval;
@@ -268,16 +271,11 @@ namespace SoliditySHA3Miner
                 }
                 else
                 {
-                    if (Config.allowCUDA && Config.cudaDevices.Any())
+                    if (AllowCUDA && Config.cudaDevices.Any(d => d.AllowDevice))
                         m_cudaMiner = new Miner.CUDA(mainNetworkInterface, Config.cudaDevices, Config.submitStale, Config.pauseOnFailedScans);
-
-                    var openCLdevices = Config.intelDevices.Union(Config.amdDevices).ToArray();
                     
-                    if ((Config.allowAMD || Config.allowIntel) && openCLdevices.Any())
-                        m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, openCLdevices, Config.submitStale, Config.pauseOnFailedScans);
-
-                    Config.intelDevices = openCLdevices.Where(d => d.Platform.ToUpperInvariant().Contains("INTEL")).ToArray();
-                    Config.amdDevices = openCLdevices.Where(d => d.Platform.Contains("AMD Accelerated Parallel Processing")).ToArray();
+                    if ((AllowAMD || AllowIntel) && Config.intelDevices.Union(Config.amdDevices).Any(d => d.AllowDevice))
+                        m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, Config.intelDevices, Config.amdDevices, Config.submitStale, Config.pauseOnFailedScans);
                 }
                 m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner }.Where(m => m != null).ToArray();
 
@@ -287,7 +285,7 @@ namespace SoliditySHA3Miner
                     Environment.Exit(1);
                 }
 
-                if (!Utils.Json.SerializeToFile(Config, GetAppConfigPath())) // Write again to update GPU intensity etc.
+                if (!Utils.Json.SerializeToFile(Config, GetAppConfigPath()))
                     Print(string.Format("[ERROR] Failed to write config file at {0}", GetAppConfigPath()));
 
                 m_apiJson = new API.Json(m_allMiners);

@@ -162,7 +162,7 @@ namespace SoliditySHA3Miner.API
 
                 foreach (var miner in m_miners)
                 {
-                    foreach (var device in miner.Devices.Where(d => d.DeviceID > -1))
+                    foreach (var device in miner.Devices.Where(d => d.AllowDevice))
                     {
                         JsonAPI.Miner newMiner = null;
                         if (miner.HasMonitoringAPI)

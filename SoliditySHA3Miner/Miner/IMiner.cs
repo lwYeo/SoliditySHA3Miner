@@ -105,8 +105,9 @@ namespace SoliditySHA3Miner.Miner
         }
     }
 
-    public struct Device
+    public class Device
     {
+        public bool AllowDevice;
         public string Type;
         public string Platform;
         public int DeviceID;
