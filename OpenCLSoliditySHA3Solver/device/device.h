@@ -16,7 +16,7 @@
 #	include <CL/cl.hpp>
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__) || defined(__MACOSX)
 #	define _GNU_SOURCE
 #	include <dlfcn.h>
 #else

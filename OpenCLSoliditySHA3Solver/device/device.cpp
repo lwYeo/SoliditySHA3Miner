@@ -143,13 +143,21 @@ namespace OpenCLSolver
 		std::string kernelPath{ KERNEL_FILE };
 		std::string kingKernelPath{ KING_KERNEL_FILE };
 
-#	ifdef __linux__
+#	if defined(__linux__) || defined(__APPLE__) || defined(__MACOSX)
 		libName = "OpenCLSoliditySHA3Solver.so";
+		void *handle = dlopen(libName.c_str(), RTLD_LOCAL | RTLD_LAZY);
+		dlinfo(handle, RTLD_DI_ORIGIN, &libPath);
+
+		if (libPath[0] != '\0')
+		{
+			std::string tempLibPath{ libPath };
+			kernelPath = tempLibPath + '/' + KERNEL_FILE;
+			kingKernelPath = tempLibPath + '/' + KING_KERNEL_FILE;
+		}
 #	else
 		libName = "OpenCLSoliditySHA3Solver.dll";
 		HMODULE hModule = LoadLibrary(libName.c_str());
 		if (hModule != NULL) GetModuleFileName(hModule, libPath, 1024);
-#	endif
 
 		if (libPath[0] != '\0')
 		{
@@ -159,6 +167,7 @@ namespace OpenCLSolver
 			kernelPath = tempLibPath.substr(0, libPathLength) + '\\' + KERNEL_FILE;
 			kingKernelPath = kernelPath.substr(0, libPathLength) + '\\' + KING_KERNEL_FILE;
 		}
+#	endif
 
 		std::fstream f(kernelPath.c_str(), (std::fstream::in | std::fstream::binary));
 
