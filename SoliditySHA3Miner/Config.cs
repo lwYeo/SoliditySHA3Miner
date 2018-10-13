@@ -27,6 +27,7 @@ namespace SoliditySHA3Miner
         public string secondaryPool { get; set; }
         public string privateKey { get; set; }
         public float gasToMine { get; set; }
+        public ulong gasLimit { get; set; }
         public bool cpuMode { get; set; }
         public Miner.Device[] cpuDevices { get; set; }
         public bool allowIntel { get; set; }
@@ -57,6 +58,7 @@ namespace SoliditySHA3Miner
             secondaryPool = string.Empty;
             privateKey = string.Empty;
             gasToMine = Defaults.GasToMine;
+            gasLimit = Defaults.GasLimit;
             cpuMode = false;
             cpuDevices = new Miner.Device[] { };
             allowIntel = true;
@@ -101,6 +103,7 @@ namespace SoliditySHA3Miner
                 "  address                 (Pool only) Miner's ethereum address (default: developer's address)\n" +
                 "  privateKey              (Solo only) Miner's private key\n" +
                 "  gasToMine               (Solo only) Gas price to mine in GWei (default: " + Defaults.GasToMine + ")\n" +
+                "  gasLimit                (Solo only) Gas limit to submit proof of work (default: " + Defaults.GasLimit + ")\n" +
                 "  pool                    (Pool only) URL of pool mining server (default: " + Defaults.PoolPrimary + ")\n" +
                 "  secondaryPool           (Optional) URL of failover pool mining server\n" +
                 "  logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)\n" +
@@ -475,134 +478,138 @@ namespace SoliditySHA3Miner
         public bool ParseArgumentsToConfig(string[] args)
         {
             foreach (var arg in args)
+            {
+                try
                 {
-                    try
+                    switch (arg.Split('=')[0])
                     {
-                        switch (arg.Split('=')[0])
-                        {
-                            case "help":
-                                PrintHelp();
-                                Environment.Exit(0);
-                                break;
+                        case "help":
+                            PrintHelp();
+                            Environment.Exit(0);
+                            break;
 
-                            case "cpuMode":
-                                cpuMode = bool.Parse(arg.Split('=')[1]);
-                                break;
+                        case "cpuMode":
+                            cpuMode = bool.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "cpuID":
-                                SetCpuDevices(arg.Split('=')[1].Split(',').Select(s => uint.Parse(s)).ToArray());
-                                break;
+                        case "cpuID":
+                            SetCpuDevices(arg.Split('=')[1].Split(',').Select(s => uint.Parse(s)).ToArray());
+                            break;
 
-                            case "allowIntel":
-                                allowIntel = bool.Parse(arg.Split('=')[1]);
-                                break;
+                        case "allowIntel":
+                            allowIntel = bool.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "allowAMD":
-                                allowAMD = bool.Parse(arg.Split('=')[1]);
-                                break;
+                        case "allowAMD":
+                            allowAMD = bool.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "allowCUDA":
-                                allowCUDA = bool.Parse(arg.Split('=')[1]);
-                                break;
+                        case "allowCUDA":
+                            allowCUDA = bool.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "listAmdDevices":
-                                PrintAmdDevices();
-                                Environment.Exit(0);
-                                break;
+                        case "listAmdDevices":
+                            PrintAmdDevices();
+                            Environment.Exit(0);
+                            break;
 
-                            case "listCudaDevices":
-                                PrintCudaDevices();
-                                Environment.Exit(0);
-                                break;
+                        case "listCudaDevices":
+                            PrintCudaDevices();
+                            Environment.Exit(0);
+                            break;
 
-                            case "minerJsonAPI":
-                                minerJsonAPI = arg.Split('=')[1];
-                                break;
+                        case "minerJsonAPI":
+                            minerJsonAPI = arg.Split('=')[1];
+                            break;
 
-                            case "minerCcminerAPI":
-                                minerCcminerAPI = arg.Split('=')[1];
-                                break;
+                        case "minerCcminerAPI":
+                            minerCcminerAPI = arg.Split('=')[1];
+                            break;
 
-                            case "overrideMaxTarget":
-                                var strValue = arg.Split('=')[1];
-                                overrideMaxTarget = strValue.StartsWith("0x")
-                                                            ? new HexBigInteger(strValue)
-                                                            : new HexBigInteger(BigInteger.Parse(strValue));
-                                break;
+                        case "overrideMaxTarget":
+                            var strValue = arg.Split('=')[1];
+                            overrideMaxTarget = strValue.StartsWith("0x")
+                                                        ? new HexBigInteger(strValue)
+                                                        : new HexBigInteger(BigInteger.Parse(strValue));
+                            break;
 
-                            case "customDifficulty":
-                                customDifficulty = uint.Parse(arg.Split('=')[1]);
-                                break;
+                        case "customDifficulty":
+                            customDifficulty = uint.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "maxScanRetry":
-                                maxScanRetry = int.Parse(arg.Split('=')[1]);
-                                break;
+                        case "maxScanRetry":
+                            maxScanRetry = int.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "pauseOnFailedScans":
-                                pauseOnFailedScans = int.Parse(arg.Split('=')[1]);
-                                break;
+                        case "pauseOnFailedScans":
+                            pauseOnFailedScans = int.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "submitStale":
-                                submitStale = bool.Parse(arg.Split('=')[1]);
-                                break;
+                        case "submitStale":
+                            submitStale = bool.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "abiFile":
-                                abiFile = arg.Split('=')[1];
-                                break;
+                        case "abiFile":
+                            abiFile = arg.Split('=')[1];
+                            break;
 
-                            case "web3api":
-                                web3api = arg.Split('=')[1];
-                                break;
+                        case "web3api":
+                            web3api = arg.Split('=')[1];
+                            break;
 
-                            case "contract":
-                                contractAddress = arg.Split('=')[1];
-                                break;
+                        case "contract":
+                            contractAddress = arg.Split('=')[1];
+                            break;
 
-                            case "networkUpdateInterval":
-                                networkUpdateInterval = int.Parse(arg.Split('=')[1]);
-                                break;
+                        case "networkUpdateInterval":
+                            networkUpdateInterval = int.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "hashrateUpdateInterval":
-                                hashrateUpdateInterval = int.Parse(arg.Split('=')[1]);
-                                break;
+                        case "hashrateUpdateInterval":
+                            hashrateUpdateInterval = int.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "kingAddress":
-                                kingAddress = arg.Split('=')[1];
-                                break;
+                        case "kingAddress":
+                            kingAddress = arg.Split('=')[1];
+                            break;
 
-                            case "address":
-                                minerAddress = arg.Split('=')[1];
-                                break;
+                        case "address":
+                            minerAddress = arg.Split('=')[1];
+                            break;
 
-                            case "privateKey":
-                                privateKey = arg.Split('=')[1];
-                                break;
+                        case "privateKey":
+                            privateKey = arg.Split('=')[1];
+                            break;
 
-                            case "gasToMine":
-                                gasToMine = float.Parse(arg.Split('=')[1]);
-                                break;
+                        case "gasToMine":
+                            gasToMine = float.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "pool":
-                                primaryPool = arg.Split('=')[1];
-                                break;
+                        case "gasLimit":
+                            gasLimit = ulong.Parse(arg.Split('=')[1]);
+                            break;
 
-                            case "secondaryPool":
-                                secondaryPool = arg.Split('=')[1];
-                                break;
+                        case "pool":
+                            primaryPool = arg.Split('=')[1];
+                            break;
 
-                            case "devFee":
-                                DevFee.UserPercent = float.Parse(arg.Split('=')[1]);
-                                break;
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        Program.Print("[ERROR] Failed parsing argument: " + arg);
-                        return false;
+                        case "secondaryPool":
+                            secondaryPool = arg.Split('=')[1];
+                            break;
+
+                        case "devFee":
+                            DevFee.UserPercent = float.Parse(arg.Split('=')[1]);
+                            break;
                     }
                 }
+                catch (Exception)
+                {
+                    Program.Print("[ERROR] Failed parsing argument: " + arg);
+                    return false;
+                }
+            }
 
-                return CheckConfig(args);
+            return CheckConfig(args);
         }
 
         public static class Defaults
@@ -620,6 +627,7 @@ namespace SoliditySHA3Miner
 
             public const bool SubmitStale = false;
             public const float GasToMine = 5.0f;
+            public const ulong GasLimit = 1704624ul;
             public const int MaxScanRetry = 3;
             public const int PauseOnFailedScan = 3;
             public const int NetworkUpdateInterval = 15000;

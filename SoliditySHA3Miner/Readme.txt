@@ -55,6 +55,7 @@ Options:
   address                 (Pool only) Miner's ethereum address (default: developer's address)
   privateKey              (Solo only) Miner's private key
   gasToMine               (Solo only) Gas price to mine in GWei (default: 5, decimals allowed)
+  gasLimit                (Solo only) Gas limit to submit proof of work (default: 1704624)
   pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
   secondaryPool           (Optional) URL of failover pool mining server
   logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)

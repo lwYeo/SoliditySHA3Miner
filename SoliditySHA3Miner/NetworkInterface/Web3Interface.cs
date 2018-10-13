@@ -42,6 +42,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly Contract m_contract;
         private readonly Account m_account;
         private readonly float m_gasToMine;
+        private readonly ulong m_gasLimit;
         private readonly Function m_mintMethod;
         private readonly Function m_transferMethod;
         private readonly List<string> m_submittedChallengeList;
@@ -71,7 +72,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public bool IsChallengedSubmitted(string challenge) => m_submittedChallengeList.Contains(challenge);
 
         public Web3Interface(string web3ApiPath, string contractAddress, string minerAddress, string privateKey,
-                             float gasToMine, string abiFileName, int updateInterval, int hashratePrintInterval)
+                             float gasToMine, string abiFileName, int updateInterval, int hashratePrintInterval, ulong gasLimit)
         {
             m_updateInterval = updateInterval;
             m_submittedChallengeList = new List<string>();
@@ -130,6 +131,9 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 m_gasToMine = gasToMine;
                 Program.Print(string.Format("[INFO] Gas to mine: {0}", m_gasToMine));
+
+                m_gasLimit = gasLimit;
+                Program.Print(string.Format("[INFO] Gas limit: {0}", m_gasLimit));
 
                 m_hashPrintTimer = new Timer(hashratePrintInterval);
                 m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
@@ -349,7 +353,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
 
                 var transactionID = string.Empty;
-                var gasLimit = new HexBigInteger(1704624ul);
+                var gasLimit = new HexBigInteger(m_gasLimit);
                 var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasToMine), UnitConversion.EthUnit.Gwei));
 
                 var oSolution = new BigInteger(Utils.Numerics.HexStringToByte32Array(solution).ToArray());

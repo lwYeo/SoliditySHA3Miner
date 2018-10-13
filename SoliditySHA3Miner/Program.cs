@@ -240,7 +240,7 @@ namespace SoliditySHA3Miner
                 Miner.Work.SetSolutionTemplate(Miner.CPU.GetNewSolutionTemplate(Miner.Work.GetKingAddressString()));
 
                 var web3Interface = new NetworkInterface.Web3Interface(Config.web3api, Config.contractAddress, Config.minerAddress, Config.privateKey, Config.gasToMine,
-                                                                       Config.abiFile, Config.networkUpdateInterval, Config.hashrateUpdateInterval);
+                                                                       Config.abiFile, Config.networkUpdateInterval, Config.hashrateUpdateInterval, Config.gasLimit);
 
                 web3Interface.OverrideMaxTarget(Config.overrideMaxTarget);
 
