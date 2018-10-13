@@ -21,7 +21,11 @@ namespace SoliditySHA3Miner.NetworkInterface
         ulong RejectedShares { get; }
         ulong Difficulty { get; }
         string DifficultyHex { get; }
-        int LastLatency { get; }
+        int LastSubmitLatency { get; }
+        int Latency { get; }
+        string MinerAddress { get; }
+        string SubmitURL { get; }
+        string CurrentChallenge { get; }
 
         ulong GetEffectiveHashrate();
         void ResetEffectiveHashrate();

@@ -136,13 +136,23 @@ namespace SoliditySHA3Miner.API
                     api.HashRateUnit = "KH/s";
                 }
 
-                api.EffectiveHashRate = (float)m_miners.Select(m => m.NetworkInterface).
-                                                        FirstOrDefault(m => m != null)?.GetEffectiveHashrate() / divisor;
+                var networkInterface = m_miners.Select(m => m.NetworkInterface).FirstOrDefault(m => m != null);
+
+                api.EffectiveHashRate = (networkInterface?.GetEffectiveHashrate() ?? 0f) / divisor;
 
                 api.TotalHashRate = totalHashRate / divisor;
-                
-                api.LatencyMS = (int)m_miners.Select(m => m.NetworkInterface).
-                                              FirstOrDefault(m => m != null)?.LastLatency;
+
+                api.MinerAddress = networkInterface.MinerAddress ?? string.Empty;
+
+                api.MiningURL = networkInterface.SubmitURL ?? string.Empty;
+
+                api.CurrentChallenge = networkInterface.CurrentChallenge ?? string.Empty;
+
+                api.CurrentDifficulty = networkInterface.Difficulty;
+
+                api.LastSubmitLatencyMS = networkInterface?.LastSubmitLatency ?? -1;
+
+                api.LatencyMS = networkInterface?.Latency ?? -1;
 
                 api.Uptime = (long)(DateTime.Now - Program.LaunchTime).TotalSeconds;
 
@@ -387,9 +397,14 @@ namespace SoliditySHA3Miner.API
         public class JsonAPI
         {
             public DateTime SystemDateTime => DateTime.Now;
+            public string MinerAddress { get; set; }
+            public string MiningURL { get; set; }
+            public string CurrentChallenge { get; set; }
+            public ulong CurrentDifficulty { get; set; }
             public float EffectiveHashRate { get; set; }
             public float TotalHashRate { get; set; }
             public string HashRateUnit { get; set; }
+            public int LastSubmitLatencyMS { get; set; }
             public int LatencyMS { get; set; }
             public long Uptime { get; set; }
             public long AcceptedShares { get; set; }
