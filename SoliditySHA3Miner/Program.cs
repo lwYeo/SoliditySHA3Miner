@@ -150,6 +150,26 @@ namespace SoliditySHA3Miner
 
         private static void Main(string[] args)
         {
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            Console.Title = string.Format("{0} {1} by lwYeo@github ({2})", GetApplicationName(), GetApplicationVersion(), GetApplicationYear());
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                m_handler += new EventHandler(Handler);
+                SetConsoleCtrlHandler(m_handler, true);
+            }
+            else
+            {
+                AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+                {
+                    Handler(CtrlType.CTRL_CLOSE_EVENT);
+                };
+                Console.CancelKeyPress += (s, ev) =>
+                {
+                    Handler(CtrlType.CTRL_C_EVENT);
+                };
+            }
+
             if (File.Exists(GetAppConfigPath()))
             {
                 Config = Utils.Json.DeserializeFromFile<Config>(GetAppConfigPath());
@@ -201,30 +221,9 @@ namespace SoliditySHA3Miner
                 }
             }
 
-            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            Console.Title = string.Format("{0} {1} by lwYeo@github ({2})", GetApplicationName(), GetApplicationVersion(), GetApplicationYear());
-
             Print(GetHeader(), excludePrefix: true);
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                m_handler += new EventHandler(Handler);
-                SetConsoleCtrlHandler(m_handler, true);
-            }
-            else
-            {
-                AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
-                {
-                    Handler(CtrlType.CTRL_CLOSE_EVENT);
-                };
-                Console.CancelKeyPress += (s, ev) =>
-                {
-                    Handler(CtrlType.CTRL_C_EVENT);
-                };
-            }
             
-            var config = Config;
-            if (!Config.ParseArgumentsToConfig(args, ref config)) Environment.Exit(1);
+            if (!Config.ParseArgumentsToConfig(args)) Environment.Exit(1);
 
             if (!Utils.Json.SerializeToFile(Config, GetAppConfigPath()))
                 Print(string.Format("[ERROR] Failed to write config file at {0}", GetAppConfigPath()));

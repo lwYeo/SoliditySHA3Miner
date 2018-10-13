@@ -125,23 +125,20 @@ namespace SoliditySHA3Miner
             Console.WriteLine(string.IsNullOrWhiteSpace(errorMessage) ? cudaDevices : errorMessage);
         }
 
-        private static void PrepareCpuDeviceList(ref Miner.Device[] cpuDevices)
+        private void PrepareCpuDeviceList()
         {
-            if (cpuDevices == null || !cpuDevices.Any())
+            var cpuDeviceCount = Miner.CPU.GetLogicalProcessorCount();
+            cpuDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cpuDeviceCount);
+            for (int i = 0; i < cpuDevices.Length; i++)
             {
-                var cpuDeviceCount = Miner.CPU.GetLogicalProcessorCount();
-                cpuDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cpuDeviceCount);
-                for (int i = 0; i < cpuDevices.Length; i++)
-                {
-                    cpuDevices[i].Type = "CPU";
-                    cpuDevices[i].DeviceID = -1;
-                }
+                cpuDevices[i].Type = "CPU";
+                cpuDevices[i].DeviceID = -1;
             }
         }
 
-        private static void SetCpuDevices(string[] sCpuIDs, ref Miner.Device[] cpuDevices)
+        private void SetCpuDevices(string[] sCpuIDs)
         {
-            PrepareCpuDeviceList(ref cpuDevices);
+            PrepareCpuDeviceList();
 
             for (int i = 0; i < sCpuIDs.Length; i++)
             {
@@ -150,24 +147,21 @@ namespace SoliditySHA3Miner
             }
         }
 
-        private static void PrepareAmdDeviceList(ref Miner.Device[] amdDevices)
+        private void PrepareAmdDeviceList()
         {
-            if (amdDevices == null || !amdDevices.Any())
+            var cudaDeviceCount = Miner.OpenCL.GetDeviceCount("AMD Accelerated Parallel Processing", out string cudaCountErrorMessage);
+            amdDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cudaDeviceCount);
+            for (int i = 0; i < amdDevices.Length; i++)
             {
-                var cudaDeviceCount = Miner.OpenCL.GetDeviceCount("AMD Accelerated Parallel Processing", out string cudaCountErrorMessage);
-                amdDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cudaDeviceCount);
-                for (int i = 0; i < amdDevices.Length; i++)
-                {
-                    amdDevices[i].Type = "OpenCL";
-                    amdDevices[i].Platform = "AMD Accelerated Parallel Processing";
-                    amdDevices[i].DeviceID = -1;
-                }
+                amdDevices[i].Type = "OpenCL";
+                amdDevices[i].Platform = "AMD Accelerated Parallel Processing";
+                amdDevices[i].DeviceID = -1;
             }
         }
 
-        private static bool SetAmdDevices(string[] sAmdDevices, ref Miner.Device[] amdDevices)
+        private bool SetAmdDevices(string[] sAmdDevices)
         {
-            PrepareAmdDeviceList(ref amdDevices);
+            PrepareAmdDeviceList();
 
             for (int i = 0; i < amdDevices.Length; i++)
             {
@@ -187,7 +181,7 @@ namespace SoliditySHA3Miner
             return true;
         }
 
-        private static void SetAmdIntensities(string[] sAmdIntensities, ref Miner.Device[] amdDevices)
+        private void SetAmdIntensities(string[] sAmdIntensities)
         {
             if (amdDevices == null || !amdDevices.Any() || sAmdIntensities == null) return;
 
@@ -199,35 +193,32 @@ namespace SoliditySHA3Miner
                     amdDevices[i].Intensity = float.Parse(sAmdIntensities[0]);
         }
 
-        private static void SetIntelIntensities(string[] sIntelIntensities, ref Miner.Device[] IntelDevices)
+        private void SetIntelIntensities(string[] sIntelIntensities)
         {
-            if (IntelDevices == null || !IntelDevices.Any() || sIntelIntensities == null) return;
+            if (intelDevices == null || !intelDevices.Any() || sIntelIntensities == null) return;
 
             if (sIntelIntensities.Length > 1)
                 for (int i = 0; i < sIntelIntensities.Length; i++)
-                    IntelDevices[i].Intensity = float.Parse(sIntelIntensities[i]);
+                    intelDevices[i].Intensity = float.Parse(sIntelIntensities[i]);
             else
                 for (int i = 0; i < sIntelIntensities.Length; i++)
-                    IntelDevices[i].Intensity = float.Parse(sIntelIntensities[0]);
+                    intelDevices[i].Intensity = float.Parse(sIntelIntensities[0]);
         }
 
-        private static void PrepareCudaDeviceList(ref Miner.Device[] cudaDevices)
+        private void PrepareCudaDeviceList()
         {
-            if (cudaDevices == null || !cudaDevices.Any())
+            var cudaDeviceCount = Miner.CUDA.GetDeviceCount(out string cudaCountErrorMessage);
+            cudaDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cudaDeviceCount);
+            for (int i = 0; i < cudaDevices.Length; i++)
             {
-                var cudaDeviceCount = Miner.CUDA.GetDeviceCount(out string cudaCountErrorMessage);
-                cudaDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cudaDeviceCount);
-                for (int i = 0; i < cudaDevices.Length; i++)
-                {
-                    cudaDevices[i].Type = "CUDA";
-                    cudaDevices[i].DeviceID = -1;
-                }
+                cudaDevices[i].Type = "CUDA";
+                cudaDevices[i].DeviceID = -1;
             }
         }
 
-        private static bool SetCudaDevices(string[] sCudaDevices, ref Miner.Device[] cudaDevices)
+        private bool SetCudaDevices(string[] sCudaDevices)
         {
-            PrepareCudaDeviceList(ref cudaDevices);
+            PrepareCudaDeviceList();
 
             for (int i = 0; i < sCudaDevices.Length; i++)
             {
@@ -247,7 +238,7 @@ namespace SoliditySHA3Miner
             return true;
         }
 
-        private static void SetCudaIntensities(string[] sCudaIntensities, ref Miner.Device[] cudaDevices)
+        private void SetCudaIntensities(string[] sCudaIntensities)
         {
             if (cudaDevices == null || !cudaDevices.Any() || sCudaIntensities == null) return;
 
@@ -259,30 +250,30 @@ namespace SoliditySHA3Miner
                     cudaDevices[i].Intensity = float.Parse(sCudaIntensities[0]);
         }
 
-        private static void CheckCPUConfig(string[] args, ref Config config)
+        private void CheckCPUConfig(string[] args)
         {
-            if ((config.cpuDevices == null || !config.cpuDevices.Any()) && args.All(a => !a.StartsWith("cpuID")))
+            if ((cpuDevices == null || !cpuDevices.Any()) && args.All(a => !a.StartsWith("cpuID")))
             {
                 Program.Print("CPU [INFO] IDs not specified, default assign all logical CPUs except first.");
                 var cpuCount = Miner.CPU.GetLogicalProcessorCount();
                 if (cpuCount <= 0) cpuCount = 1;
-                config.cpuDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cpuCount);
+                cpuDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cpuCount);
 
                 for (int i = 0; i < cpuCount; i++)
                 {
-                    config.cpuDevices[i].Type = "CPU";
-                    config.cpuDevices[i].DeviceID = (i < 1) ? -1 : i;
+                    cpuDevices[i].Type = "CPU";
+                    cpuDevices[i].DeviceID = (i < 1) ? -1 : i;
                 }
             }
         }
 
-        private static void CheckAMDConfig(string[] args, ref Config config)
+        private void CheckAMDConfig(string[] args)
         {
-            if (config.allowAMD || config.allowIntel)
+            if (allowAMD || allowIntel)
             {
                 try
                 {
-                    Miner.OpenCL.PreInitialize(config.allowIntel, out var openCLInitErrorMessage);
+                    Miner.OpenCL.PreInitialize(allowIntel, out var openCLInitErrorMessage);
                     
                     if (!string.IsNullOrWhiteSpace(openCLInitErrorMessage))
                     {
@@ -293,7 +284,7 @@ namespace SoliditySHA3Miner
                     }
                     else
                     {
-                        if (config.allowIntel)
+                        if (allowIntel)
                         {
                             Program.Print("OpenCL [INFO] Assign all Intel(R) OpenCL devices.");
                             var deviceCount = Miner.OpenCL.GetDeviceCount("Intel(R) OpenCL", out var openCLerrorMessage);
@@ -318,11 +309,11 @@ namespace SoliditySHA3Miner
                                         Name = tempName
                                     });
                                 }
-                                config.intelDevices = tempIntelList.ToArray();
+                                intelDevices = tempIntelList.ToArray();
                             }
                         }
 
-                        if (config.allowAMD && (config.amdDevices == null || !config.amdDevices.Any()) && args.All(a => !a.StartsWith("openclDevices")))
+                        if (allowAMD && (amdDevices == null || !amdDevices.Any()) && args.All(a => !a.StartsWith("openclDevices")))
                         {
                             Program.Print("OpenCL [INFO] Device not specified, default assign all AMD APP devices.");
 
@@ -348,7 +339,7 @@ namespace SoliditySHA3Miner
                                         Name = tempName
                                     });
                                 }
-                                config.amdDevices = tempAmdList.ToArray();
+                                amdDevices = tempAmdList.ToArray();
                             }
                         }
                     }
@@ -364,9 +355,9 @@ namespace SoliditySHA3Miner
             }
         }
 
-        private static void CheckCUDAConfig(string[] args, ref Config config)
+        private void CheckCUDAConfig(string[] args)
         {
-            if (config.allowCUDA && (config.cudaDevices == null || !config.cudaDevices.Any()) && args.All(a => !a.StartsWith("cudaDevice")))
+            if (allowCUDA && (cudaDevices == null || !cudaDevices.Any()) && args.All(a => !a.StartsWith("cudaDevice")))
             {
                 Program.Print("CUDA [INFO] Device not specified, default assign all CUDA devices.");
                 var cudaDeviceCount = Miner.CUDA.GetDeviceCount(out string cudaCountErrorMessage);
@@ -374,12 +365,12 @@ namespace SoliditySHA3Miner
 
                 if (cudaDeviceCount > 0)
                 {
-                    config.cudaDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cudaDeviceCount);
-                    for (int i = 0; i < config.cudaDevices.Length; i++)
+                    cudaDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cudaDeviceCount);
+                    for (int i = 0; i < cudaDevices.Length; i++)
                     {
-                        config.cudaDevices[i].Type = "CUDA";
-                        config.cudaDevices[i].DeviceID = i;
-                        config.cudaDevices[i].Name = Miner.CUDA.GetDeviceName(i, out string errorMessage);
+                        cudaDevices[i].Type = "CUDA";
+                        cudaDevices[i].DeviceID = i;
+                        cudaDevices[i].Name = Miner.CUDA.GetDeviceName(i, out string errorMessage);
                     }
                 }
                 else
@@ -389,49 +380,49 @@ namespace SoliditySHA3Miner
             }
         }
 
-        private static bool CheckConfig(string[] args, ref Config config)
+        private bool CheckConfig(string[] args)
         {
             try
             {
-                if (config.networkUpdateInterval < 1000) config.networkUpdateInterval = 1000;
-                if (config.hashrateUpdateInterval < 1000) config.hashrateUpdateInterval = 1000;
+                if (networkUpdateInterval < 1000) networkUpdateInterval = 1000;
+                if (hashrateUpdateInterval < 1000) hashrateUpdateInterval = 1000;
                 
-                if (string.IsNullOrEmpty(config.kingAddress))
+                if (string.IsNullOrEmpty(kingAddress))
                     Program.Print("[INFO] King making disabled.");
                 else
-                    Program.Print("[INFO] King making enabled, address: " + config.kingAddress);
+                    Program.Print("[INFO] King making enabled, address: " + kingAddress);
 
-                if (string.IsNullOrWhiteSpace(config.minerAddress) && string.IsNullOrWhiteSpace(config.privateKey))
+                if (string.IsNullOrWhiteSpace(minerAddress) && string.IsNullOrWhiteSpace(privateKey))
                 {
                     Program.Print("[INFO] Miner address not specified, donating 100% to dev.");
-                    config.minerAddress = DevFee.Address;
+                    minerAddress = DevFee.Address;
                 }
 
-                if (!string.IsNullOrWhiteSpace(config.privateKey))
+                if (!string.IsNullOrWhiteSpace(privateKey))
                 {
                     Program.Print("[INFO] Solo mining mode.");
                 }
-                else if (string.IsNullOrWhiteSpace(config.primaryPool))
+                else if (string.IsNullOrWhiteSpace(primaryPool))
                 {
-                    Program.Print("[INFO] Primary pool not specified, using " + Config.Defaults.PoolPrimary);
-                    config.primaryPool = Config.Defaults.PoolPrimary;
+                    Program.Print("[INFO] Primary pool not specified, using " + Defaults.PoolPrimary);
+                    primaryPool = Defaults.PoolPrimary;
                 }
                 else
                 {
-                    Program.Print("[INFO] Primary pool specified, using " + config.primaryPool);
+                    Program.Print("[INFO] Primary pool specified, using " + primaryPool);
 
-                    if (!string.IsNullOrWhiteSpace(config.secondaryPool))
-                        Program.Print("[INFO] Secondary pool specified, using " + config.secondaryPool);
+                    if (!string.IsNullOrWhiteSpace(secondaryPool))
+                        Program.Print("[INFO] Secondary pool specified, using " + secondaryPool);
                 }
 
-                if (config.cpuMode)
+                if (cpuMode)
                 {
-                    CheckCPUConfig(args, ref config);
+                    CheckCPUConfig(args);
                 }
                 else
                 {
-                    if (config.allowAMD || config.allowIntel) CheckAMDConfig(args, ref config);
-                    if (config.allowCUDA) CheckCUDAConfig(args, ref config);
+                    if (allowAMD || allowIntel) CheckAMDConfig(args);
+                    if (allowCUDA) CheckCUDAConfig(args);
 
                     foreach (var arg in args)
                     {
@@ -440,21 +431,18 @@ namespace SoliditySHA3Miner
                             switch (arg.Split('=')[0])
                             {
                                 case "intelIntensity":
-                                    if (!config.allowIntel || arg.EndsWith('=')) break;
-                                    var intelDevices = config.intelDevices;
-                                    SetIntelIntensities(arg.Split('=')[1].Split(','), ref intelDevices);
+                                    if (!allowIntel || arg.EndsWith('=')) break;
+                                    SetIntelIntensities(arg.Split('=')[1].Split(','));
                                     break;
 
                                 case "amdIntensity":
-                                    if (!config.allowAMD || arg.EndsWith('=')) break;
-                                    var amdDevices = config.amdDevices;
-                                    SetAmdIntensities(arg.Split('=')[1].Split(','), ref amdDevices);
+                                    if (!allowAMD || arg.EndsWith('=')) break;
+                                    SetAmdIntensities(arg.Split('=')[1].Split(','));
                                     break;
 
                                 case "cudaIntensity":
-                                    if (!config.allowCUDA || arg.EndsWith('=')) break;
-                                    var cudaDevices = config.cudaDevices;
-                                    SetCudaIntensities(arg.Split('=')[1].Split(','), ref cudaDevices);
+                                    if (!allowCUDA || arg.EndsWith('=')) break;
+                                    SetCudaIntensities(arg.Split('=')[1].Split(','));
                                     break;
                             }
                         }
@@ -474,7 +462,7 @@ namespace SoliditySHA3Miner
             }
         }
 
-        public static bool ParseArgumentsToConfig(string[] args, ref Config config)
+        public bool ParseArgumentsToConfig(string[] args)
         {
             foreach (var arg in args)
                 {
@@ -488,24 +476,23 @@ namespace SoliditySHA3Miner
                                 break;
 
                             case "cpuMode":
-                                config.cpuMode = bool.Parse(arg.Split('=')[1]);
+                                cpuMode = bool.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "cpuID":
-                                var cpuDevices = config.cpuDevices;
-                                SetCpuDevices(arg.Split('=')[1].Split(','), ref cpuDevices);
+                                SetCpuDevices(arg.Split('=')[1].Split(','));
                                 break;
 
                             case "allowIntel":
-                                config.allowIntel = bool.Parse(arg.Split('=')[1]);
+                                allowIntel = bool.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "allowAMD":
-                                config.allowAMD = bool.Parse(arg.Split('=')[1]);
+                                allowAMD = bool.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "allowCUDA":
-                                config.allowCUDA = bool.Parse(arg.Split('=')[1]);
+                                allowCUDA = bool.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "listAmdDevices":
@@ -514,8 +501,7 @@ namespace SoliditySHA3Miner
                                 break;
 
                             case "amdDevice":
-                                var amdDevices = config.amdDevices;
-                                if (!SetAmdDevices(arg.Split('=')[1].Split(','), ref amdDevices))
+                                if (!SetAmdDevices(arg.Split('=')[1].Split(',')))
                                     return false;
                                 break;
 
@@ -525,84 +511,83 @@ namespace SoliditySHA3Miner
                                 break;
 
                             case "cudaDevice":
-                                var cudaDevices = config.cudaDevices;
-                                if (!SetCudaDevices(arg.Split('=')[1].Split(','), ref cudaDevices))
+                                if (!SetCudaDevices(arg.Split('=')[1].Split(',')))
                                     return false;
                                 break;
 
                             case "minerJsonAPI":
-                                config.minerJsonAPI = arg.Split('=')[1];
+                                minerJsonAPI = arg.Split('=')[1];
                                 break;
 
                             case "minerCcminerAPI":
-                                config.minerCcminerAPI = arg.Split('=')[1];
+                                minerCcminerAPI = arg.Split('=')[1];
                                 break;
 
                             case "overrideMaxTarget":
                                 var strValue = arg.Split('=')[1];
-                                config.overrideMaxTarget = strValue.StartsWith("0x")
+                                overrideMaxTarget = strValue.StartsWith("0x")
                                                             ? new HexBigInteger(strValue)
                                                             : new HexBigInteger(BigInteger.Parse(strValue));
                                 break;
 
                             case "customDifficulty":
-                                config.customDifficulty = uint.Parse(arg.Split('=')[1]);
+                                customDifficulty = uint.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "maxScanRetry":
-                                config.maxScanRetry = int.Parse(arg.Split('=')[1]);
+                                maxScanRetry = int.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "pauseOnFailedScans":
-                                config.pauseOnFailedScans = int.Parse(arg.Split('=')[1]);
+                                pauseOnFailedScans = int.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "submitStale":
-                                config.submitStale = bool.Parse(arg.Split('=')[1]);
+                                submitStale = bool.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "abiFile":
-                                config.abiFile = arg.Split('=')[1];
+                                abiFile = arg.Split('=')[1];
                                 break;
 
                             case "web3api":
-                                config.web3api = arg.Split('=')[1];
+                                web3api = arg.Split('=')[1];
                                 break;
 
                             case "contract":
-                                config.contractAddress = arg.Split('=')[1];
+                                contractAddress = arg.Split('=')[1];
                                 break;
 
                             case "networkUpdateInterval":
-                                config.networkUpdateInterval = int.Parse(arg.Split('=')[1]);
+                                networkUpdateInterval = int.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "hashrateUpdateInterval":
-                                config.hashrateUpdateInterval = int.Parse(arg.Split('=')[1]);
+                                hashrateUpdateInterval = int.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "kingAddress":
-                                config.kingAddress = arg.Split('=')[1];
+                                kingAddress = arg.Split('=')[1];
                                 break;
 
                             case "address":
-                                config.minerAddress = arg.Split('=')[1];
+                                minerAddress = arg.Split('=')[1];
                                 break;
 
                             case "privateKey":
-                                config.privateKey = arg.Split('=')[1];
+                                privateKey = arg.Split('=')[1];
                                 break;
 
                             case "gasToMine":
-                                config.gasToMine = float.Parse(arg.Split('=')[1]);
+                                gasToMine = float.Parse(arg.Split('=')[1]);
                                 break;
 
                             case "pool":
-                                config.primaryPool = arg.Split('=')[1];
+                                primaryPool = arg.Split('=')[1];
                                 break;
 
                             case "secondaryPool":
-                                config.secondaryPool = arg.Split('=')[1];
+                                secondaryPool = arg.Split('=')[1];
                                 break;
 
                             case "devFee":
@@ -617,7 +602,7 @@ namespace SoliditySHA3Miner
                     }
                 }
 
-                return CheckConfig(args, ref config);
+                return CheckConfig(args);
         }
 
         public static class Defaults
