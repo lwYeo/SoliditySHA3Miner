@@ -138,12 +138,33 @@ namespace OpenCLSolver
 	{
 		char*  str;
 		size_t fileSize;
+		std::string libName;
+		char libPath[1024]{ 0 };
+		std::string kernelPath{ KERNEL_FILE };
+		std::string kingKernelPath{ KING_KERNEL_FILE };
 
-		std::fstream f(KERNEL_FILE, (std::fstream::in | std::fstream::binary));
+#	ifdef __linux__
+		libName = "OpenCLSoliditySHA3Solver.so";
+#	else
+		libName = "OpenCLSoliditySHA3Solver.dll";
+		HMODULE hModule = LoadLibrary(libName.c_str());
+		if (hModule != NULL) GetModuleFileName(hModule, libPath, 1024);
+#	endif
+
+		if (libPath[0] != '\0')
+		{
+			std::string tempLibPath{ libPath };
+			int libPathLength = tempLibPath.length() - libName.length();
+
+			kernelPath = tempLibPath.substr(0, libPathLength) + '\\' + KERNEL_FILE;
+			kingKernelPath = kernelPath.substr(0, libPathLength) + '\\' + KING_KERNEL_FILE;
+		}
+
+		std::fstream f(kernelPath.c_str(), (std::fstream::in | std::fstream::binary));
 
 		if (!f.is_open())
 		{
-			errorMessage = "Failed to open " + std::string{ KERNEL_FILE };
+			errorMessage = "Failed to open " + kernelPath;
 			return false;
 		}
 
@@ -166,11 +187,11 @@ namespace OpenCLSolver
 		kernelSource = (const char *)str;
 		kernelSourceSize = fileSize;
 
-		std::fstream kingf(KING_KERNEL_FILE, (std::fstream::in | std::fstream::binary));
+		std::fstream kingf(kingKernelPath.c_str(), (std::fstream::in | std::fstream::binary));
 
 		if (!kingf.is_open())
 		{
-			errorMessage = "Failed to open " + std::string{ KING_KERNEL_FILE };
+			errorMessage = "Failed to open " + kingKernelPath;
 			return false;
 		}
 

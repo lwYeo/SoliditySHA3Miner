@@ -16,6 +16,13 @@
 #	include <CL/cl.hpp>
 #endif
 
+#ifdef __linux__
+#	define _GNU_SOURCE
+#	include <dlfcn.h>
+#else
+#	include <Libloaderapi.h>
+#endif
+
 namespace OpenCLSolver
 {
 	#define DEFAULT_INTENSITY 24.056f
