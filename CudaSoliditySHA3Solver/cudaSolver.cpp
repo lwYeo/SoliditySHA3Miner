@@ -773,7 +773,7 @@ namespace CUDASolver
 			getWorkPosition(lastPosition);
 
 			device->hashCount.store(0ull);
-			device->hashStartTime = std::chrono::steady_clock::now();
+			device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(500); // reduce hashrate spike on new challenge
 
 			if (device->isNewTarget)
 			{

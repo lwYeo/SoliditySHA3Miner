@@ -268,7 +268,7 @@ namespace OpenCLSolver
 					strcpy_s((char *)deviceName, assignDevice->name.size() + 1, assignDevice->name.c_str());
 					#endif
 
-					onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device codename (" + assignDevice->name + ")...");
+					onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device (" + assignDevice->name + ")...");
 					onMessage(platformName.c_str(), deviceEnum, "Info", "Intensity: " + std::to_string(assignDevice->userDefinedIntensity));
 
 					if (assignDevice->isAPP() && foundAdlApi())
@@ -768,7 +768,7 @@ namespace OpenCLSolver
 		if (device->isNewMessage || device->isNewTarget)
 		{
 			device->hashCount.store(0ull);
-			device->hashStartTime = std::chrono::steady_clock::now();
+			device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(500); // reduce hashrate spike on new challenge
 
 			if (device->isNewTarget)
 			{
