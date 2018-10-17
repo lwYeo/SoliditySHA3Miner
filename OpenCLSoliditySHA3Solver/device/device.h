@@ -17,7 +17,6 @@
 #endif
 
 #if defined(__linux__) || defined(__APPLE__) || defined(__MACOSX)
-#	define _GNU_SOURCE
 #	include <dlfcn.h>
 #else
 #	include <Libloaderapi.h>
