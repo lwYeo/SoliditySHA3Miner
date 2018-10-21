@@ -46,6 +46,8 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly Function m_getMiningDifficulty;
         private readonly Function m_getMiningTarget;
         private readonly Function m_getChallengeNumber;
+        private readonly Function m_getMiningReward;
+        private readonly Function m_MAXIMUM_TARGET;
 
         private readonly int m_mintMethodInputParamCount;
 
@@ -142,6 +144,10 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_getMiningDifficulty = m_contract.GetFunction("getMiningDifficulty");
                 m_getMiningTarget = m_contract.GetFunction("getMiningTarget");
                 m_getChallengeNumber = m_contract.GetFunction("getChallengeNumber");
+                m_getMiningReward = m_contract.GetFunction("getMiningReward");
+
+                if (m_contract.ContractBuilder.ContractABI.Functions.Any(f => f.Name == "_MAXIMUM_TARGET"))
+                    m_MAXIMUM_TARGET = m_contract.GetFunction("_MAXIMUM_TARGET");
 
                 m_mintMethodInputParamCount = m_contract.ContractBuilder.
                                                          ContractABI.Functions.
@@ -180,7 +186,10 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 try
                 {
-                    return new HexBigInteger(m_contract.GetFunction("_MAXIMUM_TARGET").CallAsync<BigInteger>().Result);
+                    if (m_MAXIMUM_TARGET != null)
+                        return new HexBigInteger(m_MAXIMUM_TARGET.CallAsync<BigInteger>().Result);
+                    else
+                        return new HexBigInteger("0x40000000000000000000000000000000000000000000000000000000000");
                 }
                 catch (AggregateException ex)
                 {
@@ -549,7 +558,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 try
                 {
-                    return m_contract.GetFunction("getMiningReward").CallAsync<BigInteger>().Result; // including decimals
+                    return m_getMiningReward.CallAsync<BigInteger>().Result; // including decimals
                 }
                 catch (Exception) { failCount++; }
             }

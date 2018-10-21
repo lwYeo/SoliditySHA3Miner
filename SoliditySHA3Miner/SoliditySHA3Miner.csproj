@@ -64,6 +64,9 @@
     <None Update="0xbtcSolo.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="ERC-541.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="GuideForEthOS.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
