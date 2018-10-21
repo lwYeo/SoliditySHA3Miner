@@ -67,6 +67,9 @@
     <None Update="ERC-541.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="ERC-918.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="GuideForEthOS.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
