@@ -637,4 +637,3 @@ namespace SoliditySHA3Miner
         }
     }
 }
-            

@@ -41,10 +41,16 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly Web3 m_web3;
         private readonly Contract m_contract;
         private readonly Account m_account;
-        private readonly float m_gasToMine;
-        private readonly ulong m_gasLimit;
         private readonly Function m_mintMethod;
         private readonly Function m_transferMethod;
+        private readonly Function m_getMiningDifficulty;
+        private readonly Function m_getMiningTarget;
+        private readonly Function m_getChallengeNumber;
+
+        private readonly int m_mintMethodInputParamCount;
+
+        private readonly float m_gasToMine;
+        private readonly ulong m_gasLimit;
         private readonly List<string> m_submittedChallengeList;
         private readonly int m_updateInterval;
         private Timer m_updateMinerTimer;
@@ -125,15 +131,22 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             if (!string.IsNullOrWhiteSpace(privateKey))
             {
-                m_mintMethod = m_contract.GetFunction("mint");
-
-                m_transferMethod = m_contract.GetFunction("transfer");
-
                 m_gasToMine = gasToMine;
                 Program.Print(string.Format("[INFO] Gas to mine: {0}", m_gasToMine));
 
                 m_gasLimit = gasLimit;
                 Program.Print(string.Format("[INFO] Gas limit: {0}", m_gasLimit));
+
+                m_mintMethod = m_contract.GetFunction("mint");
+                m_transferMethod = m_contract.GetFunction("transfer");
+                m_getMiningDifficulty = m_contract.GetFunction("getMiningDifficulty");
+                m_getMiningTarget = m_contract.GetFunction("getMiningTarget");
+                m_getChallengeNumber = m_contract.GetFunction("getChallengeNumber");
+
+                m_mintMethodInputParamCount = m_contract.ContractBuilder.
+                                                         ContractABI.Functions.
+                                                         First(f => f.Name == "mint").
+                                                         InputParameters.Count();
 
                 m_hashPrintTimer = new Timer(hashratePrintInterval);
                 m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
@@ -193,7 +206,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             var startTime = DateTime.Now;
             try
             {
-                return MiningParameters.GetSoloMiningParameters(m_contract, MinerAddress);
+                return MiningParameters.GetSoloMiningParameters(MinerAddress, m_getMiningDifficulty, m_getMiningTarget, m_getChallengeNumber);
             }
             catch (Exception ex)
             {
@@ -359,11 +372,17 @@ namespace SoliditySHA3Miner.NetworkInterface
                 var oSolution = new BigInteger(Utils.Numerics.HexStringToByte32Array(solution).ToArray());
                 // Note: do not directly use -> new HexBigInteger(solution).Value
                 //Because two's complement representation always interprets the highest-order bit of the last byte in the array
-                //(the byte at position Array.Length- 1) as the sign bit,
+                //(the byte at position Array.Length - 1) as the sign bit,
                 //the method returns a byte array with an extra element whose value is zero
                 //to disambiguate positive values that could otherwise be interpreted as having their sign bits set.
 
-                var dataInput = new object[] { oSolution, HexByteConvertorExtensions.HexToByteArray(digest) };
+                object[] dataInput = null;
+
+                if (m_mintMethodInputParamCount > 1) // 0xBitcoin compatibility
+                    dataInput = new object[] { oSolution, HexByteConvertorExtensions.HexToByteArray(digest) };
+
+                else // Draft EIP-918 compatibility [2018-03-07]
+                    dataInput = new object[] { oSolution };
 
                 var retryCount = 0u;
                 var startSubmitDateTime = DateTime.Now;

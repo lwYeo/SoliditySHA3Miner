@@ -19,9 +19,12 @@ namespace SoliditySHA3Miner.NetworkInterface
         public string MiningTargetByte32String { get; private set; }
         public string ChallengeNumberByte32String { get; private set; }
 
-        public static MiningParameters GetSoloMiningParameters(Contract contract, string ethAddress)
+        public static MiningParameters GetSoloMiningParameters(string ethAddress,
+                                                               Function getMiningDifficulty,
+                                                               Function getMiningTarget,
+                                                               Function getChallengeNumber)
         {
-            lock (contract) { return new MiningParameters(contract, ethAddress); }
+            return new MiningParameters(ethAddress, getMiningDifficulty, getMiningTarget, getChallengeNumber);
         }
 
         public static MiningParameters GetPoolMiningParameters(string poolURL,
@@ -33,7 +36,10 @@ namespace SoliditySHA3Miner.NetworkInterface
             return new MiningParameters(poolURL, getPoolEthAddress, getChallengeNumber, getMinimumShareDifficulty, getMinimumShareTarget);
         }
 
-        private MiningParameters(Contract contract, string ethAddress)
+        private MiningParameters(string ethAddress,
+                                 Function getMiningDifficulty,
+                                 Function getMiningTarget,
+                                 Function getChallengeNumber)
         {
             EthAddress = ethAddress;
             bool success = false;
@@ -46,7 +52,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     {
                         Task.Factory.StartNew(() =>
                         {
-                            try { MiningDifficulty = new HexBigInteger(contract.GetFunction("getMiningDifficulty").CallAsync<BigInteger>().Result); }
+                            try { MiningDifficulty = new HexBigInteger(getMiningDifficulty.CallAsync<BigInteger>().Result); }
                             catch (System.AggregateException ex)
                             {
                                 exceptions.Add(ex);
@@ -55,7 +61,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         }),
                         Task.Factory.StartNew(() =>
                         {
-                            try { MiningTarget = new HexBigInteger(contract.GetFunction("getMiningTarget").CallAsync<BigInteger>().Result); }
+                            try { MiningTarget = new HexBigInteger(getMiningTarget.CallAsync<BigInteger>().Result); }
                             catch (System.AggregateException ex)
                             {
                                 exceptions.Add(ex);
@@ -66,7 +72,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         ContinueWith(task => MiningTargetByte32String = Utils.Numerics.BigIntegerToByte32HexString(MiningTarget.Value)),
                         Task.Factory.StartNew(() =>
                         {
-                            try { ChallengeNumberByte32 = Utils.Numerics.FilterByte32Array(contract.GetFunction("getChallengeNumber").CallAsync<byte[]>().Result); }
+                            try { ChallengeNumberByte32 = Utils.Numerics.FilterByte32Array(getChallengeNumber.CallAsync<byte[]>().Result); }
                             catch (System.AggregateException ex)
                             {
                                 exceptions.Add(ex);
