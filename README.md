@@ -39,7 +39,7 @@ Libraries are included in the Software under the following license terms:
 
 ### Donation addresses
 
-    ETH (or any ERC 20/918 tokens)  : 0x9172ff7884cefed19327adace9c470ef1796105c
+    ETH (or any ERC 20/918 tokens)  : 0x9172ff7884CEFED19327aDaCe9C470eF1796105c
     
     BTC                             : 3GS5J5hcG6Qcu9xHWGmJaV5ftWLmZuR255
     
