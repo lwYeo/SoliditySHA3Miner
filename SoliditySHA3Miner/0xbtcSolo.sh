@@ -7,5 +7,7 @@ command -v dotnet >/dev/null 2>&1 ||
  read -p "Press any key to continue...";
  exit 1;
 }
-rm -f SoliditySHA3Miner.conf
+  if [ -f SoliditySHA3Miner.conf ] ; then
+    rm -f SoliditySHA3Miner.conf
+  fi
 dotnet SoliditySHA3Miner.dll web3api=https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE abiFile=ERC-541.abi contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 gasToMine=5 privateKey=YOUR_ETH_PRIVATE_KEY
