@@ -5,6 +5,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -127,9 +128,15 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             m_web3 = new Web3(SubmitURL);
 
-            var abi = File.ReadAllText(Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), abiFileName));
+            var erc20AbiPath = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "ERC-20.abi");
+            var tokenAbiPath = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), abiFileName);
 
-            m_contract = m_web3.Eth.GetContract(abi, contractAddress);
+            var erc20Abi = JArray.Parse(File.ReadAllText(erc20AbiPath));
+            var tokenAbi = JArray.Parse(File.ReadAllText(tokenAbiPath));            
+            tokenAbi.Merge(erc20Abi, new JsonMergeSettings { MergeArrayHandling = MergeArrayHandling.Union });
+
+            m_contract = m_web3.Eth.GetContract(tokenAbi.ToString(), contractAddress);
+            var contractABI = m_contract.ContractBuilder.ContractABI;
 
             if (!string.IsNullOrWhiteSpace(privateKey))
             {
@@ -146,8 +153,11 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_getChallengeNumber = m_contract.GetFunction("getChallengeNumber");
                 m_getMiningReward = m_contract.GetFunction("getMiningReward");
 
-                if (m_contract.ContractBuilder.ContractABI.Functions.Any(f => f.Name == "_MAXIMUM_TARGET"))
+                if (contractABI.Functions.Any(f => f.Name == "_MAXIMUM_TARGET"))
                     m_MAXIMUM_TARGET = m_contract.GetFunction("_MAXIMUM_TARGET");
+
+                else if (contractABI.Functions.Any(f => f.Name == "MAX_TARGET"))
+                    m_MAXIMUM_TARGET = m_contract.GetFunction("MAX_TARGET");
 
                 m_mintMethodInputParamCount = m_contract.ContractBuilder.
                                                          ContractABI.Functions.

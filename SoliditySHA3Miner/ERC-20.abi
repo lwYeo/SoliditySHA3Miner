@@ -2,7 +2,7 @@
    {
       "constant":true,
       "inputs":[ ],
-      "name":"MIN_TARGET",
+      "name":"totalSupply",
       "outputs":[
          {
             "name":"",
@@ -15,11 +15,16 @@
    },
    {
       "constant":true,
-      "inputs":[ ],
-      "name":"MAX_TARGET",
+      "inputs":[
+         {
+            "name":"tokenOwner",
+            "type":"address"
+         }
+      ],
+      "name":"balanceOf",
       "outputs":[
          {
-            "name":"",
+            "name":"balance",
             "type":"uint256"
          }
       ],
@@ -31,11 +36,65 @@
       "constant":false,
       "inputs":[
          {
-            "name":"nonce",
+            "name":"to",
+            "type":"address"
+         },
+         {
+            "name":"tokens",
             "type":"uint256"
          }
       ],
-      "name":"mint",
+      "name":"transfer",
+      "outputs":[
+         {
+            "name":"success",
+            "type":"bool"
+         }
+      ],
+      "payable":false,
+      "stateMutability":"nonpayable",
+      "type":"function"
+   },
+   {
+      "constant":false,
+      "inputs":[
+         {
+            "name":"from",
+            "type":"address"
+         },
+         {
+            "name":"to",
+            "type":"address"
+         },
+         {
+            "name":"tokens",
+            "type":"uint256"
+         }
+      ],
+      "name":"transferFrom",
+      "outputs":[
+         {
+            "name":"success",
+            "type":"bool"
+         }
+      ],
+      "payable":false,
+      "stateMutability":"nonpayable",
+      "type":"function"
+   },
+   {
+      "constant":false,
+      "inputs":[
+         {
+            "name":"spender",
+            "type":"address"
+         },
+         {
+            "name":"tokens",
+            "type":"uint256"
+         }
+      ],
+      "name":"approve",
       "outputs":[
          {
             "name":"success",
@@ -48,97 +107,25 @@
    },
    {
       "constant":true,
-      "inputs":[ ],
-      "name":"getAdjustmentInterval",
-      "outputs":[
-         {
-            "name":"",
-            "type":"uint256"
-         }
-      ],
-      "payable":false,
-      "stateMutability":"view",
-      "type":"function"
-   },
-   {
-      "constant":true,
-      "inputs":[ ],
-      "name":"getChallengeNumber",
-      "outputs":[
-         {
-            "name":"",
-            "type":"bytes32"
-         }
-      ],
-      "payable":false,
-      "stateMutability":"view",
-      "type":"function"
-   },
-   {
-      "constant":true,
-      "inputs":[ ],
-      "name":"getMiningDifficulty",
-      "outputs":[
-         {
-            "name":"",
-            "type":"uint256"
-         }
-      ],
-      "payable":false,
-      "stateMutability":"view",
-      "type":"function"
-   },
-   {
-      "constant":true,
-      "inputs":[ ],
-      "name":"getMiningTarget",
-      "outputs":[
-         {
-            "name":"",
-            "type":"uint256"
-         }
-      ],
-      "payable":false,
-      "stateMutability":"view",
-      "type":"function"
-   },
-   {
-      "constant":true,
-      "inputs":[
-
-      ],
-      "name":"getMiningReward",
-      "outputs":[
-         {
-            "name":"",
-            "type":"uint256"
-         }
-      ],
-      "payable":false,
-      "stateMutability":"view",
-      "type":"function"
-   },
-   {
-      "constant":false,
       "inputs":[
          {
-            "name":"_nonce",
-            "type":"uint256"
+            "name":"tokenOwner",
+            "type":"address"
          },
          {
-            "name":"_minter",
+            "name":"spender",
             "type":"address"
          }
       ],
-      "name":"hash",
+      "name":"allowance",
       "outputs":[
          {
-            "name":"digest",
-            "type":"bytes32"
+            "name":"remaining",
+            "type":"uint256"
          }
       ],
       "payable":false,
-      "stateMutability":"nonpayable",
+      "stateMutability":"view",
       "type":"function"
    },
    {
@@ -150,22 +137,39 @@
             "type":"address"
          },
          {
-            "indexed":false,
-            "name":"reward_amount",
-            "type":"uint256"
+            "indexed":true,
+            "name":"to",
+            "type":"address"
          },
          {
             "indexed":false,
-            "name":"epochCount",
+            "name":"tokens",
             "type":"uint256"
-         },
-         {
-            "indexed":false,
-            "name":"newChallengeNumber",
-            "type":"bytes32"
          }
       ],
-      "name":"Mint",
+      "name":"Transfer",
+      "type":"event"
+   },
+   {
+      "anonymous":false,
+      "inputs":[
+         {
+            "indexed":true,
+            "name":"tokenOwner",
+            "type":"address"
+         },
+         {
+            "indexed":true,
+            "name":"spender",
+            "type":"address"
+         },
+         {
+            "indexed":false,
+            "name":"tokens",
+            "type":"uint256"
+         }
+      ],
+      "name":"Approval",
       "type":"event"
    }
 ]
