@@ -8,6 +8,7 @@ command -v dotnet >/dev/null 2>&1 ||
  exit 1;
 }
 while : ; do
-  dotnet SoliditySHA3Miner.dll abiFile=0xbtc.abi contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 overrideMaxTarget=27606985387162255149739023449108101809804435888681546220650096895197184 pool=http://mike.rs:8080 address=0x9172ff7884CEFED19327aDaCe9C470eF1796105c
+  rm -f SoliditySHA3Miner.conf
+  dotnet SoliditySHA3Miner.dll abiFile=ERC-541.abi contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 overrideMaxTarget=27606985387162255149739023449108101809804435888681546220650096895197184 pool=http://mike.rs:8080 address=0x9172ff7884CEFED19327aDaCe9C470eF1796105c
   [[ $? -eq 22 ]] || break
 done
