@@ -11,7 +11,7 @@ conf=$(jq -n \
   --arg minerCcminerAPI "127.0.0.1:4068" \
   --arg web3api "https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE" \
   --arg contractAddress "0xB6eD7644C69416d67B522e20bC294A9a9B405B31" \
-  --arg abiFile "0xbtc.abi" \
+  --arg abiFile "ERC-541.abi" \
   --arg overrideMaxTarget "0x40000000000000000000000000000000000000000000000000000000000" \
   --arg customDifficulty 0 \
   --arg submitStale false \
