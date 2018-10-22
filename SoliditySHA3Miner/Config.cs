@@ -406,14 +406,15 @@ namespace SoliditySHA3Miner
                     Program.AllowAMD = allowAMD;
                     Program.AllowCUDA = allowCUDA;
 
-                    CheckOpenCLConfig(args);
+                    if (Program.AllowCUDA && args.All(a => !a.StartsWith("cudaDevice")))
+                        Program.Print("CUDA [INFO] Device not specified, default assign all CUDA devices.");
+
                     CheckCUDAConfig(args);
 
-                    if (args.All(a => !a.StartsWith("amdDevice")))
+                    if (Program.AllowAMD && args.All(a => !a.StartsWith("amdDevice")))
                         Program.Print("OpenCL [INFO] AMD APP device not specified, default assign all AMD APP devices.");
 
-                    if (args.All(a => !a.StartsWith("cudaDevice")))
-                        Program.Print("CUDA [INFO] Device not specified, default assign all CUDA devices.");
+                    CheckOpenCLConfig(args);
 
                     foreach (var arg in args)
                     {

@@ -7,12 +7,17 @@ namespace OpenCLSolver
 		*hasADL_API = openCLSolver::foundAdlApi();
 	}
 
-	void PreInitialize(bool allowIntel, const char *errorMessge, uint64_t *errorSize)
+	void PreInitialize(bool allowIntel, const char *errorMessage, uint64_t *errorSize)
 	{
 		std::string errMsg{ 0 };
 		openCLSolver::preInitialize(allowIntel, errMsg);
 
-		errorMessge = errMsg.c_str();
+		#ifdef __linux__
+		strcpy((char *)errorMessage, errMsg.c_str());
+		#else
+		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
+		#endif
+
 		*errorSize = errMsg.length();
 	}
 
@@ -26,7 +31,12 @@ namespace OpenCLSolver
 		std::string errMsg{ 0 };
 		*deviceCount = openCLSolver::getDeviceCount(platformName, errMsg);
 
-		errorMessage = errMsg.c_str();
+		#ifdef __linux__
+		strcpy((char *)errorMessage, errMsg.c_str());
+		#else
+		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
+		#endif
+
 		*errorSize = errMsg.length();
 	}
 

@@ -30,6 +30,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <OutputPath></OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup>

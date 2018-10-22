@@ -164,8 +164,8 @@ namespace OpenCLSolver
 			std::string tempLibPath{ libPath };
 			int libPathLength = tempLibPath.length() - libName.length();
 
-			kernelPath = tempLibPath.substr(0, libPathLength) + '\\' + KERNEL_FILE;
-			kingKernelPath = kernelPath.substr(0, libPathLength) + '\\' + KING_KERNEL_FILE;
+			kernelPath = tempLibPath.substr(0, libPathLength) + KERNEL_FILE;
+			kingKernelPath = kernelPath.substr(0, libPathLength) + KING_KERNEL_FILE;
 		}
 #	endif
 
