@@ -239,7 +239,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     Program.Print(string.Format("[INFO] New challenge detected {0}...", CurrentChallenge));
                     OnNewMessagePrefix(this, CurrentChallenge + address.Replace("0x", string.Empty));
-                    m_challengeReceiveDateTime = DateTime.Now;
+                    if (m_challengeReceiveDateTime == DateTime.MinValue) m_challengeReceiveDateTime = DateTime.Now;
                 }
 
                 if (m_customDifficulity == 0)
@@ -297,7 +297,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (m_maxTarget == null || hashrate == 0) return TimeSpan.Zero;
             var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(hashrate);
 
-            if (m_challengeReceiveDateTime == null) m_challengeReceiveDateTime = DateTime.Now;
+            if (m_challengeReceiveDateTime == DateTime.MinValue) return TimeSpan.Zero;
 
             return TimeSpan.FromSeconds((ulong)timeToSolveBlock - (ulong)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds);
         }
@@ -345,6 +345,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             if (string.IsNullOrWhiteSpace(solution) || solution == "0x") return false;
 
+            m_challengeReceiveDateTime = DateTime.MinValue;
             var startSubmitDateTime = DateTime.Now;
 
             if (m_runFailover)

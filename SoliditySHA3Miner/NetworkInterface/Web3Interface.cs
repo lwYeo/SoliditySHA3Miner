@@ -299,7 +299,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     Program.Print(string.Format("[INFO] New challenge detected {0}...", CurrentChallenge));
                     OnNewMessagePrefix(this, CurrentChallenge + address.Replace("0x", string.Empty));
-                    m_challengeReceiveDateTime = DateTime.Now;
+                    if (m_challengeReceiveDateTime == DateTime.MinValue) m_challengeReceiveDateTime = DateTime.Now;
                 }
 
                 if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
@@ -350,7 +350,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (m_maxTarget == null || hashrate == 0) return TimeSpan.Zero;
             var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(hashrate);
 
-            if (m_challengeReceiveDateTime == null) m_challengeReceiveDateTime = DateTime.Now;
+            if (m_challengeReceiveDateTime == DateTime.MinValue) return TimeSpan.Zero;
 
             return TimeSpan.FromSeconds((ulong)timeToSolveBlock - (ulong)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds);
         }
@@ -404,6 +404,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     Program.Print(string.Format("[INFO] Submission cancelled, nonce has been submitted for the current challenge."));
                     return false;
                 }
+                m_challengeReceiveDateTime = DateTime.MinValue;
 
                 var transactionID = string.Empty;
                 var gasLimit = new HexBigInteger(m_gasLimit);
