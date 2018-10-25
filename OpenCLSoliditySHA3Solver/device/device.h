@@ -27,7 +27,7 @@ namespace OpenCLSolver
 	#define DEFAULT_INTENSITY 24.056f
 	#define DEFAULT_INTENSITY_KING 24.12f
 	#define DEFAULT_LOCAL_WORK_SIZE 128u
-	#define MAX_SOLUTION_COUNT_DEVICE 32u
+	#define MAX_SOLUTION_COUNT_DEVICE 4u
 
 	#define KERNEL_FILE "sha3Kernel.cl"
 	#define KING_KERNEL_FILE "sha3kingKernel.cl"

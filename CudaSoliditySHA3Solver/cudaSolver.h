@@ -20,7 +20,7 @@
 #	include <device_launch_parameters.h>
 #endif //__INTELLISENSE__
 
-#define MAX_SOLUTION_COUNT_DEVICE			32
+#define MAX_SOLUTION_COUNT_DEVICE			4
 #define NONCE_POSITION						UINT256_LENGTH + ADDRESS_LENGTH + ADDRESS_LENGTH
 
 __constant__ static uint64_t const Keccak_f1600_RC[24] =
