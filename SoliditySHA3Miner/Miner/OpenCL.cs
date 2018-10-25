@@ -230,6 +230,7 @@ namespace SoliditySHA3Miner.Miner
         private Timer m_hashPrintTimer;
         private int m_pauseOnFailedScan;
         private int m_failedScanCount;
+        private bool m_isCurrentChallengeStopSolving;
 
         public readonly IntPtr m_instance;
 
@@ -411,9 +412,10 @@ namespace SoliditySHA3Miner.Miner
                 m_MessageCallback = Solver.SetOnMessageHandler(m_instance, m_instance_OnMessage);
                 m_SolutionCallback = Solver.SetOnSolutionHandler(m_instance, m_instance_OnSolution);
 
-                NetworkInterface.OnGetMiningParameterStatus += NetworkInterfaceOnGetMiningParameterStatus;
-                NetworkInterface.OnNewMessagePrefix += NetworkInterfaceOnNewMessagePrefix;
-                NetworkInterface.OnNewTarget += NetworkInterfaceOnNewTarget;
+                NetworkInterface.OnGetMiningParameterStatus += NetworkInterface_OnGetMiningParameterStatus;
+                NetworkInterface.OnNewMessagePrefix += NetworkInterface_OnNewMessagePrefix;
+                NetworkInterface.OnNewTarget += NetworkInterface_OnNewTarget;
+                networkInterface.OnStopSolvingCurrentChallenge += NetworkInterface_OnStopSolvingCurrentChallenge;
 
                 Solver.SetSubmitStale(m_instance, isSubmitStale);
 
@@ -582,12 +584,26 @@ namespace SoliditySHA3Miner.Miner
                 : string.Format(sFormat.ToString(), message));
         }
 
-        private void NetworkInterfaceOnNewMessagePrefix(NetworkInterface.INetworkInterface sender, string messagePrefix)
+        private void NetworkInterface_OnStopSolvingCurrentChallenge(NetworkInterface.INetworkInterface sender, string currentTarget)
+        {
+            m_isCurrentChallengeStopSolving = true;
+            Solver.PauseFinding(m_instance, true);
+        }
+
+        private void NetworkInterface_OnNewMessagePrefix(NetworkInterface.INetworkInterface sender, string messagePrefix)
         {
             try
             {
                 if (m_instance != null && m_instance.ToInt64() != 0)
+                {
                     Solver.UpdatePrefix(m_instance, new StringBuilder(messagePrefix));
+
+                    if (m_isCurrentChallengeStopSolving)
+                    {
+                        Solver.PauseFinding(m_instance, false);
+                        m_isCurrentChallengeStopSolving = false;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -595,7 +611,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        private void NetworkInterfaceOnNewTarget(NetworkInterface.INetworkInterface sender, string target)
+        private void NetworkInterface_OnNewTarget(NetworkInterface.INetworkInterface sender, string target)
         {
             try
             {
@@ -608,7 +624,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        private void NetworkInterfaceOnGetMiningParameterStatus(NetworkInterface.INetworkInterface sender, bool success, NetworkInterface.MiningParameters miningParameters)
+        private void NetworkInterface_OnGetMiningParameterStatus(NetworkInterface.INetworkInterface sender, bool success, NetworkInterface.MiningParameters miningParameters)
         {
             try
             {
@@ -619,11 +635,7 @@ namespace SoliditySHA3Miner.Miner
                         var isPause = false;
                         Solver.IsPaused(m_instance, ref isPause);
 
-                        if (!NetworkInterface.IsPool &&
-                                ((NetworkInterface.Web3Interface)NetworkInterface).IsChallengedSubmitted(miningParameters.ChallengeNumberByte32String))
-                        {
-                            isPause = true;
-                        }
+                        if (m_isCurrentChallengeStopSolving) { isPause = true; }
                         else if (isPause)
                         {
                             if (m_failedScanCount > m_pauseOnFailedScan)
