@@ -126,7 +126,7 @@ namespace SoliditySHA3Miner
 
                 Console.WriteLine(message);
 
-                if (message.Contains("Kernel launch failed"))
+                if (message.Contains("Kernel launch failed") || message.Contains("Stop mining"))
                 {
                     Task.Delay(5000);
                     Environment.Exit(22);
