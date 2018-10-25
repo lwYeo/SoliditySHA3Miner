@@ -2,7 +2,9 @@
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -42,50 +44,76 @@ namespace SoliditySHA3Miner.NetworkInterface
                                  Function getChallengeNumber)
         {
             EthAddress = ethAddress;
-            bool success = false;
-            while (!success)
+
+            var retryCount = 0;
+            var exceptions = new List<Exception>();
+
+            while (retryCount < 10)
             {
-                var exceptions = new List<System.AggregateException>();
+                Task.Delay(200).Wait();
                 try
                 {
-                    Task.WaitAll(new Task[]
-                    {
-                        Task.Factory.StartNew(() =>
-                        {
-                            try { MiningDifficulty = new HexBigInteger(getMiningDifficulty.CallAsync<BigInteger>().Result); }
-                            catch (System.AggregateException ex)
-                            {
-                                exceptions.Add(ex);
-                                throw ex;
-                            }
-                        }),
-                        Task.Factory.StartNew(() =>
-                        {
-                            try { MiningTarget = new HexBigInteger(getMiningTarget.CallAsync<BigInteger>().Result); }
-                            catch (System.AggregateException ex)
-                            {
-                                exceptions.Add(ex);
-                                throw ex;
-                            }
-                        }).
-                        ContinueWith(task => MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false))).
-                        ContinueWith(task => MiningTargetByte32String = Utils.Numerics.BigIntegerToByte32HexString(MiningTarget.Value)),
-                        Task.Factory.StartNew(() =>
-                        {
-                            try { ChallengeNumberByte32 = Utils.Numerics.FilterByte32Array(getChallengeNumber.CallAsync<byte[]>().Result); }
-                            catch (System.AggregateException ex)
-                            {
-                                exceptions.Add(ex);
-                                throw ex;
-                            }
-                        }).
-                        ContinueWith(Task => ChallengeNumber = new HexBigInteger(HexByteConvertorExtensions.ToHex(ChallengeNumberByte32, prefix: true))).
-                        ContinueWith(task => ChallengeNumberByte32String = Utils.Numerics.BigIntegerToByte32HexString(ChallengeNumber.Value))
-                    });
-                    success = true;
+                    MiningDifficulty = new HexBigInteger(getMiningDifficulty.CallAsync<BigInteger>().Result);
+                    break;
                 }
-                catch (System.Exception) { exceptions.ForEach(ex => Program.Print(ex.InnerExceptions[0].Message)); }
+                catch (AggregateException ex)
+                {
+                    retryCount++;
+                    if (retryCount == 10) exceptions.Add(ex.InnerExceptions[0]);
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    if (retryCount == 10) exceptions.Add(ex);
+                }
             }
+
+            while (retryCount < 10)
+            {
+                Task.Delay(200).Wait();
+                try
+                {
+                    MiningTarget = new HexBigInteger(getMiningTarget.CallAsync<BigInteger>().Result);
+                    MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false));
+                    MiningTargetByte32String = Utils.Numerics.BigIntegerToByte32HexString(MiningTarget.Value);
+                    break;
+                }
+                catch (AggregateException ex)
+                {
+                    retryCount++;
+                    if (retryCount == 10) exceptions.Add(ex.InnerExceptions[0]);
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    if (retryCount == 10) exceptions.Add(ex);
+                }
+            }
+
+            while (retryCount < 10)
+            {
+                Task.Delay(200).Wait();
+                try
+                {
+                    ChallengeNumberByte32 = Utils.Numerics.FilterByte32Array(getChallengeNumber.CallAsync<byte[]>().Result);
+                    ChallengeNumber = new HexBigInteger(HexByteConvertorExtensions.ToHex(ChallengeNumberByte32, prefix: true));
+                    ChallengeNumberByte32String = Utils.Numerics.BigIntegerToByte32HexString(ChallengeNumber.Value);
+                    break;
+                }
+                catch (AggregateException ex)
+                {
+                    retryCount++;
+                    if (retryCount == 10) exceptions.Add(ex.InnerExceptions[0]);
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    if (retryCount == 10) exceptions.Add(ex);
+                }
+            }
+
+            var exMessage = string.Join(Environment.NewLine, exceptions.Select(ex => ex.Message));
+            if (exceptions.Any()) throw new Exception(exMessage);
         }
 
         private MiningParameters(string poolURL,

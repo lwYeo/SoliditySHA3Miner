@@ -42,9 +42,10 @@ namespace SoliditySHA3Miner.NetworkInterface
         private int m_retryCount;
         private MiningParameters m_lastParameters;
         
-        public event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
-        public event NewMessagePrefixEvent OnNewMessagePrefixEvent;
-        public event NewTargetEvent OnNewTargetEvent;
+        public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
+        public event NewMessagePrefixEvent OnNewMessagePrefix;
+        public event NewTargetEvent OnNewTarget;
+        public event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
 
         public event GetTotalHashrateEvent OnGetTotalHashrate;
 
@@ -233,7 +234,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 var miningParameters = GetMiningParameters();
                 if (miningParameters == null)
                 {
-                    OnGetMiningParameterStatusEvent(this, false, null);
+                    OnGetMiningParameterStatus(this, false, null);
                     return;
                 }
 
@@ -244,7 +245,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 if (m_lastParameters == null || miningParameters.ChallengeNumber.Value != m_lastParameters.ChallengeNumber.Value)
                 {
                     Program.Print(string.Format("[INFO] New challenge detected {0}...", CurrentChallenge));
-                    OnNewMessagePrefixEvent(this, CurrentChallenge + address.Replace("0x", string.Empty));
+                    OnNewMessagePrefix(this, CurrentChallenge + address.Replace("0x", string.Empty));
                 }
 
                 if (m_customDifficulity == 0)
@@ -254,7 +255,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
                     {
                         Program.Print(string.Format("[INFO] New target detected {0}...", target));
-                        OnNewTargetEvent(this, target);
+                        OnNewTarget(this, target);
                     }
 
                     if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
@@ -267,7 +268,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         {
                             var newTarget = calculatedTarget.ToString();
                             Program.Print(string.Format("[INFO] Update target {0}...", newTarget));
-                            OnNewTargetEvent(this, newTarget);
+                            OnNewTarget(this, newTarget);
                         }
                     }
                 }
@@ -277,11 +278,11 @@ namespace SoliditySHA3Miner.NetworkInterface
                     var calculatedTarget = m_maxTarget.Value / m_customDifficulity;
                     var newTarget = new HexBigInteger(new BigInteger(m_customDifficulity)).HexValue;
 
-                    OnNewTargetEvent(this, newTarget);
+                    OnNewTarget(this, newTarget);
                 }
 
                 m_lastParameters = miningParameters;
-                OnGetMiningParameterStatusEvent(this, true, miningParameters);
+                OnGetMiningParameterStatus(this, true, miningParameters);
             }
             catch (Exception ex)
             {

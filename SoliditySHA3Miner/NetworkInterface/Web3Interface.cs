@@ -61,9 +61,10 @@ namespace SoliditySHA3Miner.NetworkInterface
         private MiningParameters m_lastParameters;
         private HexBigInteger m_maxTarget;
         
-        public event GetMiningParameterStatusEvent OnGetMiningParameterStatusEvent;
-        public event NewMessagePrefixEvent OnNewMessagePrefixEvent;
-        public event NewTargetEvent OnNewTargetEvent;
+        public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
+        public event NewMessagePrefixEvent OnNewMessagePrefix;
+        public event NewTargetEvent OnNewTarget;
+        public event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
 
         public event GetTotalHashrateEvent OnGetTotalHashrate;
 
@@ -292,7 +293,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 var miningParameters = GetMiningParameters();
                 if (miningParameters == null)
                 {
-                    OnGetMiningParameterStatusEvent(this, false, null);
+                    OnGetMiningParameterStatus(this, false, null);
                     return;
                 }
 
@@ -304,13 +305,13 @@ namespace SoliditySHA3Miner.NetworkInterface
                 if (m_lastParameters == null || miningParameters.ChallengeNumber.Value != m_lastParameters.ChallengeNumber.Value)
                 {
                     Program.Print(string.Format("[INFO] New challenge detected {0}...", CurrentChallenge));
-                    OnNewMessagePrefixEvent(this, CurrentChallenge + address.Replace("0x", string.Empty));
+                    OnNewMessagePrefix(this, CurrentChallenge + address.Replace("0x", string.Empty));
                 }
 
                 if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
                 {
                     Program.Print(string.Format("[INFO] New target detected {0}...", target));
-                    OnNewTargetEvent(this, target);
+                    OnNewTarget(this, target);
                 }
 
                 if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
@@ -330,12 +331,12 @@ namespace SoliditySHA3Miner.NetworkInterface
                         var calculatedTarget = m_maxTarget.Value * (ulong)Math.Pow(10, expValue) / (ulong)(calculatedDifficulty * Math.Pow(10, expValue));
                         
                         Program.Print(string.Format("[INFO] Update target {0}...", Utils.Numerics.BigIntegerToByte32HexString(calculatedTarget)));
-                        OnNewTargetEvent(this, Utils.Numerics.BigIntegerToByte32HexString(calculatedTarget));
+                        OnNewTarget(this, Utils.Numerics.BigIntegerToByte32HexString(calculatedTarget));
                     }
                 }
 
                 m_lastParameters = miningParameters;
-                OnGetMiningParameterStatusEvent(this, true, miningParameters);
+                OnGetMiningParameterStatus(this, true, miningParameters);
             }
             catch (Exception ex)
             {
@@ -378,8 +379,9 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             lock (this)
             {
-                if (m_submittedChallengeList.Contains(challenge))
+                if (IsChallengedSubmitted(challenge))
                 {
+                    OnStopSolvingCurrentChallenge(this, challenge);
                     Program.Print(string.Format("[INFO] Submission cancelled, nonce has been submitted for the current challenge."));
                     return false;
                 }
@@ -439,7 +441,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                         if (!string.IsNullOrWhiteSpace(transactionID))
                         {
-                            if (!m_submittedChallengeList.Contains(challenge))
+                            if (!IsChallengedSubmitted(challenge))
                             {
                                 m_submittedChallengeList.Insert(0, challenge);
                                 if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
@@ -456,7 +458,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                             errorMessage += "\n " + iEx.Message;
 
                         Program.Print(errorMessage);
-                        if (m_submittedChallengeList.Contains(challenge)) return false;
+                        if (IsChallengedSubmitted(challenge)) return false;
                     }
                     catch (Exception ex)
                     {
@@ -466,7 +468,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                             errorMessage += "\n " + ex.InnerException.Message;
 
                         Program.Print(errorMessage);
-                        if (m_submittedChallengeList.Contains(challenge) || ex.Message == "Failed to verify transaction.") return false;
+                        if (IsChallengedSubmitted(challenge) || ex.Message == "Failed to verify transaction.") return false;
                     }
 
                     System.Threading.Thread.Sleep(1000);

@@ -273,9 +273,9 @@ namespace SoliditySHA3Miner.Miner
                 m_MessageCallback = Solver.SetOnMessageHandler(m_instance, m_instance_OnMessage);
                 m_SolutionCallback = Solver.SetOnSolutionHandler(m_instance, m_instance_OnSolution);
 
-                NetworkInterface.OnGetMiningParameterStatusEvent += NetworkInterface_OnGetMiningParameterStatusEvent;
-                NetworkInterface.OnNewMessagePrefixEvent += NetworkInterface_OnNewMessagePrefixEvent;
-                NetworkInterface.OnNewTargetEvent += NetworkInterface_OnNewTargetEvent;
+                NetworkInterface.OnGetMiningParameterStatus += NetworkInterfaceOnGetMiningParameterStatus;
+                NetworkInterface.OnNewMessagePrefix += NetworkInterfaceOnNewMessagePrefix;
+                NetworkInterface.OnNewTarget += NetworkInterfaceOnNewTarget;
 
                 Solver.SetSubmitStale(m_instance, isSubmitStale);
 
@@ -343,7 +343,7 @@ namespace SoliditySHA3Miner.Miner
                 : string.Format(sFormat.ToString(), message.ToString()));
         }
 
-        private void NetworkInterface_OnNewMessagePrefixEvent(NetworkInterface.INetworkInterface sender, string messagePrefix)
+        private void NetworkInterfaceOnNewMessagePrefix(NetworkInterface.INetworkInterface sender, string messagePrefix)
         {
             try
             {
@@ -356,7 +356,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        private void NetworkInterface_OnNewTargetEvent(NetworkInterface.INetworkInterface sender, string target)
+        private void NetworkInterfaceOnNewTarget(NetworkInterface.INetworkInterface sender, string target)
         {
             try
             {
@@ -369,7 +369,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        private void NetworkInterface_OnGetMiningParameterStatusEvent(NetworkInterface.INetworkInterface sender,
+        private void NetworkInterfaceOnGetMiningParameterStatus(NetworkInterface.INetworkInterface sender,
                                                                       bool success, NetworkInterface.MiningParameters miningParameters)
         {
             try
