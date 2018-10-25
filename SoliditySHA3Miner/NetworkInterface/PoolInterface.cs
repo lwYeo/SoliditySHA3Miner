@@ -13,17 +13,12 @@ namespace SoliditySHA3Miner.NetworkInterface
     public class PoolInterface : INetworkInterface
     {
         /// <summary>
-        /// Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234
-        /// <para></para>
-        /// Then we can find difficulty [N] target = 2^234 / N
-        /// <para></para>
-        /// Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234
-        /// <para></para>
-        /// Which simplifies to # of hashes to find block difficulty [N] = N * 2^22
-        /// <para></para>
-        /// Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second
-        /// <para></para>
-        /// Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T
+        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
+        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
+        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
+        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
+        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
+        /// <para>Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T</para>
         /// </summary>
         private readonly ulong EFFECTIVE_HASHRATE_CONST = (ulong)Math.Pow(2, 22);
 

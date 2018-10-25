@@ -50,7 +50,6 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             while (retryCount < 10)
             {
-                Task.Delay(200).Wait();
                 try
                 {
                     MiningDifficulty = new HexBigInteger(getMiningDifficulty.CallAsync<BigInteger>().Result);
@@ -60,6 +59,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     retryCount++;
                     if (retryCount == 10) exceptions.Add(ex.InnerExceptions[0]);
+                    else { Task.Delay(200).Wait(); }
                 }
                 catch (Exception ex)
                 {
@@ -70,7 +70,6 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             while (retryCount < 10)
             {
-                Task.Delay(200).Wait();
                 try
                 {
                     MiningTarget = new HexBigInteger(getMiningTarget.CallAsync<BigInteger>().Result);
@@ -82,17 +81,18 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     retryCount++;
                     if (retryCount == 10) exceptions.Add(ex.InnerExceptions[0]);
+                    else { Task.Delay(200).Wait(); }
                 }
                 catch (Exception ex)
                 {
                     retryCount++;
                     if (retryCount == 10) exceptions.Add(ex);
+                    else { Task.Delay(200).Wait(); }
                 }
             }
 
             while (retryCount < 10)
             {
-                Task.Delay(200).Wait();
                 try
                 {
                     ChallengeNumberByte32 = Utils.Numerics.FilterByte32Array(getChallengeNumber.CallAsync<byte[]>().Result);
@@ -104,11 +104,13 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     retryCount++;
                     if (retryCount == 10) exceptions.Add(ex.InnerExceptions[0]);
+                    else { Task.Delay(200).Wait(); }
                 }
                 catch (Exception ex)
                 {
                     retryCount++;
                     if (retryCount == 10) exceptions.Add(ex);
+                    else { Task.Delay(200).Wait(); }
                 }
             }
 
