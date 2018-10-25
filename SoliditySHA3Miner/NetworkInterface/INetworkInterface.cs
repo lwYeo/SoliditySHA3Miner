@@ -29,6 +29,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         string SubmitURL { get; }
         string CurrentChallenge { get; }
 
+        TimeSpan GetTimeLeftToSolveBlock(ulong hashrate);
         ulong GetEffectiveHashrate();
         void ResetEffectiveHashrate();
         void UpdateMiningParameters();

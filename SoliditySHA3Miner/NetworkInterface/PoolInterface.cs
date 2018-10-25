@@ -12,22 +12,15 @@ namespace SoliditySHA3Miner.NetworkInterface
 {
     public class PoolInterface : INetworkInterface
     {
-        /// <summary>
-        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
-        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
-        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
-        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
-        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
-        /// <para>Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T</para>
-        /// </summary>
-        private readonly ulong EFFECTIVE_HASHRATE_CONST = (ulong)Math.Pow(2, 22);
+        private readonly BigInteger uint256_MaxValue = BigInteger.Pow(2, 256);
+        private HexBigInteger m_maxTarget;
+        private DateTime m_challengeReceiveDateTime;
 
         private const int MAX_SUBMIT_DTM_COUNT = 50;
         private readonly List<DateTime> m_submitDateTimeList;
 
         private readonly string s_PoolURL;
         private readonly ulong m_customDifficulity;
-        private readonly HexBigInteger m_maxTarget;
         private readonly int m_maxScanRetry;
         private readonly int m_updateInterval;
         private bool m_isGetMiningParameters;
@@ -36,7 +29,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         private bool m_runFailover;
         private int m_retryCount;
         private MiningParameters m_lastParameters;
-        
+
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
         public event NewMessagePrefixEvent OnNewMessagePrefix;
         public event NewTargetEvent OnNewTarget;
@@ -218,6 +211,11 @@ namespace SoliditySHA3Miner.NetworkInterface
             OnGetTotalHashrate(this, ref totalHashRate);
             Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s (Effective) / {1} MH/s (Local)",
                                         GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
+            
+            var timeLeftToSolveBlock = GetTimeLeftToSolveBlock(totalHashRate);
+
+            Program.Print(string.Format("[INFO] Estimated time left to solve block: {0}d {1}h {2}m {3}s",
+                          timeLeftToSolveBlock.Days, timeLeftToSolveBlock.Hours, timeLeftToSolveBlock.Minutes, timeLeftToSolveBlock.Seconds));
         }
 
         private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -241,6 +239,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     Program.Print(string.Format("[INFO] New challenge detected {0}...", CurrentChallenge));
                     OnNewMessagePrefix(this, CurrentChallenge + address.Replace("0x", string.Empty));
+                    m_challengeReceiveDateTime = DateTime.Now;
                 }
 
                 if (m_customDifficulity == 0)
@@ -286,6 +285,31 @@ namespace SoliditySHA3Miner.NetworkInterface
             finally { m_isGetMiningParameters = false; }
         }
 
+        /// <summary>
+        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
+        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
+        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
+        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
+        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
+        /// </summary>
+        public TimeSpan GetTimeLeftToSolveBlock(ulong hashrate)
+        {
+            if (m_maxTarget == null || hashrate == 0) return TimeSpan.Zero;
+            var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(hashrate);
+
+            if (m_challengeReceiveDateTime == null) m_challengeReceiveDateTime = DateTime.Now;
+
+            return TimeSpan.FromSeconds((ulong)timeToSolveBlock - (ulong)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds);
+        }
+
+        /// <summary>
+        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
+        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
+        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
+        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
+        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
+        /// <para>Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T</para>
+        /// </summary>
         public ulong GetEffectiveHashrate()
         {
             var hashrate = 0ul;
@@ -293,7 +317,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (m_submitDateTimeList.Count > 1)
             {
                 var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
-                hashrate = Difficulty * EFFECTIVE_HASHRATE_CONST / avgSolveTime;
+                hashrate = (ulong)(new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(avgSolveTime));
             }
 
             return hashrate;

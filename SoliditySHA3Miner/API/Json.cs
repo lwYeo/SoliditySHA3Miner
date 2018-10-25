@@ -138,6 +138,8 @@ namespace SoliditySHA3Miner.API
 
                 var networkInterface = m_miners.Select(m => m.NetworkInterface).FirstOrDefault(m => m != null);
 
+                api.EstimateTimeLeftToSolveBlock = (ulong)(networkInterface?.GetTimeLeftToSolveBlock(totalHashRate) ?? TimeSpan.Zero).TotalSeconds;
+
                 api.EffectiveHashRate = (networkInterface?.GetEffectiveHashrate() ?? 0f) / divisor;
 
                 api.TotalHashRate = totalHashRate / divisor;
@@ -401,6 +403,7 @@ namespace SoliditySHA3Miner.API
             public string MiningURL { get; set; }
             public string CurrentChallenge { get; set; }
             public ulong CurrentDifficulty { get; set; }
+            public ulong EstimateTimeLeftToSolveBlock { get; set; }
             public float EffectiveHashRate { get; set; }
             public float TotalHashRate { get; set; }
             public string HashRateUnit { get; set; }
