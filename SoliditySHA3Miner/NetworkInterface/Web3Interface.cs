@@ -274,9 +274,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                                         GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
 
             var timeLeftToSolveBlock = GetTimeLeftToSolveBlock(totalHashRate);
+            var magnitude = (timeLeftToSolveBlock.TotalSeconds < 0) ? "- " : string.Empty;
 
-            Program.Print(string.Format("[INFO] Estimated time left to solve block: {0}d {1}h {2}m {3}s",
-                          timeLeftToSolveBlock.Days, timeLeftToSolveBlock.Hours, timeLeftToSolveBlock.Minutes, timeLeftToSolveBlock.Seconds));
+            Program.Print(string.Format("[INFO] Estimated time left to solve block: {0}{1}d {2}h {3}m {4}s",
+                                        magnitude,
+                                        Math.Abs(timeLeftToSolveBlock.Days),
+                                        Math.Abs(timeLeftToSolveBlock.Hours),
+                                        Math.Abs(timeLeftToSolveBlock.Minutes),
+                                        Math.Abs(timeLeftToSolveBlock.Seconds)));
         }
 
         private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -352,11 +357,11 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(hashrate);
 
-            var secondsLeftToSolveBlock = timeToSolveBlock -(ulong)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds;
+            var secondsLeftToSolveBlock = timeToSolveBlock -(long)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds;
 
-            return (secondsLeftToSolveBlock > (ulong)TimeSpan.MaxValue.TotalSeconds)
+            return (secondsLeftToSolveBlock > (long)TimeSpan.MaxValue.TotalSeconds)
                 ? TimeSpan.MaxValue
-                : TimeSpan.FromSeconds((ulong)timeToSolveBlock - (ulong)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds);
+                : TimeSpan.FromSeconds((long)secondsLeftToSolveBlock);
         }
 
         /// <summary>
