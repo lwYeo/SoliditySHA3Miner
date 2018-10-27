@@ -124,17 +124,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                                  JObject getMinimumShareDifficulty,
                                  JObject getMinimumShareTarget)
         {
-            Task.WaitAll(new Task[]
-            {
-                Task.Factory.StartNew(() => EthAddress = Utils.Json.InvokeJObjectRPC(poolURL, getPoolEthAddress).SelectToken("$.result").Value<string>()),
-                Task.Factory.StartNew(() => ChallengeNumber = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getChallengeNumber).SelectToken("$.result").Value<string>())).
-                             ContinueWith(task => ChallengeNumberByte32 = Utils.Numerics.FilterByte32Array(ChallengeNumber.Value.ToByteArray(littleEndian: false))).
-                             ContinueWith(task => ChallengeNumberByte32String = Utils.Numerics.BigIntegerToByte32HexString(ChallengeNumber.Value)),
-                Task.Factory.StartNew(() => MiningDifficulty = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareDifficulty).SelectToken("$.result").Value<string>()))),
-                Task.Factory.StartNew(() => MiningTarget = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareTarget).SelectToken("$.result").Value<string>()))).
-                             ContinueWith(task => MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false))).
-                             ContinueWith(task => MiningTargetByte32String = Utils.Numerics.BigIntegerToByte32HexString(MiningTarget.Value))
-            });
+            EthAddress = Utils.Json.InvokeJObjectRPC(poolURL, getPoolEthAddress).SelectToken("$.result").Value<string>();
+            ChallengeNumber = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getChallengeNumber).SelectToken("$.result").Value<string>());
+            ChallengeNumberByte32 = Utils.Numerics.FilterByte32Array(ChallengeNumber.Value.ToByteArray(littleEndian: false));
+            ChallengeNumberByte32String = Utils.Numerics.BigIntegerToByte32HexString(ChallengeNumber.Value);
+            MiningDifficulty = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareDifficulty).SelectToken("$.result").Value<string>()));
+            MiningTarget = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareTarget).SelectToken("$.result").Value<string>()));
+            MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false));
+            MiningTargetByte32String = Utils.Numerics.BigIntegerToByte32HexString(MiningTarget.Value);
         }
     }
 }

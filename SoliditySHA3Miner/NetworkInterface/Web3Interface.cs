@@ -347,12 +347,16 @@ namespace SoliditySHA3Miner.NetworkInterface
         /// </summary>
         public TimeSpan GetTimeLeftToSolveBlock(ulong hashrate)
         {
-            if (m_maxTarget == null || hashrate == 0) return TimeSpan.Zero;
+            if (m_maxTarget == null || m_maxTarget.Value == 0 || Difficulty == 0 || hashrate == 0 || m_challengeReceiveDateTime == DateTime.MinValue)
+                return TimeSpan.Zero;
+
             var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(hashrate);
 
-            if (m_challengeReceiveDateTime == DateTime.MinValue) return TimeSpan.Zero;
+            var secondsLeftToSolveBlock = timeToSolveBlock -(ulong)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds;
 
-            return TimeSpan.FromSeconds((ulong)timeToSolveBlock - (ulong)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds);
+            return (secondsLeftToSolveBlock > (ulong)TimeSpan.MaxValue.TotalSeconds)
+                ? TimeSpan.MaxValue
+                : TimeSpan.FromSeconds((ulong)timeToSolveBlock - (ulong)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds);
         }
 
         /// <summary>
