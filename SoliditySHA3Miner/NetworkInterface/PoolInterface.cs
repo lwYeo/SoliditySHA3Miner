@@ -213,14 +213,23 @@ namespace SoliditySHA3Miner.NetworkInterface
                                         GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
             
             var timeLeftToSolveBlock = GetTimeLeftToSolveBlock(totalHashRate);
-            var magnitude = (timeLeftToSolveBlock.TotalSeconds < 0) ? "- " : string.Empty;
 
-            Program.Print(string.Format("[INFO] Estimated time left to solve block: {0}{1}d {2}h {3}m {4}s",
-                                        magnitude,
-                                        Math.Abs(timeLeftToSolveBlock.Days),
-                                        Math.Abs(timeLeftToSolveBlock.Hours),
-                                        Math.Abs(timeLeftToSolveBlock.Minutes),
-                                        Math.Abs(timeLeftToSolveBlock.Seconds)));
+            if (timeLeftToSolveBlock.TotalSeconds < 0)
+            {
+                Program.Print(string.Format("[INFO] Estimated time left to solve block: -({0}d {1}h {2}m {3}s)",
+                                            Math.Abs(timeLeftToSolveBlock.Days),
+                                            Math.Abs(timeLeftToSolveBlock.Hours),
+                                            Math.Abs(timeLeftToSolveBlock.Minutes),
+                                            Math.Abs(timeLeftToSolveBlock.Seconds)));
+            }
+            else
+            {
+                Program.Print(string.Format("[INFO] Estimated time left to solve block: {0}d {1}h {2}m {3}s",
+                                            Math.Abs(timeLeftToSolveBlock.Days),
+                                            Math.Abs(timeLeftToSolveBlock.Hours),
+                                            Math.Abs(timeLeftToSolveBlock.Minutes),
+                                            Math.Abs(timeLeftToSolveBlock.Seconds)));
+            }
         }
 
         private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
