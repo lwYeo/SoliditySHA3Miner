@@ -135,23 +135,173 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_gasLimit = gasLimit;
                 Program.Print(string.Format("[INFO] Gas limit: {0}", m_gasLimit));
 
-                m_mintMethod = m_contract.GetFunction("mint");
+                #region ERC20 methods
+
                 m_transferMethod = m_contract.GetFunction("transfer");
-                m_getMiningDifficulty = m_contract.GetFunction("getMiningDifficulty");
-                m_getMiningTarget = m_contract.GetFunction("getMiningTarget");
-                m_getChallengeNumber = m_contract.GetFunction("getChallengeNumber");
-                m_getMiningReward = m_contract.GetFunction("getMiningReward");
 
-                if (contractABI.Functions.Any(f => f.Name == "_MAXIMUM_TARGET"))
-                    m_MAXIMUM_TARGET = m_contract.GetFunction("_MAXIMUM_TARGET");
+                #endregion
 
-                else if (contractABI.Functions.Any(f => f.Name == "MAX_TARGET"))
+                #region ERC918-B methods
+
+                if (contractABI.Functions.Any(f => f.Name == "mint"))
+                    m_mintMethod = m_contract.GetFunction("mint");
+
+                if (contractABI.Functions.Any(f => f.Name == "getMiningDifficulty"))
+                    m_getMiningDifficulty = m_contract.GetFunction("getMiningDifficulty");
+
+                if (contractABI.Functions.Any(f => f.Name == "getMiningTarget"))
+                    m_getMiningTarget = m_contract.GetFunction("getMiningTarget");
+
+                if (contractABI.Functions.Any(f => f.Name == "getChallengeNumber"))
+                    m_getChallengeNumber = m_contract.GetFunction("getChallengeNumber");
+
+                if (contractABI.Functions.Any(f => f.Name == "getMiningReward"))
+                    m_getMiningReward = m_contract.GetFunction("getMiningReward");
+
+                #endregion
+
+                #region ERC918 methods
+
+                if (contractABI.Functions.Any(f => f.Name == "MAX_TARGET"))
                     m_MAXIMUM_TARGET = m_contract.GetFunction("MAX_TARGET");
+
+                #endregion
+
+                #region ABI methods checking
+
+                if (m_mintMethod == null)
+                {
+                    var mintABI = contractABI.Functions.
+                                              FirstOrDefault(f => f.Name.IndexOf("mint", StringComparison.OrdinalIgnoreCase) > -1);
+                    if (mintABI == null)
+                        throw new InvalidOperationException("'mint' function not found, mining cannot proceed.");
+
+                    else if (!mintABI.InputParameters.Any())
+                        throw new InvalidOperationException("'mint' function must have input parameter, mining cannot proceed.");
+
+                    else if (mintABI.InputParameters[0].Type != "uint256")
+                        throw new InvalidOperationException("'mint' function first input parameter type must be uint256, mining cannot proceed.");
+
+                    m_mintMethod = m_contract.GetFunction(mintABI.Name);
+                }
+
+                if (m_getMiningDifficulty == null)
+                {
+                    var miningDifficultyABI = contractABI.Functions.
+                                                          FirstOrDefault(f => f.Name.IndexOf("miningDifficulty", StringComparison.OrdinalIgnoreCase) > -1);
+                    if (miningDifficultyABI == null)
+                        miningDifficultyABI = contractABI.Functions.
+                                                          FirstOrDefault(f => f.Name.IndexOf("mining_difficulty", StringComparison.OrdinalIgnoreCase) > -1);
+                    if (miningDifficultyABI == null)
+                        throw new InvalidOperationException("'miningDifficulty' function not found, mining cannot proceed.");
+
+                    else if (!miningDifficultyABI.OutputParameters.Any())
+                        throw new InvalidOperationException("'miningDifficulty' function must have output parameter, mining cannot proceed.");
+
+                    else if (miningDifficultyABI.OutputParameters[0].Type != "uint256")
+                        throw new InvalidOperationException("'miningDifficulty' function output parameter type must be uint256, mining cannot proceed.");
+
+                    m_getMiningDifficulty = m_contract.GetFunction(miningDifficultyABI.Name);
+                }
+
+                if (m_getMiningTarget == null)
+                {
+                    var miningTargetABI = contractABI.Functions.
+                                                      FirstOrDefault(f => f.Name.IndexOf("miningTarget", StringComparison.OrdinalIgnoreCase) > -1);
+                    if (miningTargetABI == null)
+                        miningTargetABI = contractABI.Functions.
+                                                      FirstOrDefault(f => f.Name.IndexOf("mining_target", StringComparison.OrdinalIgnoreCase) > -1);
+                    if (miningTargetABI == null)
+                        throw new InvalidOperationException("'miningTarget' function not found, mining cannot proceed.");
+
+                    else if (!miningTargetABI.OutputParameters.Any())
+                        throw new InvalidOperationException("'miningTarget' function must have output parameter, mining cannot proceed.");
+
+                    else if (miningTargetABI.OutputParameters[0].Type != "uint256")
+                        throw new InvalidOperationException("'miningTarget' function output parameter type must be uint256, mining cannot proceed.");
+
+                    m_getMiningTarget = m_contract.GetFunction(miningTargetABI.Name);
+                }
+
+                if (m_getChallengeNumber == null)
+                {
+                    var challengeNumberABI = contractABI.Functions.
+                                                         FirstOrDefault(f => f.Name.IndexOf("challengeNumber", StringComparison.OrdinalIgnoreCase) > -1);
+                    if (challengeNumberABI == null)
+                        challengeNumberABI = contractABI.Functions.
+                                                         FirstOrDefault(f => f.Name.IndexOf("challenge_number", StringComparison.OrdinalIgnoreCase) > -1);
+                    if (challengeNumberABI == null)
+                        throw new InvalidOperationException("'challengeNumber' function not found, mining cannot proceed.");
+
+                    else if (!challengeNumberABI.OutputParameters.Any())
+                        throw new InvalidOperationException("'challengeNumber' function must have output parameter, mining cannot proceed.");
+
+                    else if (challengeNumberABI.OutputParameters[0].Type != "bytes32")
+                        throw new InvalidOperationException("'challengeNumber' function output parameter type must be bytes32, mining cannot proceed.");
+
+                    m_getChallengeNumber = m_contract.GetFunction(challengeNumberABI.Name);
+                }
+
+                if (m_getMiningReward == null)
+                {
+                    var miningRewardABI = contractABI.Functions.
+                                                      FirstOrDefault(f => f.Name.IndexOf("miningReward", StringComparison.OrdinalIgnoreCase) > -1);
+                    if (miningRewardABI == null)
+                        miningRewardABI = contractABI.Functions.
+                                                      FirstOrDefault(f => f.Name.IndexOf("mining_reward", StringComparison.OrdinalIgnoreCase) > -1);
+                    if (miningRewardABI == null)
+                        throw new InvalidOperationException("'miningReward' function not found, mining cannot proceed.");
+
+                    else if (!miningRewardABI.OutputParameters.Any())
+                        throw new InvalidOperationException("'miningReward' function must have output parameter, mining cannot proceed.");
+
+                    else if (miningRewardABI.OutputParameters[0].Type != "uint256")
+                        throw new InvalidOperationException("'miningReward' function output parameter type must be uint256, mining cannot proceed.");
+
+                    m_getMiningReward = m_contract.GetFunction(miningRewardABI.Name);
+                }
+
+                if (m_MAXIMUM_TARGET == null)
+                {
+                    var maxTargetNames = new string[] { "MAX_TARGET", "MAXIMUM_TARGET", "maxTarget", "maximumTarget" };
+
+                    // ERC541 backwards compatibility
+                    if (contractABI.Functions.Any(f => f.Name == "_MAXIMUM_TARGET"))
+                    {
+                        m_MAXIMUM_TARGET = m_contract.GetFunction("_MAXIMUM_TARGET");
+                    }
+                    else
+                    {
+                        var maxTargetABI = contractABI.Functions.
+                                                       FirstOrDefault(function =>
+                                                       {
+                                                           return maxTargetNames.Any(targetName =>
+                                                           {
+                                                               return function.Name.IndexOf(targetName, StringComparison.OrdinalIgnoreCase) > -1;
+                                                           });
+                                                       });
+                        if (maxTargetABI == null)
+                            m_MAXIMUM_TARGET = null; // Mining still can proceed without MAX_TARGET
+                        else
+                        {
+                            if (!maxTargetABI.OutputParameters.Any())
+                                Program.Print(string.Format("[ERROR] '{0}' function must have output parameter.", maxTargetABI.Name));
+
+                            else if (maxTargetABI.OutputParameters[0].Type != "uint256")
+                                Program.Print(string.Format("[ERROR] '{0}' function output parameter type must be uint256.", maxTargetABI.Name));
+
+                            else
+                                m_MAXIMUM_TARGET = m_contract.GetFunction(maxTargetABI.Name);
+                        }
+                    }
+                }
 
                 m_mintMethodInputParamCount = m_contract.ContractBuilder.
                                                          ContractABI.Functions.
                                                          First(f => f.Name == "mint").
                                                          InputParameters.Count();
+
+                #endregion
 
                 m_hashPrintTimer = new Timer(hashratePrintInterval);
                 m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
