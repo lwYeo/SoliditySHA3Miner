@@ -1,4 +1,5 @@
-﻿using Nethereum.Contracts;
+﻿using Nethereum.ABI.Model;
+using Nethereum.Contracts;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
@@ -126,6 +127,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             m_contract = m_web3.Eth.GetContract(tokenAbi.ToString(), contractAddress);
             var contractABI = m_contract.ContractBuilder.ContractABI;
+            FunctionABI mintABI = null;
 
             if (!string.IsNullOrWhiteSpace(privateKey))
             {
@@ -143,8 +145,8 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 #region ERC918-B methods
 
-                if (contractABI.Functions.Any(f => f.Name == "mint"))
-                    m_mintMethod = m_contract.GetFunction("mint");
+                mintABI = contractABI.Functions.FirstOrDefault(f => f.Name == "mint");
+                if (mintABI != null) m_mintMethod = m_contract.GetFunction(mintABI.Name);
 
                 if (contractABI.Functions.Any(f => f.Name == "getMiningDifficulty"))
                     m_getMiningDifficulty = m_contract.GetFunction("getMiningDifficulty");
@@ -171,8 +173,8 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 if (m_mintMethod == null)
                 {
-                    var mintABI = contractABI.Functions.
-                                              FirstOrDefault(f => f.Name.IndexOf("mint", StringComparison.OrdinalIgnoreCase) > -1);
+                    mintABI = contractABI.Functions.
+                                          FirstOrDefault(f => f.Name.IndexOf("mint", StringComparison.OrdinalIgnoreCase) > -1);
                     if (mintABI == null)
                         throw new InvalidOperationException("'mint' function not found, mining cannot proceed.");
 
@@ -296,10 +298,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     }
                 }
 
-                m_mintMethodInputParamCount = m_contract.ContractBuilder.
-                                                         ContractABI.Functions.
-                                                         First(f => f.Name == "mint").
-                                                         InputParameters.Count();
+                m_mintMethodInputParamCount = mintABI?.InputParameters.Count() ?? 0;
 
                 #endregion
 
