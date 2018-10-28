@@ -96,6 +96,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                 throw new Exception("Invalid contract address provided, ensure capitalization is correct.");
             }
 
+            Program.Print("[INFO] Contract address : " + contractAddress);
+
             if (!string.IsNullOrWhiteSpace(privateKey))
             {
                 m_account = new Account(privateKey);
