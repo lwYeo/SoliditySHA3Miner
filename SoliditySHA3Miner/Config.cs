@@ -94,7 +94,7 @@ namespace SoliditySHA3Miner
                 "  maxScanRetry            Number of retries to scan for new work (default: " + Defaults.MaxScanRetry + ")\n" +
                 "  pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)\n" +
                 "  submitStale             Submit stale jobs, may create more rejected shares (default: " + Defaults.SubmitStale.ToString().ToLower() + ")\n" +
-                "  abiFile                 Token abi in a file (default: '0xbtc.abi' in the same folder as this miner)\n" +
+                "  abiFile                 Token abi in a file (default: 'ERC-541.abi' in the same folder as this miner)\n" +
                 "  web3api                 User-defined web3 provider URL (default: Infura mainnet provider)\n" +
                 "  contract                Token contract address (default: 0xbtc contract address)\n" +
                 "  hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: " + Defaults.HashrateUpdateInterval + ")\n" +

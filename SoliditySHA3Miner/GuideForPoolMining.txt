@@ -8,9 +8,8 @@
 3) Below are the following arguments that may/need to be changed :
 
 3a) abiFile=
-  * If omitted, the '0xbtc.abi' file will be used by default
-  * Replace the value to the available filename that ends with '.abi' in the folder for the token you are mining.
-  * If the file is not available, you can manually create a new file by and insert the data contents from etherscan.com -> {find the token you want to mine} -> Contract -> Code -> Contract ABI.
+  * If omitted, the 'ERC-541.abi' file will be used by default
+  * Replace the value to the available filename that ends with '.abi' in the folder for the token interface you are mining.
 
 3b) contract=
   * If omitted, 0xBTC contract address will be used by default.

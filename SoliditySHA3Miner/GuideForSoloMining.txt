@@ -12,9 +12,8 @@
   * To avoid connection issues, do change to your own web3 API such as your account from 'https://infura.io/', or if you have your own Geth/Parity set up.
 
 4b) abiFile=
-  * If omitted, the '0xbtc.abi' file will be used by default
-  * Replace the value to the available filename that ends with '.abi' in the folder for the token you are mining.
-  * If the file is not available, you can manually create a new file by and insert the data contents from etherscan.com -> {find the token you want to mine} -> Contract -> Code -> Contract ABI.
+  * If omitted, the 'ERC-541.abi' file will be used by default
+  * Replace the value to the available filename that ends with '.abi' in the folder for the token interface you are mining.
 
 4c) contract=
   * If omitted, 0xBTC contract address will be used by default.

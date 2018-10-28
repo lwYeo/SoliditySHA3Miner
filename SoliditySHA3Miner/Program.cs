@@ -80,6 +80,8 @@ namespace SoliditySHA3Miner
 
         public static string GetApplicationName() => typeof(Program).Assembly.GetName().Name;
 
+        public static string GetCompanyName() => typeof(Program).Assembly.GetCustomAttribute<AssemblyCompanyAttribute>().Company;
+
         public static string GetApplicationVersion() => typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
         public static string GetApplicationYear() => File.GetCreationTime(typeof(Program).Assembly.Location).Year.ToString();
@@ -145,7 +147,7 @@ namespace SoliditySHA3Miner
         private static string GetHeader()
         {
             return "\n" +
-                "*** " + GetApplicationName() + " " + GetApplicationVersion() + " by lwYeo@github (" + GetApplicationYear() + ") ***\n" +
+                "*** " + GetApplicationName() + " " + GetApplicationVersion() + " by " + GetCompanyName() + " (" + GetApplicationYear() + ") ***\n" +
                 "*** Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
                 "\n" +
                 "Donation addresses:\n" +
@@ -157,7 +159,7 @@ namespace SoliditySHA3Miner
         private static void Main(string[] args)
         {
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            Console.Title = string.Format("{0} {1} by lwYeo@github ({2})", GetApplicationName(), GetApplicationVersion(), GetApplicationYear());
+            Console.Title = string.Format("{0} {1} by {2} ({3})", GetApplicationName(), GetApplicationVersion(), GetCompanyName(), GetApplicationYear());
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
