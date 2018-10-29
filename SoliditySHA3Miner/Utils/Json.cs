@@ -44,24 +44,19 @@ namespace SoliditySHA3Miner.Utils
             lock (_Object2)
             {
                 string sJSON = string.Empty;
-                JObject jObject = null;
-                try
+
+                using (var oClient = new HttpClient())
                 {
-                    using (var oClient = new HttpClient())
+                    oClient.Timeout = new TimeSpan(0, 0, MAX_TIMEOUT);
+                    using (HttpResponseMessage oResponse = oClient.GetAsync(url).Result)
                     {
-                        oClient.Timeout = new TimeSpan(0, 0, MAX_TIMEOUT);
-                        using (HttpResponseMessage oResponse = oClient.GetAsync(url).Result)
+                        using (HttpContent oContent = oResponse.Content)
                         {
-                            using (HttpContent oContent = oResponse.Content)
-                            {
-                                sJSON = oContent.ReadAsStringAsync().Result;
-                            }
+                            sJSON = oContent.ReadAsStringAsync().Result;
                         }
                     }
-                    jObject = (JObject)JsonConvert.DeserializeObject(sJSON);
                 }
-                catch { }
-                return jObject;
+                return (JObject)JsonConvert.DeserializeObject(sJSON);
             }
         }
 
