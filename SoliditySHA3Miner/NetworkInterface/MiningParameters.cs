@@ -65,6 +65,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     retryCount++;
                     if (retryCount == 10) exceptions.Add(ex);
+                    else { Task.Delay(200).Wait(); }
                 }
             }
 
