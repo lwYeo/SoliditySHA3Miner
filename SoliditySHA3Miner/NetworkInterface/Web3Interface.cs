@@ -685,18 +685,13 @@ namespace SoliditySHA3Miner.NetworkInterface
             try
             {
                 var success = false;
+                var hasWaited = false;
                 TransactionReceipt reciept = null;
                 while (reciept == null)
                 {
                     try
                     {
                         reciept = m_web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionID).Result;
-                        if (reciept == null)
-                        {
-                            m_newChallengeResetEvent.Reset();
-                            m_newChallengeResetEvent.WaitOne();
-                            reciept = m_web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionID).Result;
-                        }
                     }
                     catch (AggregateException ex)
                     {
@@ -715,6 +710,17 @@ namespace SoliditySHA3Miner.NetworkInterface
                             errorMessage += "\n " + ex.InnerException.Message;
 
                         Program.Print(errorMessage);
+                    }
+
+                    if (reciept == null)
+                    {
+                        if (hasWaited) Task.Delay(m_updateInterval).Wait();
+                        else
+                        {
+                            m_newChallengeResetEvent.Reset();
+                            m_newChallengeResetEvent.WaitOne();
+                            hasWaited = true;
+                        }
                     }
                 }
 
