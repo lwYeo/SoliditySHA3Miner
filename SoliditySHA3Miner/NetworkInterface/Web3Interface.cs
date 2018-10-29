@@ -49,6 +49,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         private Timer m_updateMinerTimer;
         private Timer m_hashPrintTimer;
         private MiningParameters m_lastParameters;
+        private System.Threading.ManualResetEvent m_newChallengeResetEvent;
 
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
         public event NewMessagePrefixEvent OnNewMessagePrefix;
@@ -76,6 +77,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             m_updateInterval = updateInterval;
             m_submittedChallengeList = new List<string>();
             m_submitDateTimeList = new List<DateTime>(MAX_SUBMIT_DTM_COUNT + 1);
+            m_newChallengeResetEvent = new System.Threading.ManualResetEvent(false);
             Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout = MAX_TIMEOUT * 1000;
             LastSubmitLatency = -1;
             Latency = -1;
@@ -428,7 +430,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             if (timeLeftToSolveBlock.TotalSeconds < 0)
             {
-                Program.Print(string.Format("[INFO] Estimated time left to solve block: -({0}d {1}h {2}m {3}s)",
+                Program.Print(string.Format("[INFO] Estimated time left to solution: -({0}d {1}h {2}m {3}s)",
                                             Math.Abs(timeLeftToSolveBlock.Days),
                                             Math.Abs(timeLeftToSolveBlock.Hours),
                                             Math.Abs(timeLeftToSolveBlock.Minutes),
@@ -436,7 +438,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
             else
             {
-                Program.Print(string.Format("[INFO] Estimated time left to solve block: {0}d {1}h {2}m {3}s",
+                Program.Print(string.Format("[INFO] Estimated time left to solution: {0}d {1}h {2}m {3}s",
                                             Math.Abs(timeLeftToSolveBlock.Days),
                                             Math.Abs(timeLeftToSolveBlock.Hours),
                                             Math.Abs(timeLeftToSolveBlock.Minutes),
@@ -465,6 +467,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     Program.Print(string.Format("[INFO] New challenge detected {0}...", CurrentChallenge));
                     OnNewMessagePrefix(this, CurrentChallenge + address.Replace("0x", string.Empty));
                     if (m_challengeReceiveDateTime == DateTime.MinValue) m_challengeReceiveDateTime = DateTime.Now;
+                    m_newChallengeResetEvent.Set();
                 }
 
                 if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
@@ -602,13 +605,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                     {
                         var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
 
-                        var estimatedGasLimit = m_mintMethod.EstimateGasAsync(from: fromAddress,
-                                                                              gas: gasLimit,
-                                                                              value: new HexBigInteger(0),
-                                                                              functionInput: dataInput).Result;
-
+                        // Commented as gas limit is dynamic in between submissions and confirmations
+                        //var estimatedGasLimit = m_mintMethod.EstimateGasAsync(from: fromAddress,
+                        //                                                      gas: gasLimit,
+                        //                                                      value: new HexBigInteger(0),
+                        //                                                      functionInput: dataInput).Result;
+                        
                         var transaction = m_mintMethod.CreateTransactionInput(from: fromAddress,
-                                                                              gas: estimatedGasLimit,
+                                                                              gas: gasLimit /*estimatedGasLimit*/,
                                                                               gasPrice: userGas,
                                                                               value: new HexBigInteger(0),
                                                                               functionInput: dataInput);
@@ -618,7 +622,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                                                                                       amount: 0,
                                                                                       nonce: txCount.Value,
                                                                                       gasPrice: userGas,
-                                                                                      gasLimit: estimatedGasLimit,
+                                                                                      gasLimit: gasLimit /*estimatedGasLimit*/,
                                                                                       data: transaction.Data);
 
                         if (!Web3.OfflineTransactionSigner.VerifyTransaction(encodedTx))
@@ -686,8 +690,13 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     try
                     {
-                        System.Threading.Thread.Sleep(3000);
                         reciept = m_web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionID).Result;
+                        if (reciept == null)
+                        {
+                            m_newChallengeResetEvent.Reset();
+                            m_newChallengeResetEvent.WaitOne();
+                            reciept = m_web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionID).Result;
+                        }
                     }
                     catch (AggregateException ex)
                     {

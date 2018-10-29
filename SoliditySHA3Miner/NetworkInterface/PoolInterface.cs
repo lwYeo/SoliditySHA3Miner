@@ -216,7 +216,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             if (timeLeftToSolveBlock.TotalSeconds < 0)
             {
-                Program.Print(string.Format("[INFO] Estimated time left to solve block: -({0}d {1}h {2}m {3}s)",
+                Program.Print(string.Format("[INFO] Estimated time left to solution: -({0}d {1}h {2}m {3}s)",
                                             Math.Abs(timeLeftToSolveBlock.Days),
                                             Math.Abs(timeLeftToSolveBlock.Hours),
                                             Math.Abs(timeLeftToSolveBlock.Minutes),
@@ -224,7 +224,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
             else
             {
-                Program.Print(string.Format("[INFO] Estimated time left to solve block: {0}d {1}h {2}m {3}s",
+                Program.Print(string.Format("[INFO] Estimated time left to solution: {0}d {1}h {2}m {3}s",
                                             Math.Abs(timeLeftToSolveBlock.Days),
                                             Math.Abs(timeLeftToSolveBlock.Hours),
                                             Math.Abs(timeLeftToSolveBlock.Minutes),
