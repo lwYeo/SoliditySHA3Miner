@@ -135,11 +135,19 @@ namespace OpenCLSolver
 
 	void Device::preInitialize(std::string sha3Kernel, std::string sha3KingKernel)
 	{
-		kernelSource = sha3Kernel.c_str();
 		kernelSourceSize = sha3Kernel.size();
-
-		kernelSourceKing = sha3KingKernel.c_str();
 		kernelSourceKingSize = sha3KingKernel.size();
+
+		kernelSource = (char *)std::malloc(kernelSourceSize + 1);
+		kernelSourceKing = (char *)std::malloc(kernelSourceKingSize + 1);
+
+#	ifdef __linux__
+		strcpy((char *)kernelSource, sha3Kernel.c_str());
+		strcpy((char *)kernelSourceKing, sha3KingKernel.c_str());
+#	else
+		strcpy_s((char *)kernelSource, kernelSourceSize + 1, sha3Kernel.c_str());
+		strcpy_s((char *)kernelSourceKing, kernelSourceKingSize + 1, sha3KingKernel.c_str());
+#	endif
 	}
 
 	// --------------------------------------------------------------------
