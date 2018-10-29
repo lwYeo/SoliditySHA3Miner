@@ -28,6 +28,10 @@ namespace SoliditySHA3Miner
         public string privateKey { get; set; }
         public float gasToMine { get; set; }
         public ulong gasLimit { get; set; }
+        public string gasApiURL { get; set; }
+        public string gasApiPath { get; set; }
+        public float gasApiMultiplier { get; set; }
+        public float gasApiOffset { get; set; }
         public bool cpuMode { get; set; }
         public Miner.Device[] cpuDevices { get; set; }
         public bool allowIntel { get; set; }

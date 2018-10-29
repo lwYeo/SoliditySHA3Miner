@@ -230,9 +230,9 @@ namespace SoliditySHA3Miner
             }
 
             Print(GetHeader(), excludePrefix: true);
-            
+
             if (!Config.ParseArgumentsToConfig(args)) Environment.Exit(1);
-            
+
             try
             {
                 Config.networkUpdateInterval = Config.networkUpdateInterval < 1000 ? Config.Defaults.NetworkUpdateInterval : Config.networkUpdateInterval;
@@ -242,7 +242,8 @@ namespace SoliditySHA3Miner
                 Miner.Work.SetSolutionTemplate(Miner.CPU.GetNewSolutionTemplate(Miner.Work.GetKingAddressString()));
 
                 var web3Interface = new NetworkInterface.Web3Interface(Config.web3api, Config.contractAddress, Config.minerAddress, Config.privateKey, Config.gasToMine,
-                                                                       Config.abiFile, Config.networkUpdateInterval, Config.hashrateUpdateInterval, Config.gasLimit);
+                                                                       Config.abiFile, Config.networkUpdateInterval, Config.hashrateUpdateInterval,
+                                                                       Config.gasLimit, Config.gasApiURL, Config.gasApiPath, Config.gasApiMultiplier, Config.gasApiOffset);
 
                 web3Interface.OverrideMaxTarget(Config.overrideMaxTarget);
 

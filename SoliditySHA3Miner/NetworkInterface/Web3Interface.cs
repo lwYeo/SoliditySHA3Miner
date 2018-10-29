@@ -51,6 +51,11 @@ namespace SoliditySHA3Miner.NetworkInterface
         private MiningParameters m_lastParameters;
         private System.Threading.ManualResetEvent m_newChallengeResetEvent;
 
+        private string m_gasApiURL;
+        private string m_gasApiPath;
+        private float m_gasApiOffset;
+        private float m_gasApiMultiplier;
+
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
         public event NewMessagePrefixEvent OnNewMessagePrefix;
         public event NewTargetEvent OnNewTarget;
@@ -72,12 +77,14 @@ namespace SoliditySHA3Miner.NetworkInterface
         public bool IsChallengedSubmitted(string challenge) => m_submittedChallengeList.Contains(challenge);
 
         public Web3Interface(string web3ApiPath, string contractAddress, string minerAddress, string privateKey,
-                             float gasToMine, string abiFileName, int updateInterval, int hashratePrintInterval, ulong gasLimit)
+                             float gasToMine, string abiFileName, int updateInterval, int hashratePrintInterval,
+                             ulong gasLimit, string gasApiURL, string gasApiPath, float gasApiMultiplier, float gasApiOffset)
         {
             m_updateInterval = updateInterval;
             m_submittedChallengeList = new List<string>();
             m_submitDateTimeList = new List<DateTime>(MAX_SUBMIT_DTM_COUNT + 1);
             m_newChallengeResetEvent = new System.Threading.ManualResetEvent(false);
+
             Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout = MAX_TIMEOUT * 1000;
             LastSubmitLatency = -1;
             Latency = -1;
@@ -140,6 +147,18 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 m_gasLimit = gasLimit;
                 Program.Print(string.Format("[INFO] Gas limit: {0}", m_gasLimit));
+
+                m_gasApiURL = gasApiURL;
+                Program.Print(string.Format("[INFO] Gas API URL: {0}", m_gasApiURL));
+
+                m_gasApiPath = gasApiPath;
+                Program.Print(string.Format("[INFO] Gas API path: {0}", m_gasApiPath));
+
+                m_gasApiOffset = gasApiOffset;
+                Program.Print(string.Format("[INFO] Gas API offset: {0}", m_gasApiOffset));
+
+                m_gasApiMultiplier = gasApiMultiplier;
+                Program.Print(string.Format("[INFO] Gas API multiplier: {0}", m_gasApiMultiplier));
 
                 #region ERC20 methods
 
@@ -581,6 +600,25 @@ namespace SoliditySHA3Miner.NetworkInterface
                 var transactionID = string.Empty;
                 var gasLimit = new HexBigInteger(m_gasLimit);
                 var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasToMine), UnitConversion.EthUnit.Gwei));
+
+                if (!string.IsNullOrWhiteSpace(m_gasApiURL))
+                {
+                    try
+                    {
+                        var apiGasPrice = Utils.Json.DeserializeFromURL(m_gasApiURL).SelectToken(m_gasApiPath).Value<float>();
+                        if (apiGasPrice > 0)
+                        {
+                            apiGasPrice *= m_gasApiMultiplier;
+                            apiGasPrice += m_gasApiOffset;
+                            userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(apiGasPrice), UnitConversion.EthUnit.Gwei));
+                            Program.Print(string.Format("[INFO] Using gas price of {0} Gwei (after offset) from API: {1}", apiGasPrice, m_gasApiURL));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Program.Print(string.Format("[ERROR] Failed to read API gas price, using 'gasToMine' parameter of {0} Gwei.\n{1}", m_gasToMine, ex.ToString()));
+                    }
+                }
 
                 var oSolution = new BigInteger(Utils.Numerics.HexStringToByte32Array(solution).ToArray());
                 // Note: do not directly use -> new HexBigInteger(solution).Value
