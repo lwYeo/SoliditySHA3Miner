@@ -148,17 +148,20 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_gasLimit = gasLimit;
                 Program.Print(string.Format("[INFO] Gas limit: {0}", m_gasLimit));
 
-                m_gasApiURL = gasApiURL;
-                Program.Print(string.Format("[INFO] Gas API URL: {0}", m_gasApiURL));
+                if (!string.IsNullOrWhiteSpace(m_gasApiURL))
+                {
+                    m_gasApiURL = gasApiURL;
+                    Program.Print(string.Format("[INFO] Gas API URL: {0}", m_gasApiURL));
 
-                m_gasApiPath = gasApiPath;
-                Program.Print(string.Format("[INFO] Gas API path: {0}", m_gasApiPath));
+                    m_gasApiPath = gasApiPath;
+                    Program.Print(string.Format("[INFO] Gas API path: {0}", m_gasApiPath));
 
-                m_gasApiOffset = gasApiOffset;
-                Program.Print(string.Format("[INFO] Gas API offset: {0}", m_gasApiOffset));
+                    m_gasApiOffset = gasApiOffset;
+                    Program.Print(string.Format("[INFO] Gas API offset: {0}", m_gasApiOffset));
 
-                m_gasApiMultiplier = gasApiMultiplier;
-                Program.Print(string.Format("[INFO] Gas API multiplier: {0}", m_gasApiMultiplier));
+                    m_gasApiMultiplier = gasApiMultiplier;
+                    Program.Print(string.Format("[INFO] Gas API multiplier: {0}", m_gasApiMultiplier));
+                }
 
                 #region ERC20 methods
 
@@ -610,17 +613,29 @@ namespace SoliditySHA3Miner.NetworkInterface
                         {
                             apiGasPrice *= m_gasApiMultiplier;
                             apiGasPrice += m_gasApiOffset;
-                            userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(apiGasPrice), UnitConversion.EthUnit.Gwei));
-                            Program.Print(string.Format("[INFO] Using gas price of {0} GWei (after offset) from API: {1}", apiGasPrice, m_gasApiURL));
+
+                            if (apiGasPrice < m_gasToMine)
+                            {
+                                Program.Print(string.Format("[INFO] Using 'gasToMine' price of {0} GWei, due to lower gas price from API: {1}",
+                                                            m_gasToMine, m_gasApiURL));
+                            }
+                            else
+                            {
+                                userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(apiGasPrice), UnitConversion.EthUnit.Gwei));
+                                Program.Print(string.Format("[INFO] Using gas price of {0} GWei (after {1} offset) from API: {2}",
+                                                            apiGasPrice, m_gasApiOffset, m_gasApiURL));
+                            }
                         }
                         else
                         {
-                            Program.Print(string.Format("[ERROR] API return gas price of 0 GWei, using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
+                            Program.Print(string.Format("[ERROR] Gas price of 0 GWei was retuned by API: {0}", m_gasApiURL));
+                            Program.Print(string.Format("[INFO] Using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
                         }
                     }
                     catch (Exception ex)
                     {
-                        Program.Print(string.Format("[ERROR] Failed to read API gas price, using 'gasToMine' parameter of {0} GWei.\n{1}", m_gasToMine, ex.ToString()));
+                        Program.Print(string.Format("[ERROR] Failed to read gas price from API: {0}\n{1}", m_gasApiURL, ex.ToString()));
+                        Program.Print(string.Format("[INFO] Using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
                     }
                 }
 

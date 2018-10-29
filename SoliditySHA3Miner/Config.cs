@@ -106,7 +106,7 @@ namespace SoliditySHA3Miner
                 "  kingAddress             Add MiningKing address to nonce, only CPU mining supported (default: none)\n" +
                 "  address                 (Pool only) Miner's ethereum address (default: developer's address)\n" +
                 "  privateKey              (Solo only) Miner's private key\n" +
-                "  gasToMine               (Solo only) Gas price to mine in GWei (default: " + Defaults.GasToMine + ")\n" +
+                "  gasToMine               (Solo only) Gas price to mine in GWei (default: " + Defaults.GasToMine + "; note: will override lower dynamic gas price)\n" +
                 "  gasLimit                (Solo only) Gas limit to submit proof of work (default: " + Defaults.GasLimit + ")\n" +
                 "  gasApiURL               (Solo only) Get dynamic gas price to mine from this JSON API URL (note: leave empty to disable)\n" +
                 "  gasApiPath              (Solo only) JSON path expression to retrieve dynamic gas price value from 'gasApiURL'\n" +
