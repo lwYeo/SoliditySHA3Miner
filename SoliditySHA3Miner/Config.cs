@@ -135,8 +135,11 @@ namespace SoliditySHA3Miner
 
             for (int i = 0; i < cpuDevices.Length; i++)
             {
-                cpuDevices[i].Type = "CPU";
-                cpuDevices[i].DeviceID = i;
+                cpuDevices[i] = new Miner.Device
+                {
+                    Type = "CPU",
+                    DeviceID = i
+                };
             }
         }
 
@@ -211,7 +214,7 @@ namespace SoliditySHA3Miner
                     {
                         Type = "CPU",
                         DeviceID = i,
-                        AllowDevice = (i > 0)
+                        AllowDevice = (i > 0 || cpuCount.Equals(1))
                     };
                 }
             }
