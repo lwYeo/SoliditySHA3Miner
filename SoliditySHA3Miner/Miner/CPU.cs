@@ -315,7 +315,11 @@ namespace SoliditySHA3Miner.Miner
             }
             Program.Print(hashString.ToString());
 
-            Solver.GetTotalHashRate(m_instance, ref hashrate);
+            if (IsPaused)
+                hashrate = 0ul;
+            else
+                Solver.GetTotalHashRate(m_instance, ref hashrate);
+
             Program.Print(string.Format("CPU [INFO] Total Hashrate: {0} MH/s", hashrate / 1000000.0f));
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
