@@ -188,6 +188,8 @@ namespace SoliditySHA3Miner.Miner
 
         public ulong GetHashrateByDevice(string platformName, int deviceID)
         {
+            if (IsPaused) return 0ul;
+
             var hashrate = 0ul;
 
             if (m_instance != null && m_instance.ToInt64() != 0)
@@ -198,6 +200,8 @@ namespace SoliditySHA3Miner.Miner
 
         public ulong GetTotalHashrate()
         {
+            if (IsPaused) return 0ul;
+
             var hashrate = 0ul;
 
             if (m_instance != null && m_instance.ToInt64() != 0)
@@ -262,6 +266,8 @@ namespace SoliditySHA3Miner.Miner
                     devicesStr += device.DeviceID.ToString("X64");
                 }
 
+                NetworkInterface.OnGetTotalHashrate += NetworkInterface_OnGetTotalHashrate;
+
                 m_instance = Solver.GetInstance(new StringBuilder(devicesStr));
                 unsafe
                 {
@@ -301,7 +307,10 @@ namespace SoliditySHA3Miner.Miner
 
             for (uint threadID = 0; threadID < Devices.Count(d => d.AllowDevice); threadID++)
             {
-                Solver.GetHashRateByThreadID(m_instance, threadID, ref hashrate);
+                if (IsPaused) hashrate = 0ul;
+                else
+                    Solver.GetHashRateByThreadID(m_instance, threadID, ref hashrate);
+
                 hashString.AppendFormat(" {0} MH/s", hashrate / 1000000.0f);
             }
             Program.Print(hashString.ToString());
@@ -384,8 +393,24 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
+        private void NetworkInterface_OnGetTotalHashrate(NetworkInterface.INetworkInterface sender, ref ulong totalHashrate)
+        {
+            if (IsPaused) return;
+            try
+            {
+                var hashrate = 0ul;
+                Solver.GetTotalHashRate(m_instance, ref hashrate);
+
+                totalHashrate += hashrate;
+            }
+            catch (Exception ex)
+            {
+                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+            }
+        }
+
         private void NetworkInterface_OnGetMiningParameterStatus(NetworkInterface.INetworkInterface sender,
-                                                                      bool success, NetworkInterface.MiningParameters miningParameters)
+                                                                 bool success, NetworkInterface.MiningParameters miningParameters)
         {
             try
             {

@@ -142,7 +142,7 @@ namespace SoliditySHA3Miner.API
             {
                 try
                 {
-                    float divisor = 1;
+                    double divisor = 1;
                     var api = new JsonAPI();
 
                     PopulateCommonApiData(ref api, ref divisor);
@@ -239,47 +239,58 @@ namespace SoliditySHA3Miner.API
             TaskCreationOptions.LongRunning);
         }
 
-        private void PopulateCommonApiData(ref JsonAPI api, ref float divisor)
+        private void GetHashRateUnit(ulong hashrate, ref double divisor, ref string unit)
+        {
+            var sHashrate = hashrate.ToString();
+            if (sHashrate.Length > 12 + 1)
+            {
+                divisor = 1000000000000;
+                unit = "TH/s";
+            }
+            else if (sHashrate.Length > 9 + 1)
+            {
+                divisor = 1000000000;
+                unit = "GH/s";
+            }
+            else if (sHashrate.Length > 6 + 1)
+            {
+                divisor = 1000000;
+                unit = "MH/s";
+            }
+            else if (sHashrate.Length > 3 + 1)
+            {
+                divisor = 1000;
+                unit = "KH/s";
+            }
+        }
+
+        private void PopulateCommonApiData(ref JsonAPI api, ref double divisor)
         {
             try
             {
+                var networkInterface = m_miners.Select(m => m.NetworkInterface).FirstOrDefault(m => m != null);
+
                 ulong totalHashRate = 0ul;
+                var hashRateUnit = string.Empty;
 
                 foreach (var miner in m_miners)
                     totalHashRate += miner.GetTotalHashrate();
 
-                var sTotalHashRate = totalHashRate.ToString();
-                if (sTotalHashRate.Length > 12 + 1)
-                {
-                    divisor = 1000000000000;
-                    api.HashRateUnit = "TH/s";
-                }
-                else if (sTotalHashRate.Length > 9 + 1)
-                {
-                    divisor = 1000000000;
-                    api.HashRateUnit = "GH/s";
-                }
-                else if (sTotalHashRate.Length > 6 + 1)
-                {
-                    divisor = 1000000;
-                    api.HashRateUnit = "MH/s";
-                }
-                else if (sTotalHashRate.Length > 3 + 1)
-                {
-                    divisor = 1000;
-                    api.HashRateUnit = "KH/s";
-                }
-
-                var networkInterface = m_miners.Select(m => m.NetworkInterface).FirstOrDefault(m => m != null);
+                if (totalHashRate > 0)
+                    GetHashRateUnit(totalHashRate, ref divisor, ref hashRateUnit);
+                else
+                    GetHashRateUnit((networkInterface?.GetEffectiveHashrate() ?? 0), ref divisor, ref hashRateUnit);
 
                 var timeLeftToSolveBlock = networkInterface?.GetTimeLeftToSolveBlock(totalHashRate) ?? TimeSpan.Zero;
 
                 if (timeLeftToSolveBlock != TimeSpan.Zero)
                     api.EstimateTimeLeftToSolveBlock = (long)timeLeftToSolveBlock.TotalSeconds;
 
-                api.EffectiveHashRate = (networkInterface?.GetEffectiveHashrate() ?? 0f) / divisor;
+                api.EffectiveHashRate = (float)((networkInterface?.GetEffectiveHashrate() ?? 0) / divisor);
 
-                api.TotalHashRate = totalHashRate / divisor;
+                api.TotalHashRate = (float)(totalHashRate / divisor);
+
+                api.HashRateUnit = hashRateUnit;
 
                 api.MinerAddress = networkInterface.MinerAddress ?? string.Empty;
 
@@ -314,7 +325,7 @@ namespace SoliditySHA3Miner.API
             }
         }
 
-        private void PopulateCudaApiData(Miner.CUDA miner, Miner.Device device, float divisor, ref JsonAPI.CUDA_Miner cudaMiner)
+        private void PopulateCudaApiData(Miner.CUDA miner, Miner.Device device, double divisor, ref JsonAPI.CUDA_Miner cudaMiner)
         {
             try
             {
@@ -326,7 +337,7 @@ namespace SoliditySHA3Miner.API
                     DeviceID = device.DeviceID,
                     PciBusID = device.PciBusID,
                     ModelName = device.Name,
-                    HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                    HashRate = (float)(miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor),
                     HasMonitoringAPI = miner.HasMonitoringAPI,
                     SettingIntensity = device.Intensity
                 };
@@ -415,7 +426,7 @@ namespace SoliditySHA3Miner.API
             }
         }
 
-        private void PopulateAmdApiData(Miner.OpenCL miner, Miner.Device device, float divisor, ref JsonAPI.AMD_Miner amdMiner)
+        private void PopulateAmdApiData(Miner.OpenCL miner, Miner.Device device, double divisor, ref JsonAPI.AMD_Miner amdMiner)
         {
             try
             {
@@ -429,7 +440,7 @@ namespace SoliditySHA3Miner.API
                     DeviceID = device.DeviceID,
                     PciBusID = device.PciBusID,
                     ModelName = device.Name,
-                    HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                    HashRate = (float)(miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor),
                     HasMonitoringAPI = miner.HasMonitoringAPI,
                     Platform = device.Platform,
                     SettingIntensity = device.Intensity
@@ -505,7 +516,7 @@ namespace SoliditySHA3Miner.API
             }
         }
 
-        private void PopulateOpenCLApiData(Miner.OpenCL miner, Miner.Device device, float divisor, ref JsonAPI.OpenCLMiner openCLMiner)
+        private void PopulateOpenCLApiData(Miner.OpenCL miner, Miner.Device device, double divisor, ref JsonAPI.OpenCLMiner openCLMiner)
         {
             try
             {
@@ -514,7 +525,7 @@ namespace SoliditySHA3Miner.API
                     Type = device.Type,
                     DeviceID = device.DeviceID,
                     ModelName = device.Name,
-                    HashRate = miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor,
+                    HashRate = (float)(miner.GetHashrateByDevice(device.Platform, device.DeviceID) / divisor),
                     HasMonitoringAPI = miner.HasMonitoringAPI,
 
                     Platform = device.Platform,
@@ -536,7 +547,7 @@ namespace SoliditySHA3Miner.API
             }
         }
 
-        private void PopulateCpuApiData(Miner.CPU miner, Miner.Device device, float divisor, ref JsonAPI.Miner cpuMiner)
+        private void PopulateCpuApiData(Miner.CPU miner, Miner.Device device, double divisor, ref JsonAPI.Miner cpuMiner)
         {
             try
             {
@@ -545,9 +556,10 @@ namespace SoliditySHA3Miner.API
                     Type = device.Type,
                     DeviceID = device.DeviceID,
                     ModelName = device.Name,
-                    HashRate = miner.GetHashrateByDevice(device.Platform, (device.Type == "CPU")
-                                                                                                    ? Array.IndexOf(miner.Devices, device)
-                                                                                                    : device.DeviceID) / divisor,
+                    HashRate = (float)(miner.GetHashrateByDevice(device.Platform,
+                                                                 (device.Type == "CPU")
+                                                                 ? Array.IndexOf(miner.Devices, device)
+                                                                 : device.DeviceID) / divisor),
                     HasMonitoringAPI = miner.HasMonitoringAPI
                 };
             }

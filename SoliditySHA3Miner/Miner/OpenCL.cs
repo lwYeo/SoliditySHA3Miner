@@ -334,6 +334,8 @@ namespace SoliditySHA3Miner.Miner
 
         public ulong GetHashrateByDevice(string platformName, int deviceID)
         {
+            if (IsPaused) return 0ul;
+
             var hashrate = 0ul;
 
             if (m_instance != null && m_instance.ToInt64() != 0)
@@ -344,6 +346,8 @@ namespace SoliditySHA3Miner.Miner
 
         public ulong GetTotalHashrate()
         {
+            if (IsPaused) return 0ul;
+
             var hashrate = 0ul;
 
             if (m_instance != null && m_instance.ToInt64() != 0)
@@ -469,6 +473,7 @@ namespace SoliditySHA3Miner.Miner
 
         private void NetworkInterface_OnGetTotalHashrate(NetworkInterface.INetworkInterface sender, ref ulong totalHashrate)
         {
+            if (IsPaused) return;
             try
             {
                 var hashrate = 0ul;
@@ -488,13 +493,13 @@ namespace SoliditySHA3Miner.Miner
             var hashString = new StringBuilder();
             hashString.Append("OpenCL [INFO] Hashrates:");
 
-            foreach (var device in Devices)
+            foreach (var device in Devices.Where(d => d.AllowDevice))
             {
-                if (device.AllowDevice)
-                {
+                if (IsPaused) hashrate = 0ul;
+                else
                     Solver.GetHashRateByDevice(m_instance, new StringBuilder(device.Platform), device.DeviceID, ref hashrate);
-                    hashString.AppendFormat(" {0} MH/s", hashrate / 1000000.0f);
-                }
+
+                hashString.AppendFormat(" {0} MH/s", hashrate / 1000000.0f);
             }
             Program.Print(hashString.ToString());
             
