@@ -19,7 +19,7 @@ namespace OpenCLSolver
 	{
 		EXPORT void __CDECL__ FoundADL_API(bool *hasADL_API);
 
-		EXPORT void __CDECL__ PreInitialize(bool allowIntel, const char *errorMessage, uint64_t *errorSize);
+		EXPORT void __CDECL__ PreInitialize(bool allowIntel, const char *sha3Kernel, uint64_t sha3KernelSize, const char *sha3KingKernel, uint64_t sha3KingKernelSize, const char *errorMessage, uint64_t *errorSize);
 
 		EXPORT void __CDECL__ GetPlatformNames(const char *platformNames);
 

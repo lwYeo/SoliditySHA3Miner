@@ -34,7 +34,7 @@ namespace OpenCLSolver
 	{
 	public:
 		static bool foundAdlApi();
-		static void preInitialize(bool allowIntel, std::string &errorMessage);
+		static void preInitialize(bool allowIntel, std::string sha3Kernel, std::string sha3KingKernel, std::string &errorMessage);
 		static std::string getPlatformNames();
 		static int getDeviceCount(std::string platformName, std::string &errorMessage);
 		static std::string getDeviceName(std::string platformName, int deviceEnum, std::string &errorMessage);

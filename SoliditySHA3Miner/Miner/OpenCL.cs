@@ -32,7 +32,7 @@ namespace SoliditySHA3Miner.Miner
             public static extern void FoundADL_API(ref bool hasADL_API);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void PreInitialize(bool allowIntel, StringBuilder errorMessage, ref ulong errorSize);
+            public static extern void PreInitialize(bool allowIntel, StringBuilder sha3Kernel, ulong sha3KernelSize, StringBuilder sha3KingKernel, ulong sha3KingKernelSize, StringBuilder errorMessage, ref ulong errorSize);
 
             [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern void GetPlatformNames(StringBuilder platformNames);
@@ -157,8 +157,11 @@ namespace SoliditySHA3Miner.Miner
             errorMessage = string.Empty;
             var errMsg = new StringBuilder(1024);
             var errSize = 0ul;
-
-            Solver.PreInitialize(allowIntel, errMsg, ref errSize);
+            
+            var sha3Kernel = new StringBuilder(Properties.Resources.ResourceManager.GetString("sha3Kernel"));
+            var sha3KingKernel = new StringBuilder(Properties.Resources.ResourceManager.GetString("sha3KingKernel"));
+            
+            Solver.PreInitialize(allowIntel, sha3Kernel, (ulong)sha3Kernel.Length, sha3KingKernel, (ulong)sha3KingKernel.Length, errMsg, ref errSize);
             errorMessage = errMsg.ToString();
         }
 

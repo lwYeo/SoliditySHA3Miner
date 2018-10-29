@@ -20,7 +20,7 @@ namespace OpenCLSolver
 		return ADL_API::foundAdlApi();
 	}
 
-	void openCLSolver::preInitialize(bool allowIntel, std::string &errorMessage)
+	void openCLSolver::preInitialize(bool allowIntel, std::string sha3Kernel, std::string sha3KingKernel, std::string &errorMessage)
 	{
 		cl_int status{ CL_SUCCESS };
 		cl_uint numPlatforms{ 0 };
@@ -57,7 +57,7 @@ namespace OpenCLSolver
 			}
 		}
 
-		Device::preInitialize(errorMessage);
+		Device::preInitialize(sha3Kernel, sha3KingKernel);
 	}
 
 	std::string openCLSolver::getPlatformNames()

@@ -7,10 +7,10 @@ namespace OpenCLSolver
 		*hasADL_API = openCLSolver::foundAdlApi();
 	}
 
-	void PreInitialize(bool allowIntel, const char *errorMessage, uint64_t *errorSize)
+	void PreInitialize(bool allowIntel, const char *sha3Kernel, uint64_t sha3KernelSize, const char *sha3KingKernel, uint64_t sha3KingKernelSize, const char *errorMessage, uint64_t *errorSize)
 	{
 		std::string errMsg{ 0 };
-		openCLSolver::preInitialize(allowIntel, errMsg);
+		openCLSolver::preInitialize(allowIntel, sha3Kernel, sha3KingKernel, errMsg);
 
 		#ifdef __linux__
 		strcpy((char *)errorMessage, errMsg.c_str());

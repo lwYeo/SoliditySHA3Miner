@@ -133,97 +133,13 @@ namespace OpenCLSolver
 		}
 	}
 
-	// Load kernel source
-	bool Device::preInitialize(std::string& errorMessage)
+	void Device::preInitialize(std::string sha3Kernel, std::string sha3KingKernel)
 	{
-		char*  str;
-		size_t fileSize;
-		std::string libName;
-		char libPath[1024]{ 0 };
-		std::string kernelPath{ KERNEL_FILE };
-		std::string kingKernelPath{ KING_KERNEL_FILE };
+		kernelSource = sha3Kernel.c_str();
+		kernelSourceSize = sha3Kernel.size();
 
-#	if defined(__linux__) || defined(__APPLE__) || defined(__MACOSX)
-		libName = "OpenCLSoliditySHA3Solver.so";
-		void *handle = dlopen(libName.c_str(), RTLD_LOCAL | RTLD_LAZY);
-		dlinfo(handle, RTLD_DI_ORIGIN, &libPath);
-
-		if (libPath[0] != '\0')
-		{
-			std::string tempLibPath{ libPath };
-			kernelPath = tempLibPath + '/' + KERNEL_FILE;
-			kingKernelPath = tempLibPath + '/' + KING_KERNEL_FILE;
-		}
-#	else
-		libName = "OpenCLSoliditySHA3Solver.dll";
-		HMODULE hModule = LoadLibrary(libName.c_str());
-		if (hModule != NULL) GetModuleFileName(hModule, libPath, 1024);
-
-		if (libPath[0] != '\0')
-		{
-			std::string tempLibPath{ libPath };
-			int libPathLength = tempLibPath.length() - libName.length();
-
-			kernelPath = tempLibPath.substr(0, libPathLength) + KERNEL_FILE;
-			kingKernelPath = kernelPath.substr(0, libPathLength) + KING_KERNEL_FILE;
-		}
-#	endif
-
-		std::fstream f(kernelPath.c_str(), (std::fstream::in | std::fstream::binary));
-
-		if (!f.is_open())
-		{
-			errorMessage = "Failed to open " + kernelPath;
-			return false;
-		}
-
-		f.seekg(0, std::fstream::end);
-		fileSize = (size_t)f.tellg();
-		f.seekg(0, std::fstream::beg);
-
-		str = new char[fileSize + 1];
-		if (!str)
-		{
-			f.close();
-			errorMessage = std::string{ KERNEL_FILE } +" is empty.";
-			return false;
-		}
-
-		f.read(str, fileSize);
-		f.close();
-		str[fileSize] = '\0';
-
-		kernelSource = (const char *)str;
-		kernelSourceSize = fileSize;
-
-		std::fstream kingf(kingKernelPath.c_str(), (std::fstream::in | std::fstream::binary));
-
-		if (!kingf.is_open())
-		{
-			errorMessage = "Failed to open " + kingKernelPath;
-			return false;
-		}
-
-		kingf.seekg(0, std::fstream::end);
-		fileSize = (size_t)kingf.tellg();
-		kingf.seekg(0, std::fstream::beg);
-
-		str = new char[fileSize + 1];
-		if (!str)
-		{
-			kingf.close();
-			errorMessage = std::string{ KING_KERNEL_FILE } +" is empty.";
-			return false;
-		}
-
-		kingf.read(str, fileSize);
-		kingf.close();
-		str[fileSize] = '\0';
-
-		kernelSourceKing = (const char *)str;
-		kernelSourceKingSize = fileSize;
-
-		return true;
+		kernelSourceKing = sha3KingKernel.c_str();
+		kernelSourceKingSize = sha3KingKernel.size();
 	}
 
 	// --------------------------------------------------------------------

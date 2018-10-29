@@ -75,10 +75,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="sha3Kernel.cl" />
-    <None Include="sha3kingKernel.cl" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
 </Project>

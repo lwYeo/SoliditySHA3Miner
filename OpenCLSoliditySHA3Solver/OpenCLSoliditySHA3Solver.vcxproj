@@ -55,7 +55,8 @@
       <AdditionalLibraryDirectories>$(AMDAPPSDKROOT)\lib\x86_64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY /Y "$(ProjectDir)*.cl" "$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.1\*.cl"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -73,9 +74,6 @@
       <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
-    <PostBuildEvent>
-      <Command>XCOPY /Y "$(ProjectDir)*.cl" "$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.1\*.cl"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="device\adl_api.h" />
@@ -105,10 +103,6 @@
     <ClCompile Include="uint256\arith_uint256.cpp" />
     <ClCompile Include="uint256\uint256.cpp" />
     <ClCompile Include="uint256\utilstrencodings.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="sha3Kernel.cl" />
-    <None Include="sha3kingKernel.cl" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />

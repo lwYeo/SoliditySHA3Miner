@@ -4,7 +4,6 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>
-#include <fstream>
 #include <thread>
 #include <string.h>
 #include "adl_api.h"
@@ -14,12 +13,6 @@
 #	include <OpenCL/cl.hpp>
 #else
 #	include <CL/cl.hpp>
-#endif
-
-#if defined(__linux__) || defined(__APPLE__) || defined(__MACOSX)
-#	include <dlfcn.h>
-#else
-#	include <Libloaderapi.h>
 #endif
 
 namespace OpenCLSolver
@@ -46,7 +39,7 @@ namespace OpenCLSolver
 		template<typename T>
 		static const char* getOpenCLErrorCodeStr(T &input);
 
-		static bool preInitialize(std::string& errorMessage);
+		static void preInitialize(std::string sha3Kernel, std::string sha3KingKernel);
 
 	public:
 		int deviceEnum;
