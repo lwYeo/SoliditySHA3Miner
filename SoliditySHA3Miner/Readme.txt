@@ -56,6 +56,10 @@ Options:
   privateKey              (Solo only) Miner's private key
   gasToMine               (Solo only) Gas price to mine in GWei (default: 5, decimals allowed)
   gasLimit                (Solo only) Gas limit to submit proof of work (default: 1704624)
+  gasApiURL               (Solo only) Get dynamic gas price to mine from this JSON API URL
+  gasApiPath              (Solo only) JSON path expression to retrieve dynamic gas price value from 'gasApiURL'
+  gasApiMultiplier        (Solo only) Multiplier to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (note: use 0.1 for EthGasStation API)
+  gasApiOffset            (Solo only) Offset to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (after 'gasApiMultiplier', decimals allowed)
   pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
   secondaryPool           (Optional) URL of failover pool mining server
   logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)
