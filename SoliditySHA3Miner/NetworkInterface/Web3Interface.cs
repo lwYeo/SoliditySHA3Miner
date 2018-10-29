@@ -611,16 +611,16 @@ namespace SoliditySHA3Miner.NetworkInterface
                             apiGasPrice *= m_gasApiMultiplier;
                             apiGasPrice += m_gasApiOffset;
                             userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(apiGasPrice), UnitConversion.EthUnit.Gwei));
-                            Program.Print(string.Format("[INFO] Using gas price of {0} Gwei (after offset) from API: {1}", apiGasPrice, m_gasApiURL));
+                            Program.Print(string.Format("[INFO] Using gas price of {0} GWei (after offset) from API: {1}", apiGasPrice, m_gasApiURL));
                         }
                         else
                         {
-                            Program.Print(string.Format("[ERROR] API return gas price of 0 Gwei, using 'gasToMine' parameter of {0} Gwei.", m_gasToMine));
+                            Program.Print(string.Format("[ERROR] API return gas price of 0 GWei, using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
                         }
                     }
                     catch (Exception ex)
                     {
-                        Program.Print(string.Format("[ERROR] Failed to read API gas price, using 'gasToMine' parameter of {0} Gwei.\n{1}", m_gasToMine, ex.ToString()));
+                        Program.Print(string.Format("[ERROR] Failed to read API gas price, using 'gasToMine' parameter of {0} GWei.\n{1}", m_gasToMine, ex.ToString()));
                     }
                 }
 
