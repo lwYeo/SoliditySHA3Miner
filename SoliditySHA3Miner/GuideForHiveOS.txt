@@ -10,7 +10,7 @@
 4) Inside "Setup Miner Config": 
 
 4a) Enter the following in "Installation URL"
-  https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.0.4/SoliditySHA3Miner-2.0.4.tar.gz
+  https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.0.5/SoliditySHA3Miner-2.0.5.tar.gz
 
 4b) "Miner name" will be auto populated, you may leave it as is
 

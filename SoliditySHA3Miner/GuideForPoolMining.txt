@@ -48,7 +48,7 @@
 
 ### Notes
 
-To wirthdraw your tokens (after the Pool have paid you), you will need ETH to perform withdrawal/transaction from your account.
+To withdraw your tokens (after the Pool have paid you), you will need ETH to perform withdrawal/transaction from your account.
 
 There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st).
 * You can set to the lowest 1.5% with 'devFee=1.5' (the formula is '(nonce mod devFee) = 0').

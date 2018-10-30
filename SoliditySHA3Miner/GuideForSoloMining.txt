@@ -35,8 +35,22 @@
 4d) gasToMine=
   * If omitted, 5 GWei will be used.
   * Replace the value with the amount of gas you prefer to mint a block with (decimals allowed, no alphabets).
+  * This value will override dynamic gas price if this value, whichever is higher.
 
-4e) privateKey=
+4e) gasApiURL=
+  * Required for dynamic gas price minting
+  * If using 'EthGasStation.info', fill the value with https://ethgasstation.info/json/ethgasAPI.json
+  
+4f) gasApiPath=
+  * If using 'EthGasStation.info', fill the value with (without quotes) '$.safeLow'
+  
+4g) gasApiMultiplier=
+  * If using 'EthGasStation.info', fill the value with 0.1
+  
+4h) gasApiOffset=
+  * Depends on how much you want to offset (decimals allowed, no alphabets).
+  
+4i) privateKey=
   * Replace the value with your own ETH private key (64 characters long excluding '0x' prefix)
   * It is your own responsibility to keep your private ETH account safe.
   * One suggestion is to create a disposable ETH mining account to mine with then transfer the tokens to your private account later.
@@ -45,7 +59,7 @@
 
 ### Notes
 
-To wirthdraw your tokens, you will need ETH to perform withdrawal/transaction from your account.
+To withdraw your tokens, you will need ETH to perform withdrawal/transaction from your account.
 
 There is a default of 2.0% dev fee (Once every 50th nounces: starting from 50th).
 * You can set to the lowest 1.5% with 'devFee=1.5' (the formula is '(nonce mod devFee) = 0').
