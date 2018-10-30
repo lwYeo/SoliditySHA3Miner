@@ -10,6 +10,6 @@ echo download and install from https://www.microsoft.com/net/download/windows/ru
 goto end
 
 :dotNetFound
-IF EXISTS SoliditySHA3Miner.conf DEL SoliditySHA3Miner.conf
-dotnet SoliditySHA3Miner.dll web3api=https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE abiFile=ERC-541.abi contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 gasToMine=5 privateKey=YOUR_ETH_PRIVATE_KEY
+DEL /F /Q SoliditySHA3Miner.conf
+dotnet SoliditySHA3Miner.dll web3api=https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE abiFile=ERC-541.abi contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 gasToMine=5 gasLimit=1704624 gasApiURL=https://ethgasstation.info/json/ethgasAPI.json gasApiPath=$.safeLow gasApiMultiplier=0.1 gasApiOffset=0.5 privateKey=YOUR_ETH_PRIVATE_KEY
 pause

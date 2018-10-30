@@ -604,6 +604,22 @@ namespace SoliditySHA3Miner
                             gasLimit = ulong.Parse(arg.Split('=')[1]);
                             break;
 
+                        case "gasApiURL":
+                            gasApiURL = arg.Split('=')[1];
+                            break;
+
+                        case "gasApiPath":
+                            gasApiPath = arg.Split('=')[1];
+                            break;
+
+                        case "gasApiMultiplier":
+                            gasApiMultiplier = float.Parse(arg.Split('=')[1]);
+                            break;
+
+                        case "gasApiOffset":
+                            gasApiOffset = float.Parse(arg.Split('=')[1]);
+                            break;
+
                         case "pool":
                             primaryPool = arg.Split('=')[1];
                             break;
