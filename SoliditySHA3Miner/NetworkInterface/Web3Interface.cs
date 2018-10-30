@@ -839,13 +839,14 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
 
-                var estimatedGasLimit = m_transferMethod.EstimateGasAsync(from: fromAddress,
-                                                                          gas: gasLimit,
-                                                                          value: new HexBigInteger(0),
-                                                                          functionInput: txInput).Result;
+                // Commented as gas limit is dynamic in between submissions and confirmations
+                //var estimatedGasLimit = m_transferMethod.EstimateGasAsync(from: fromAddress,
+                //                                                          gas: gasLimit,
+                //                                                          value: new HexBigInteger(0),
+                //                                                          functionInput: txInput).Result;
 
                 var transaction = m_transferMethod.CreateTransactionInput(from: fromAddress,
-                                                                          gas: estimatedGasLimit,
+                                                                          gas: gasLimit /*estimatedGasLimit*/,
                                                                           gasPrice: userGas,
                                                                           value: new HexBigInteger(0),
                                                                           functionInput: txInput);
@@ -855,7 +856,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                                                                               amount: 0,
                                                                               nonce: txCount.Value,
                                                                               gasPrice: userGas,
-                                                                              gasLimit: estimatedGasLimit,
+                                                                              gasLimit: gasLimit /*estimatedGasLimit*/,
                                                                               data: transaction.Data);
 
                 if (!Web3.OfflineTransactionSigner.VerifyTransaction(encodedTx))
