@@ -682,7 +682,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                                 if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
                             }
 
-                            Task.Factory.StartNew(() => GetTransactionReciept(transactionID, fromAddress, gasLimit, userGas, LastSubmitLatency));
+                            Task.Factory.StartNew(() => GetTransactionReciept(transactionID, fromAddress, gasLimit, userGas, LastSubmitLatency, DateTime.Now));
                         }
                     }
                     catch (AggregateException ex)
@@ -715,14 +715,12 @@ namespace SoliditySHA3Miner.NetworkInterface
                         sender.StopMining();
                     }
                 }
-                if (m_submitDateTimeList.Count >= MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
-                m_submitDateTimeList.Add(DateTime.Now);
-
                 return true;
             }
         }
 
-        private void GetTransactionReciept(string transactionID, string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas, int responseTime)
+        private void GetTransactionReciept(string transactionID, string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas,
+                                           int responseTime, DateTime submitDateTime)
         {
             try
             {
@@ -782,6 +780,9 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 if (success)
                 {
+                    if (m_submitDateTimeList.Count >= MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
+                    m_submitDateTimeList.Add(submitDateTime);
+
                     var devFee = (ulong)Math.Round(100 / Math.Abs(DevFee.UserPercent));
                     if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0u;
 
