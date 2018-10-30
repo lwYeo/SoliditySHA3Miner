@@ -1,7 +1,7 @@
 # SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
 
-Current latest public release version: [2.0.4](https://github.com/lwYeo/SoliditySHA3Miner/releases/latest)
+Current latest public release version: [2.0.5](https://github.com/lwYeo/SoliditySHA3Miner/releases/latest)
 
 Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
 
@@ -106,13 +106,23 @@ Options:
 	
     privateKey              (Solo only) Miner's private key
 	
-    gasToMine               (Solo only) Gas price to mine in GWei (default: 5, decimals allowed)
+    gasToMine               (Solo only) Gas price to mine in GWei (default: 5, decimals allowed; note: will override lower dynamic gas price)
+	
+    gasLimit                (Solo only) Gas limit to submit proof of work (default: 1704624)
+	
+    gasApiURL               (Solo only) Get dynamic gas price to mine from this JSON API URL (note: leave empty to disable)
+	
+    gasApiPath              (Solo only) JSON path expression to retrieve dynamic gas price value from 'gasApiURL'
+	
+    gasApiMultiplier        (Solo only) Multiplier to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (note: use 0.1 for EthGasStation API)
+	
+    gasApiOffset            (Solo only) Offset to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (after 'gasApiMultiplier', decimals allowed)
 	
     pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
 	
     secondaryPool           (Optional) URL of failover pool mining server
 	
-	logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)
+    logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)
 	
     devFee                  Set developer fee in percentage (default: 2%, minimum: 1.5%)
     
