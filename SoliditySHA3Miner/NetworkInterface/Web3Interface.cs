@@ -148,7 +148,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_gasLimit = gasLimit;
                 Program.Print(string.Format("[INFO] Gas limit: {0}", m_gasLimit));
 
-                if (!string.IsNullOrWhiteSpace(m_gasApiURL))
+                if (!string.IsNullOrWhiteSpace(gasApiURL))
                 {
                     m_gasApiURL = gasApiURL;
                     Program.Print(string.Format("[INFO] Gas API URL: {0}", m_gasApiURL));
