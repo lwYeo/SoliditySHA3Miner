@@ -140,7 +140,58 @@ namespace SoliditySHA3Miner.NetworkInterface
             var contractABI = m_contract.ContractBuilder.ContractABI;
             FunctionABI mintABI = null;
 
-            if (!string.IsNullOrWhiteSpace(privateKey))
+            if (string.IsNullOrWhiteSpace(privateKey)) // look for maximum target method only
+            {
+                if (m_MAXIMUM_TARGET == null)
+                {
+                    #region ERC918 methods
+
+                    if (contractABI.Functions.Any(f => f.Name == "MAX_TARGET"))
+                        m_MAXIMUM_TARGET = m_contract.GetFunction("MAX_TARGET");
+
+                    #endregion
+
+                    #region ABI methods checking
+
+                    if (m_MAXIMUM_TARGET == null)
+                    {
+                        var maxTargetNames = new string[] { "MAX_TARGET", "MAXIMUM_TARGET", "maxTarget", "maximumTarget" };
+
+                        // ERC541 backwards compatibility
+                        if (contractABI.Functions.Any(f => f.Name == "_MAXIMUM_TARGET"))
+                        {
+                            m_MAXIMUM_TARGET = m_contract.GetFunction("_MAXIMUM_TARGET");
+                        }
+                        else
+                        {
+                            var maxTargetABI = contractABI.Functions.
+                                                           FirstOrDefault(function =>
+                                                           {
+                                                               return maxTargetNames.Any(targetName =>
+                                                               {
+                                                                   return function.Name.IndexOf(targetName, StringComparison.OrdinalIgnoreCase) > -1;
+                                                               });
+                                                           });
+                            if (maxTargetABI == null)
+                                m_MAXIMUM_TARGET = null; // Mining still can proceed without MAX_TARGET
+                            else
+                            {
+                                if (!maxTargetABI.OutputParameters.Any())
+                                    Program.Print(string.Format("[ERROR] '{0}' function must have output parameter.", maxTargetABI.Name));
+
+                                else if (maxTargetABI.OutputParameters[0].Type != "uint256")
+                                    Program.Print(string.Format("[ERROR] '{0}' function output parameter type must be uint256.", maxTargetABI.Name));
+
+                                else
+                                    m_MAXIMUM_TARGET = m_contract.GetFunction(maxTargetABI.Name);
+                            }
+                        }
+                    }
+
+                    #endregion
+                }
+            }
+            else
             {
                 m_gasToMine = gasToMine;
                 Program.Print(string.Format("[INFO] Gas to mine: {0}", m_gasToMine));
