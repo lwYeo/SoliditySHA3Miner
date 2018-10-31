@@ -833,7 +833,11 @@ namespace SoliditySHA3Miner.NetworkInterface
                 success = (reciept.Status.Value == 1);
 
                 if (!success) RejectedShares++;
-                if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0ul;
+                if (SubmittedShares == ulong.MaxValue)
+                {
+                    SubmittedShares = 0ul;
+                    RejectedShares = 0ul;
+                }
                 else SubmittedShares++;
 
                 Program.Print(string.Format("[INFO] Miner share [{0}] submitted: {1} ({2}ms), block: {3}," +
@@ -850,9 +854,9 @@ namespace SoliditySHA3Miner.NetworkInterface
                     m_submitDateTimeList.Add(submitDateTime);
 
                     var devFee = (ulong)Math.Round(100 / Math.Abs(DevFee.UserPercent));
-                    if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0u;
-
-                    if (((SubmittedShares) % devFee) == 0) SubmitDevFee(fromAddress, gasLimit, userGas, SubmittedShares);
+                    
+                    if (((SubmittedShares - RejectedShares) % devFee) == 0)
+                        SubmitDevFee(fromAddress, gasLimit, userGas, SubmittedShares);
                 }
             }
             catch (AggregateException ex)

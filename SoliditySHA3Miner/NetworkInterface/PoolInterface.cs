@@ -392,8 +392,12 @@ namespace SoliditySHA3Miner.NetworkInterface
                     var poolAddress = fromAddress;
                     lock (this)
                     {
-                        if (SubmittedShares == ulong.MaxValue) SubmittedShares = 0u;
-                        var minerAddress = ((SubmittedShares) % devFee) == 0 ? DevFee.Address : MinerAddress;
+                        if (SubmittedShares == ulong.MaxValue)
+                        {
+                            SubmittedShares = 0ul;
+                            RejectedShares = 0ul;
+                        }
+                        var minerAddress = ((SubmittedShares - RejectedShares) % devFee) == 0 ? DevFee.Address : MinerAddress;
 
                         JObject submitShare;
                         submitShare = GetPoolParameter("submitShare", solution, minerAddress, digest, difficulty, challenge,
