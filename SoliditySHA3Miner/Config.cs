@@ -156,13 +156,13 @@ namespace SoliditySHA3Miner
             PrepareCpuDeviceList();
 
             for (int i = 0; i < cpuDevices.Length; i++)
-                cpuDevices[i].AllowDevice = iCpuIDs.Any(id => id.Equals(i));
+                cpuDevices[i].AllowDevice = iCpuIDs.Any(id => id == i);
         }
         
         private void SetAmdDevices(uint[] iAmdDevices)
         {
             for (uint i = 0; i < amdDevices.Length; i++)
-                amdDevices[i].AllowDevice = iAmdDevices.Any(id => id.Equals(i));
+                amdDevices[i].AllowDevice = iAmdDevices.Any(id => id == i);
         }
 
         private void SetAmdIntensities(string[] sAmdIntensities)
@@ -192,7 +192,7 @@ namespace SoliditySHA3Miner
         private void SetCudaDevices(uint[] iCudaDevices)
         {
             for (uint i = 0; i < cudaDevices.Length; i++)
-                cudaDevices[i].AllowDevice = iCudaDevices.Any(id => id.Equals(i));
+                cudaDevices[i].AllowDevice = iCudaDevices.Any(id => id == i);
         }
 
         private void SetCudaIntensities(string[] sCudaIntensities)
