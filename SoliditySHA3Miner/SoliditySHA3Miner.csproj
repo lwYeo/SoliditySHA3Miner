@@ -81,6 +81,9 @@
     <None Update="0xbtcSolo.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="CLM.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="ERC-20.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

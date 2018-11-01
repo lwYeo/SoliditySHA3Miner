@@ -40,6 +40,8 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly Function m_getMiningReward;
         private readonly Function m_MAXIMUM_TARGET;
 
+        private readonly Function m_CLM_ContractProgress;
+
         private readonly int m_mintMethodInputParamCount;
 
         private readonly float m_gasToMine;
@@ -133,7 +135,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             var tokenAbiPath = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), abiFileName);
 
             var erc20Abi = JArray.Parse(File.ReadAllText(erc20AbiPath));
-            var tokenAbi = JArray.Parse(File.ReadAllText(tokenAbiPath));            
+            var tokenAbi = JArray.Parse(File.ReadAllText(tokenAbiPath));
             tokenAbi.Merge(erc20Abi, new JsonMergeSettings { MergeArrayHandling = MergeArrayHandling.Union });
 
             m_contract = m_web3.Eth.GetContract(tokenAbi.ToString(), contractAddress);
@@ -243,6 +245,19 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 if (contractABI.Functions.Any(f => f.Name == "MAX_TARGET"))
                     m_MAXIMUM_TARGET = m_contract.GetFunction("MAX_TARGET");
+
+                #endregion
+
+                #region CLM MN/POW methods
+
+                if (contractABI.Functions.Any(f => f.Name == "contractProgress"))
+                    m_CLM_ContractProgress = m_contract.GetFunction("contractProgress");
+
+                if (m_CLM_ContractProgress != null)
+                    m_getMiningReward = null; // Do not start mining if cannot get POW reward value, exception will be thrown later
+
+                if (contractABI.Functions.Any(f => f.Name == "rewardsProofOfWork"))
+                    m_getMiningReward = m_contract.GetFunction("rewardsProofOfWork");
 
                 #endregion
 
@@ -564,7 +579,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         var expValue = BitConverter.GetBytes(decimal.GetBits((decimal)calculatedDifficulty)[3])[2];
 
                         var calculatedTarget = m_maxTarget.Value * (ulong)Math.Pow(10, expValue) / (ulong)(calculatedDifficulty * Math.Pow(10, expValue));
-                        
+
                         Program.Print(string.Format("[INFO] Update target {0}...", Utils.Numerics.BigIntegerToByte32HexString(calculatedTarget)));
                         OnNewTarget(this, Utils.Numerics.BigIntegerToByte32HexString(calculatedTarget));
                     }
@@ -718,7 +733,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         //                                                      gas: gasLimit,
                         //                                                      value: new HexBigInteger(0),
                         //                                                      functionInput: dataInput).Result;
-                        
+
                         var transaction = m_mintMethod.CreateTransactionInput(from: fromAddress,
                                                                               gas: gasLimit /*estimatedGasLimit*/,
                                                                               gasPrice: userGas,
@@ -833,6 +848,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 success = (reciept.Status.Value == 1);
 
                 if (!success) RejectedShares++;
+
                 if (SubmittedShares == ulong.MaxValue)
                 {
                     SubmittedShares = 0ul;
@@ -854,7 +870,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     m_submitDateTimeList.Add(submitDateTime);
 
                     var devFee = (ulong)Math.Round(100 / Math.Abs(DevFee.UserPercent));
-                    
+
                     if (((SubmittedShares - RejectedShares) % devFee) == 0)
                         SubmitDevFee(fromAddress, gasLimit, userGas, SubmittedShares);
                 }
@@ -887,6 +903,9 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 try
                 {
+                    if (m_CLM_ContractProgress != null)
+                        return m_CLM_ContractProgress.CallDeserializingToObjectAsync<CLM_ContractProgress>().Result.PowReward;
+
                     return m_getMiningReward.CallAsync<BigInteger>().Result; // including decimals
                 }
                 catch (Exception) { failCount++; }
