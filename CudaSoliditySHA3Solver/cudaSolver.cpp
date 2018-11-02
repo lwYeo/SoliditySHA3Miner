@@ -197,22 +197,24 @@ namespace CUDASolver
 			}
 			else
 			{
-				if (deviceName.find("2080") != std::string::npos || deviceName.find("2070") != std::string::npos
+				if (deviceName.find("2080") != std::string::npos
 					|| deviceName.find("1080 TI") != std::string::npos || deviceName.find("1080TI") != std::string::npos)
-					defaultIntensity = 29.0f;
-
-				else if (deviceName.find("1080") != std::string::npos
-					|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
-					defaultIntensity = 29.01f;
-
-				else if (deviceName.find("2060") != std::string::npos || deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
-					defaultIntensity = 28.0f;
-
-				else if (deviceName.find("2050") != std::string::npos || deviceName.find("1060") != std::string::npos || deviceName.find("970") != std::string::npos)
 					defaultIntensity = 27.0f;
 
-				else if (deviceName.find("1050") != std::string::npos || deviceName.find("960") != std::string::npos)
+				else if (deviceName.find("1080") != std::string::npos || deviceName.find("2070") != std::string::npos
+					|| deviceName.find("1070 TI") != std::string::npos || deviceName.find("1070TI") != std::string::npos)
+					defaultIntensity = 26.33f;
+
+				else if (deviceName.find("2060") != std::string::npos
+					|| deviceName.find("1070") != std::string::npos || deviceName.find("980") != std::string::npos)
 					defaultIntensity = 26.0f;
+
+				else if (deviceName.find("2050") != std::string::npos
+					|| deviceName.find("1060") != std::string::npos || deviceName.find("970") != std::string::npos)
+					defaultIntensity = 25.5f;
+
+				else if (deviceName.find("1050") != std::string::npos || deviceName.find("960") != std::string::npos)
+					defaultIntensity = 25.0f;
 			}
 
 			assignDevice->intensity = (intensity < 1.000f) ? defaultIntensity : intensity;

@@ -10,7 +10,7 @@
 
 namespace CUDASolver
 {
-	constexpr float DEFALUT_INTENSITY{ 25.0f };
+	constexpr float DEFALUT_INTENSITY{ 24.0f };
 
 	class Device
 	{
