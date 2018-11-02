@@ -510,7 +510,7 @@ namespace OpenCLSolver
 
 	void Device::setIntensity(float const intensity, bool isKingMaking)
 	{
-		if (isINTEL()) userDefinedIntensity = (intensity > 1.0f) ? intensity : 18.0f; // iGPU
+		if (isINTEL()) userDefinedIntensity = (intensity > 1.0f) ? intensity : 16.0f; // iGPU
 		else userDefinedIntensity = (intensity > 1.0f) ? intensity : (isKingMaking ? DEFAULT_INTENSITY_KING : DEFAULT_INTENSITY);
 
 		auto userTotalWorkSize = (uint32_t)std::pow(2, userDefinedIntensity);
