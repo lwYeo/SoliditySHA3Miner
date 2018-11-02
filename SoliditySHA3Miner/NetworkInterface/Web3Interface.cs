@@ -256,9 +256,6 @@ namespace SoliditySHA3Miner.NetworkInterface
                 if (m_CLM_ContractProgress != null)
                     m_getMiningReward = null; // Do not start mining if cannot get POW reward value, exception will be thrown later
 
-                if (contractABI.Functions.Any(f => f.Name == "rewardsProofOfWork"))
-                    m_getMiningReward = m_contract.GetFunction("rewardsProofOfWork");
-
                 #endregion
 
                 #region ABI methods checking
