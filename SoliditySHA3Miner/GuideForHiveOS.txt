@@ -10,7 +10,7 @@
 4) Inside "Setup Miner Config": 
 
 4a) Enter the following in "Installation URL"
-  https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.0.5/SoliditySHA3Miner-2.0.5.tar.gz
+  https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.0.6/SoliditySHA3Miner-2.0.6.tar.gz
 
 4b) "Miner name" will be auto populated, you may leave it as is
 
@@ -29,5 +29,5 @@
 
 4i) For rigs with older version of SoliditySHA3Miner, run the following commands in shell/terminal to upgrade SoliditySHA3Miner
   miner stop
-  custom-get https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.0.5/SoliditySHA3Miner-2.0.5.tar.gz -f
+  custom-get https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.0.6/SoliditySHA3Miner-2.0.6.tar.gz -f
   miner start
