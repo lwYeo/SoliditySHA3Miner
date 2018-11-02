@@ -40,6 +40,8 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly Function m_getMiningReward;
         private readonly Function m_MAXIMUM_TARGET;
 
+        private readonly Function m_CLM_ContractProgress;
+
         private readonly int m_mintMethodInputParamCount;
 
         private readonly float m_gasToMine;
@@ -247,6 +249,12 @@ namespace SoliditySHA3Miner.NetworkInterface
                 #endregion
 
                 #region CLM MN/POW methods
+
+                if (contractABI.Functions.Any(f => f.Name == "contractProgress"))
+                    m_CLM_ContractProgress = m_contract.GetFunction("contractProgress");
+
+                if (m_CLM_ContractProgress != null)
+                    m_getMiningReward = null; // Do not start mining if cannot get POW reward value, exception will be thrown later
 
                 if (contractABI.Functions.Any(f => f.Name == "rewardsProofOfWork"))
                     m_getMiningReward = m_contract.GetFunction("rewardsProofOfWork");
@@ -895,6 +903,9 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 try
                 {
+                    if (m_CLM_ContractProgress != null)
+                        return m_CLM_ContractProgress.CallDeserializingToObjectAsync<CLM_ContractProgress>().Result.PowReward;
+
                     return m_getMiningReward.CallAsync<BigInteger>().Result; // including decimals
                 }
                 catch (Exception) { failCount++; }
