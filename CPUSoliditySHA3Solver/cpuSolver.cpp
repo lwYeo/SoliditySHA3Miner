@@ -85,12 +85,12 @@ namespace CPUSolver
 		std::memcpy(&currentTarget, deviceInstance->Target, UINT256_LENGTH);
 		std::memcpy(&currentSolution, deviceInstance->SolutionTemplate, UINT256_LENGTH);
 
-		auto endWorkPosition = processor->WorkPosition + processor->WorkSize;
-		auto maxSolutionCount = deviceInstance->MaxSolutionCount;
+		uint64_t const endWorkPosition = processor->WorkPosition + processor->WorkSize;
+		uint32_t const maxSolutionCount = deviceInstance->MaxSolutionCount;
 
-		for (auto i = processor->WorkPosition; i < endWorkPosition; ++i)
+		for (auto currentWorkPosition = processor->WorkPosition; currentWorkPosition < endWorkPosition; ++currentWorkPosition)
 		{
-			std::memcpy(&currentSolution[ADDRESS_LENGTH], &i, UINT64_LENGTH);
+			std::memcpy(&currentSolution[ADDRESS_LENGTH], &currentWorkPosition, UINT64_LENGTH);
 			currentMessage.structure.solution = currentSolution;
 
 			keccak_256(&(digest)[0], UINT256_LENGTH, &currentMessage.byteArray[0], MESSAGE_LENGTH);
@@ -99,7 +99,7 @@ namespace CPUSolver
 			{
 				if (deviceInstance->SolutionCount < maxSolutionCount)
 				{
-					deviceInstance->Solutions[deviceInstance->SolutionCount] = i;
+					deviceInstance->Solutions[deviceInstance->SolutionCount] = currentWorkPosition;
 					deviceInstance->SolutionCount++;
 				}
 			}
@@ -108,9 +108,9 @@ namespace CPUSolver
 
 	void CpuSolver::HashMidState(Instance *deviceInstance, Processor *processor)
 	{
-		auto endWorkPosition = processor->WorkPosition + processor->WorkSize;
-		auto currentHigh64Target = *deviceInstance->High64Target;
-		auto maxSolutionCount = deviceInstance->MaxSolutionCount;
+		uint64_t const endWorkPosition = processor->WorkPosition + processor->WorkSize;
+		uint64_t const currentHigh64Target = *deviceInstance->High64Target;
+		uint32_t const maxSolutionCount = deviceInstance->MaxSolutionCount;
 
 		uint64_t currentMidState[SPONGE_LENGTH / UINT64_LENGTH];
 		std::memcpy(&currentMidState, deviceInstance->MidState, SPONGE_LENGTH);
@@ -122,7 +122,7 @@ namespace CPUSolver
 		}
 	}
 
-	bool CpuSolver::IslessThan(byte32_t &left, byte32_t &right)
+	bool CpuSolver::IslessThan(byte32_t const &left, byte32_t const &right)
 	{
 		for (uint32_t i{ 0 }; i < UINT256_LENGTH; ++i)
 		{

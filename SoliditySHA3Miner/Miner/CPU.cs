@@ -97,9 +97,13 @@ namespace SoliditySHA3Miner.Miner
                             ? cpuName.ToString().Trim()
                             : "Unknown";
 
+                var affinities = new StringBuilder();
+                affinities.AppendJoin(',', device.Affinities);
+
                 device.IsAssigned = true;
 
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", string.Format("Assigned device ({0})...", device.Name));
+                PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", string.Format("Affinities: {0}", affinities.ToString()));
 
                 if (!device.IsInitialized)
                 {

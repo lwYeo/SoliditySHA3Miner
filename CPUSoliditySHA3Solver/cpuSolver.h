@@ -37,6 +37,6 @@ namespace CPUSolver
 		void HashMidState(Instance *deviceInstance, Processor *processor);
 
 	private:
-		bool IslessThan(byte32_t &left, byte32_t &right);
+		bool IslessThan(byte32_t const &left, byte32_t const &right);
 	};
 }

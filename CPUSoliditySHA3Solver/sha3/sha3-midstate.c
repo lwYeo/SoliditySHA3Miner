@@ -16,10 +16,23 @@
 
 #include "sha3-midstate.h"
 
-#define ROTL_64(x, n)			((x << n) | (x >> (64 - n)))
-#define ROTR_64(x, n)			((x >> n) | (x << (64 - n)))
-#define CHI(a, b, c)			(a ^ ((~b) & c))
+#if defined(_MSC_VER)
+#	pragma intrinsic(_rotl64)
+#	define ROTL_64(x, n)		_rotl64(x, n)
+#	pragma intrinsic(_rotr64)
+#	define ROTR_64(x, n)		_rotr64(x, n)
+#elif defined(__clang__)
+#	define ROTL_64(x, n)		__builtin_rotateleft64(x, n)
+#	define ROTR_64(x, n)		__builtin_rotateright64(x, n)
+#elif defined(__x86_64__)
+#	define ROTL_64(x, n)		({ u64 r; asm("rolq %1,%0" : "=r"(r) : "J"(n),"0"(x) : "cc"); r; })
+#	define ROTR_64(x, n)		({ u64 r; asm("rorq %1,%0" : "=r"(r) : "J"(n),"0"(x) : "cc"); r; })
+#else
+#	define ROTL_64(x, n)		((x << n) | (x >> (64 - n)))
+#	define ROTR_64(x, n)		((x >> n) | (x << (64 - n)))
+#endif
 
+#define CHI(a, b, c)			(a ^ ((~b) & c))
 #define XOR5(a, b, c, d, e)		(a ^ b ^ c ^ d ^ e)
 #define XOR3(a, b, c)			(a ^ b ^ c)
 
@@ -35,7 +48,7 @@ static inline uint64_t bswap64(uint64_t const input)
 		((input >> 56) & 0x00000000000000ffull);
 }
 
-static const uint64_t Keccak_f1600_RC[24] =
+static uint64_t const Keccak_f1600_RC[24] =
 {
 	0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
 	0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
@@ -47,8 +60,8 @@ static const uint64_t Keccak_f1600_RC[24] =
 	0x8000000000008080, 0x0000000080000001, 0x8000000080008008
 };
 
-void sha3_midstate(const uint64_t *midState, const uint64_t target, const uint64_t workPosition,
-					const uint32_t maxSolutionCount, uint32_t *solutionCount, uint64_t *solutions)
+void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t const workPosition,
+					uint32_t const maxSolutionCount, uint32_t *solutionCount, uint64_t *solutions)
 {
 	uint64_t nonce, state[25], C[5], D[5], n[11];
 	nonce = workPosition;
