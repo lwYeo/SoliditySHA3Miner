@@ -15,7 +15,8 @@ dotnet SoliditySHA3Miner.dll ^
 web3api=https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE ^
 abiFile=ERC-541.abi ^
 contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 ^
-gasToMine=5 ^
+gasToMine=3 ^
+gasApiMax=7 ^
 gasLimit=1704624 ^
 gasApiURL=https://ethgasstation.info/json/ethgasAPI.json ^
 gasApiPath=$.safeLow ^

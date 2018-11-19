@@ -60,6 +60,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly int m_mintMethodInputParamCount;
 
         private readonly float m_gasToMine;
+        private readonly float m_gasApiMax;
         private readonly ulong m_gasLimit;
         private readonly List<byte[]> m_submittedChallengeList;
         private readonly int m_updateInterval;
@@ -94,7 +95,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public Web3Interface(string web3ApiPath, string contractAddress, string minerAddress, string privateKey,
                              float gasToMine, string abiFileName, int updateInterval, int hashratePrintInterval,
-                             ulong gasLimit, string gasApiURL, string gasApiPath, float gasApiMultiplier, float gasApiOffset)
+                             ulong gasLimit, string gasApiURL, string gasApiPath, float gasApiMultiplier, float gasApiOffset, float gasApiMax)
         {
             m_updateInterval = updateInterval;
             m_submittedChallengeList = new List<byte[]>();
@@ -212,7 +213,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             else
             {
                 m_gasToMine = gasToMine;
-                Program.Print(string.Format("[INFO] Gas to mine: {0}", m_gasToMine));
+                Program.Print(string.Format("[INFO] Gas to mine: {0} GWei", m_gasToMine));
 
                 m_gasLimit = gasLimit;
                 Program.Print(string.Format("[INFO] Gas limit: {0}", m_gasLimit));
@@ -230,6 +231,9 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                     m_gasApiMultiplier = gasApiMultiplier;
                     Program.Print(string.Format("[INFO] Gas API multiplier: {0}", m_gasApiMultiplier));
+
+                    m_gasApiMax = gasApiMax;
+                    Program.Print(string.Format("[INFO] Gas API maximum: {0} GWei", m_gasApiMax));
                 }
 
                 #region ERC20 methods
@@ -495,7 +499,8 @@ namespace SoliditySHA3Miner.NetworkInterface
             catch (Exception ex)
             {
                 success = false;
-                throw ex;
+                Program.Print("[ERROR] " + ex.Message);
+                return null;
             }
             finally
             {
@@ -716,6 +721,12 @@ namespace SoliditySHA3Miner.NetworkInterface
                             {
                                 Program.Print(string.Format("[INFO] Using 'gasToMine' price of {0} GWei, due to lower gas price from API: {1}",
                                                             m_gasToMine, m_gasApiURL));
+                            }
+                            else if (apiGasPrice > m_gasApiMax)
+                            {
+                                userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasApiMax), UnitConversion.EthUnit.Gwei));
+                                Program.Print(string.Format("[INFO] Using 'gasApiMax' price of {0} GWei, due to higher gas price from API: {1}",
+                                                            m_gasApiMax, m_gasApiURL));
                             }
                             else
                             {

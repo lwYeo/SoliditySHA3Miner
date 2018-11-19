@@ -141,14 +141,42 @@ namespace SoliditySHA3Miner.NetworkInterface
                                  JObject getMinimumShareDifficulty,
                                  JObject getMinimumShareTarget)
         {
-            EthAddress = Utils.Json.InvokeJObjectRPC(poolURL, getPoolEthAddress).SelectToken("$.result").Value<string>();
-            Challenge = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getChallengeNumber).SelectToken("$.result").Value<string>());
-            ChallengeByte32 = Utils.Numerics.FilterByte32Array(Challenge.Value.ToByteArray(littleEndian: false));
-            ChallengeByte32String = Utils.Numerics.Byte32ArrayToHexString(ChallengeByte32);
-            MiningDifficulty = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareDifficulty).SelectToken("$.result").Value<ulong>());
-            MiningTarget = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareTarget).SelectToken("$.result").Value<string>()));
-            MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false));
-            MiningTargetByte32String = Utils.Numerics.Byte32ArrayToHexString(MiningTargetByte32);
+            try
+            {
+                EthAddress = Utils.Json.InvokeJObjectRPC(poolURL, getPoolEthAddress).SelectToken("$.result").Value<string>();
+            }
+            catch (Exception ex)
+            {
+                throw new OperationCanceledException("Failed to get pool address: " + ex.Message, ex.InnerException);
+            }
+            try
+            {
+                Challenge = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getChallengeNumber).SelectToken("$.result").Value<string>());
+                ChallengeByte32 = Utils.Numerics.FilterByte32Array(Challenge.Value.ToByteArray(littleEndian: false));
+                ChallengeByte32String = Utils.Numerics.Byte32ArrayToHexString(ChallengeByte32);
+            }
+            catch (Exception ex)
+            {
+                throw new OperationCanceledException("Failed to get pool challenge: " + ex.Message, ex.InnerException);
+            }
+            try
+            {
+                MiningDifficulty = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareDifficulty).SelectToken("$.result").Value<ulong>());
+            }
+            catch (Exception ex)
+            {
+                throw new OperationCanceledException("Failed to get pool difficulty: " + ex.Message, ex.InnerException);
+            }
+            try
+            {
+                MiningTarget = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareTarget).SelectToken("$.result").Value<string>()));
+                MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false));
+                MiningTargetByte32String = Utils.Numerics.Byte32ArrayToHexString(MiningTargetByte32);
+            }
+            catch (Exception ex)
+            {
+                throw new OperationCanceledException("Failed to get pool target: " + ex.Message, ex.InnerException);
+            }
         }
     }
 }

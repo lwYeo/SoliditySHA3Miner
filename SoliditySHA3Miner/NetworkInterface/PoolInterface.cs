@@ -171,20 +171,15 @@ namespace SoliditySHA3Miner.NetworkInterface
                 return MiningParameters.GetPoolMiningParameters(s_PoolURL, getPoolEthAddress, getPoolChallengeNumber,
                                                                 getPoolMinimumShareDifficulty, getPoolMinimumShareTarget);
             }
-            catch (AggregateException ex)
-            {
-                success = false;
-                m_retryCount++;
-
-                Program.Print("[ERROR] " + ex.Message);
-            }
             catch (Exception ex)
             {
                 success = false;
                 m_retryCount++;
 
                 string errorMsg = ex.Message;
-                if (ex.InnerException != null) errorMsg += ("\n " + ex.InnerException.Message);
+                if (ex.InnerException != null)
+                    errorMsg += ("\n " + ex.InnerException.ToString());
+
                 Program.Print("[ERROR] " + errorMsg);
             }
             finally

@@ -50,6 +50,7 @@ namespace SoliditySHA3Miner
         public string gasApiPath { get; set; }
         public float gasApiMultiplier { get; set; }
         public float gasApiOffset { get; set; }
+        public float gasApiMax { get; set; }
         public bool allowCPU { get; set; }
         public Miner.DeviceCPU cpuDevice { get; set; }
         public bool allowIntel { get; set; }
@@ -81,6 +82,7 @@ namespace SoliditySHA3Miner
             privateKey = string.Empty;
             gasToMine = Defaults.GasToMine;
             gasLimit = Defaults.GasLimit;
+            gasApiMax = Defaults.GasApiMax;
             allowCPU = false;
             cpuDevice = new Miner.DeviceCPU();
             allowIntel = true;
@@ -102,10 +104,10 @@ namespace SoliditySHA3Miner
                 "  allowIntel              Allow to use Intel GPU (OpenCL) (default: true)\n" +
                 "  allowAMD                Allow to use AMD GPU (OpenCL) (default: true)\n" +
                 "  allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)\n" +
-                "  intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)\n" +
+                "  intelIntensity          GPU (Intel OpenCL) intensity (default: 17, decimals allowed)\n" +
                 "  listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)\n" +
                 "  amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)\n" +
-                "  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.223, decimals allowed)\n" +
+                "  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.056, decimals allowed)\n" +
                 "  listCudaDevices         List of all CUDA devices in this system and exit (device ID: GPU name)\n" +
                 "  cudaDevice              Comma separated list of CUDA devices to use (default: all devices)\n" +
                 "  cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)\n" +
@@ -124,12 +126,13 @@ namespace SoliditySHA3Miner
                 "  kingAddress             Add MiningKing address to nonce, only CPU mining supported (default: none)\n" +
                 "  address                 (Pool only) Miner's ethereum address (default: developer's address)\n" +
                 "  privateKey              (Solo only) Miner's private key\n" +
-                "  gasToMine               (Solo only) Gas price to mine in GWei (default: " + Defaults.GasToMine + "; note: will override lower dynamic gas price)\n" +
+                "  gasToMine               (Solo only) Gas price to mine in GWei (default: " + Defaults.GasToMine + ", decimals allowed; note: will override lower dynamic gas price)\n" +
                 "  gasLimit                (Solo only) Gas limit to submit proof of work (default: " + Defaults.GasLimit + ")\n" +
                 "  gasApiURL               (Solo only) Get dynamic gas price to mine from this JSON API URL (note: leave empty to disable)\n" +
                 "  gasApiPath              (Solo only) JSON path expression to retrieve dynamic gas price value from 'gasApiURL'\n" +
                 "  gasApiMultiplier        (Solo only) Multiplier to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (note: use 0.1 for EthGasStation API)\n" +
                 "  gasApiOffset            (Solo only) Offset to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (after 'gasApiMultiplier', decimals allowed)\n" +
+                "  gasApiMax               (Solo only) Maximum gas price to mine in GWei from API (default: " + Defaults.GasApiMax + ", decimals allowed)" +
                 "  pool                    (Pool only) URL of pool mining server (default: " + Defaults.PoolPrimary + ")\n" +
                 "  secondaryPool           (Optional) URL of failover pool mining server\n" +
                 "  logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)\n" +
@@ -760,6 +763,10 @@ namespace SoliditySHA3Miner
                             gasApiOffset = float.Parse(arg.Split('=')[1]);
                             break;
 
+                        case "gasApiMax":
+                            gasApiMax = float.Parse(arg.Split('=')[1]);
+                            break;
+
                         case "pool":
                             primaryPool = arg.Split('=')[1];
                             break;
@@ -797,8 +804,9 @@ namespace SoliditySHA3Miner
             public const string CcminerAPIPath = "127.0.0.1:4068";
 
             public const bool SubmitStale = false;
-            public const float GasToMine = 5.0f;
+            public const float GasToMine = 3.0f;
             public const ulong GasLimit = 1704624ul;
+            public const float GasApiMax = 7.0f;
             public const int MaxScanRetry = 3;
             public const int PauseOnFailedScan = 3;
             public const int NetworkUpdateInterval = 15000;

@@ -263,7 +263,7 @@ namespace SoliditySHA3Miner
 
                 var web3Interface = new NetworkInterface.Web3Interface(Config.web3api, Config.contractAddress, Config.minerAddress, Config.privateKey, Config.gasToMine,
                                                                        Config.abiFile, Config.networkUpdateInterval, Config.hashrateUpdateInterval,
-                                                                       Config.gasLimit, Config.gasApiURL, Config.gasApiPath, Config.gasApiMultiplier, Config.gasApiOffset);
+                                                                       Config.gasLimit, Config.gasApiURL, Config.gasApiPath, Config.gasApiMultiplier, Config.gasApiOffset, Config.gasApiMax);
 
                 web3Interface.OverrideMaxTarget(Config.overrideMaxTarget);
 

@@ -31,10 +31,10 @@ Options:
   allowIntel              Allow to use Intel GPU (OpenCL) (default: true)
   allowAMD                Allow to use AMD GPU (OpenCL) (default: true)
   allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)
-  intelIntensity          GPU (Intel OpenCL) intensity (default: 20.5, decimals allowed)
+  intelIntensity          GPU (Intel OpenCL) intensity (default: 17, decimals allowed)
   listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)
   amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)
-  amdIntensity            GPU (AMD OpenCL) intensity (default: auto, decimals allowed)
+  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.056, decimals allowed)
   listCudaDevices         List of all CUDA devices in this system (device ID: GPU name)
   cudaDevice              Comma separated list of CUDA devices to use (default: all devices)
   cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)
@@ -53,12 +53,13 @@ Options:
   kingAddress             Add MiningKing address to nonce, only CPU mining supported (default: none)
   address                 (Pool only) Miner's ethereum address (default: developer's address)
   privateKey              (Solo only) Miner's private key
-  gasToMine               (Solo only) Gas price to mine in GWei (default: 5, decimals allowed; note: will override lower dynamic gas price)
+  gasToMine               (Solo only) Gas price to mine in GWei (default: 3, decimals allowed; note: will override lower dynamic gas price)
   gasLimit                (Solo only) Gas limit to submit proof of work (default: 1704624)
   gasApiURL               (Solo only) Get dynamic gas price to mine from this JSON API URL (note: leave empty to disable)
   gasApiPath              (Solo only) JSON path expression to retrieve dynamic gas price value from 'gasApiURL'
   gasApiMultiplier        (Solo only) Multiplier to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (note: use 0.1 for EthGasStation API)
   gasApiOffset            (Solo only) Offset to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (after 'gasApiMultiplier', decimals allowed)
+  gasApiMax               (Solo only) Maximum gas price to mine in GWei from API (default: 7, decimals allowed)
   pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
   secondaryPool           (Optional) URL of failover pool mining server
   logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)
