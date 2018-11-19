@@ -10,6 +10,21 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="cpuSolver.cpp" />
+    <ClCompile Include="sha3\keccak-tiny.c" />
+    <ClCompile Include="sha3\sha3-midstate.c" />
+    <ClCompile Include="solver.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cpuSolver.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="instance.h" />
+    <ClInclude Include="sha3\keccak-tiny.h" />
+    <ClInclude Include="sha3\sha3-midstate.h" />
+    <ClInclude Include="solver.h" />
+    <ClInclude Include="types.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{B3B05A02-57FF-4A7F-9D64-D8A5B7435B0C}</ProjectGuid>
@@ -72,28 +87,6 @@
       <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="cpuSolver.cpp" />
-    <ClCompile Include="sha3.cpp" />
-    <ClCompile Include="solver.cpp" />
-    <ClCompile Include="uint256\arith_uint256.cpp" />
-    <ClCompile Include="uint256\uint256.cpp" />
-    <ClCompile Include="uint256\utilstrencodings.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="cpuSolver.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="sha3.h" />
-    <ClInclude Include="solver.h" />
-    <ClInclude Include="types.h" />
-    <ClInclude Include="uint256\arith_uint256.h" />
-    <ClInclude Include="uint256\compat_byteswap.h" />
-    <ClInclude Include="uint256\compat_endian.h" />
-    <ClInclude Include="uint256\crypto_common.h" />
-    <ClInclude Include="uint256\tinyformat.h" />
-    <ClInclude Include="uint256\uint256.h" />
-    <ClInclude Include="uint256\utilstrencodings.h" />
-  </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />
   </ItemGroup>

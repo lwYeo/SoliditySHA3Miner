@@ -87,20 +87,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="cudaSolver.h" />
-    <ClInclude Include="device\device.h" />
+    <ClInclude Include="device\instance.h" />
     <ClInclude Include="device\nv_api.h" />
     <ClInclude Include="device\nv_apiEnum.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="sha3.h" />
     <ClInclude Include="solver.h" />
     <ClInclude Include="types.h" />
-    <ClInclude Include="uint256\arith_uint256.h" />
-    <ClInclude Include="uint256\compat_byteswap.h" />
-    <ClInclude Include="uint256\compat_endian.h" />
-    <ClInclude Include="uint256\crypto_common.h" />
-    <ClInclude Include="uint256\tinyformat.h" />
-    <ClInclude Include="uint256\uint256.h" />
-    <ClInclude Include="uint256\utilstrencodings.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cudaSha3.cu" />
@@ -109,13 +101,8 @@
   <ItemGroup>
     <ClCompile Include="cudaErrorCheck.cu" />
     <ClCompile Include="cudaSolver.cpp" />
-    <ClCompile Include="device\device.cpp" />
     <ClCompile Include="device\nv_api.cpp" />
-    <ClCompile Include="sha3.cpp" />
     <ClCompile Include="solver.cpp" />
-    <ClCompile Include="uint256\arith_uint256.cpp" />
-    <ClCompile Include="uint256\uint256.cpp" />
-    <ClCompile Include="uint256\utilstrencodings.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,3 +1,19 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #pragma once
 
 #ifndef __SOLVER__
@@ -19,77 +35,49 @@ namespace OpenCLSolver
 	{
 		EXPORT void __CDECL__ FoundADL_API(bool *hasADL_API);
 
-		EXPORT void __CDECL__ PreInitialize(bool allowIntel, const char *sha3Kernel, uint64_t sha3KernelSize, const char *sha3KingKernel, uint64_t sha3KingKernelSize, const char *errorMessage, uint64_t *errorSize);
+		EXPORT void __CDECL__ PreInitialize(const char *sha3Kernel, const char *sha3KingKernel, size_t kernelSize, size_t kingKernelSize);
 
-		EXPORT void __CDECL__ GetPlatformNames(const char *platformNames);
+		EXPORT void __CDECL__ GetPlatforms(Platform **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage);
 
-		EXPORT void __CDECL__ GetDeviceCount(const char *platformName, int *deviceCount, const char *errorMessage, uint64_t *errorSize);
+		EXPORT void __CDECL__ GetDevicesByPlatform(Platform platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage);
 
-		EXPORT void __CDECL__ GetDeviceName(const char *platformName, int deviceEnum, const char *deviceName, uint64_t *nameSize, const char *errorMessage, uint64_t *errorSize);
+		EXPORT OpenCLSolver *__CDECL__ GetInstance() noexcept;
 
-		EXPORT openCLSolver *__CDECL__ GetInstance() noexcept;
+		EXPORT void __CDECL__ DisposeInstance(OpenCLSolver *instance) noexcept;
 
-		EXPORT void __CDECL__ DisposeInstance(openCLSolver *instance) noexcept;
+		EXPORT void __CDECL__ InitializeDevice(OpenCLSolver *instance, DeviceCL *device, bool isKingMaking, const char *errorMessage);
 
-		EXPORT GetKingAddressCallback __CDECL__ SetOnGetKingAddressHandler(openCLSolver *instance, GetKingAddressCallback getKingAddressCallback);
+		EXPORT void __CDECL__ PushHigh64Target(OpenCLSolver *instance, DeviceCL device, cl_ulong *high64Target, const char *errorMessage);
 
-		EXPORT GetSolutionTemplateCallback __CDECL__ SetOnGetSolutionTemplateHandler(openCLSolver *instance, GetSolutionTemplateCallback getSolutionTemplateCallback);
+		EXPORT void __CDECL__ PushTarget(OpenCLSolver *instance, DeviceCL device, byte32_t *target, const char *errorMessage);
 
-		EXPORT GetWorkPositionCallback __CDECL__ SetOnGetWorkPositionHandler(openCLSolver *instance, GetWorkPositionCallback getWorkPositionCallback);
+		EXPORT void __CDECL__ PushMidState(OpenCLSolver *instance, DeviceCL device, sponge_ut *midState, const char *errorMessage);
 
-		EXPORT ResetWorkPositionCallback __CDECL__ SetOnResetWorkPositionHandler(openCLSolver *instance, ResetWorkPositionCallback resetWorkPositionCallback);
+		EXPORT void __CDECL__ PushMessage(OpenCLSolver *instance, DeviceCL device, message_ut *message, const char *errorMessage);
 
-		EXPORT IncrementWorkPositionCallback __CDECL__ SetOnIncrementWorkPositionHandler(openCLSolver *instance, IncrementWorkPositionCallback incrementWorkPositionCallback);
+		EXPORT void __CDECL__ Hash(OpenCLSolver *instance, DeviceCL *device, const char *errorMessage);
 
-		EXPORT MessageCallback __CDECL__ SetOnMessageHandler(openCLSolver *instance, MessageCallback messageCallback);
+		EXPORT void __CDECL__ ReleaseDeviceObjects(OpenCLSolver *instance, DeviceCL *device, const char *errorMessage);
 
-		EXPORT SolutionCallback __CDECL__ SetOnSolutionHandler(openCLSolver *instance, SolutionCallback solutionCallback);
+		EXPORT void __CDECL__ GetDeviceSettingMaxCoreClock(DeviceCL device, int *coreClock, const char *errorMessage);
 
-		EXPORT void __CDECL__ SetSubmitStale(openCLSolver *instance, const bool submitStale);
+		EXPORT void __CDECL__ GetDeviceSettingMaxMemoryClock(DeviceCL device, int *memoryClock, const char *errorMessage);
 
-		EXPORT void __CDECL__ AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity, unsigned int *pciBusID, const char *deviceName, uint64_t *nameSize);
+		EXPORT void __CDECL__ GetDeviceSettingPowerLimit(DeviceCL device, int *powerLimit, const char *errorMessage);
 
-		EXPORT void __CDECL__ IsAssigned(openCLSolver *instance, bool *isAssigned);
+		EXPORT void __CDECL__ GetDeviceSettingThermalLimit(DeviceCL device, int *thermalLimit, const char *errorMessage);
 
-		EXPORT void __CDECL__ IsAnyInitialised(openCLSolver *instance, bool *isAnyInitialised);
+		EXPORT void __CDECL__ GetDeviceSettingFanLevelPercent(DeviceCL device, int *fanLevel, const char *errorMessage);
 
-		EXPORT void __CDECL__ IsMining(openCLSolver *instance, bool *isMining);
+		EXPORT void __CDECL__ GetDeviceCurrentFanTachometerRPM(DeviceCL device, int *tachometerRPM, const char *errorMessage);
 
-		EXPORT void __CDECL__ IsPaused(openCLSolver *instance, bool *isPaused);
+		EXPORT void __CDECL__ GetDeviceCurrentTemperature(DeviceCL device, int *temperature, const char *errorMessage);
 
-		EXPORT void __CDECL__ GetHashRateByDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, uint64_t *hashRate);
+		EXPORT void __CDECL__ GetDeviceCurrentCoreClock(DeviceCL device, int *coreClock, const char *errorMessage);
 
-		EXPORT void __CDECL__ GetTotalHashRate(openCLSolver *instance, uint64_t *totalHashRate);
+		EXPORT void __CDECL__ GetDeviceCurrentMemoryClock(DeviceCL device, int *memoryClock, const char *errorMessage);
 
-		EXPORT void __CDECL__ UpdatePrefix(openCLSolver *instance, const char *prefix);
-
-		EXPORT void __CDECL__ UpdateTarget(openCLSolver *instance, const char *target);
-
-		EXPORT void __CDECL__ PauseFinding(openCLSolver *instance, const bool pause);
-
-		EXPORT void __CDECL__ StartFinding(openCLSolver *instance);
-
-		EXPORT void __CDECL__ StopFinding(openCLSolver *instance);
-
-		EXPORT void __CDECL__ GetDeviceSettingMaxCoreClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *coreClock);
-
-		EXPORT void __CDECL__ GetDeviceSettingMaxMemoryClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *memoryClock);
-
-		EXPORT void __CDECL__ GetDeviceSettingPowerLimit(openCLSolver *instance, const char *platformName, const int deviceEnum, int *powerLimit);
-
-		EXPORT void __CDECL__ GetDeviceSettingThermalLimit(openCLSolver *instance, const char *platformName, const int deviceEnum, int *thermalLimit);
-
-		EXPORT void __CDECL__ GetDeviceSettingFanLevelPercent(openCLSolver *instance, const char *platformName, const int deviceEnum, int *fanLevel);
-
-		EXPORT void __CDECL__ GetDeviceCurrentFanTachometerRPM(openCLSolver *instance, const char *platformName, const int deviceEnum, int *tachometerRPM);
-
-		EXPORT void __CDECL__ GetDeviceCurrentTemperature(openCLSolver *instance, const char *platformName, const int deviceEnum, int *temperature);
-
-		EXPORT void __CDECL__ GetDeviceCurrentCoreClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *coreClock);
-
-		EXPORT void __CDECL__ GetDeviceCurrentMemoryClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *memoryClock);
-
-		EXPORT void __CDECL__ GetDeviceCurrentUtilizationPercent(openCLSolver *instance, const char *platformName, const int deviceEnum, int *utiliztion);
+		EXPORT void __CDECL__ GetDeviceCurrentUtilizationPercent(DeviceCL device, int *utiliztion, const char *errorMessage);
 	}
 }
 

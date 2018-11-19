@@ -5,7 +5,7 @@ Current latest public release version: [2.0.6](https://github.com/lwYeo/Solidity
 
 Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
 
-Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)
+Built with .NET Core 2.1.5 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)
 
 - .NET Core 2.1 can be downloaded from [https://www.microsoft.com/net/download]
 
@@ -20,11 +20,9 @@ If you are looking for a GUI version, refer to this link [https://github.com/lwY
 
 ## LICENSE
 
-SoliditySHA3Miner is licensed under the [MIT license](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/LICENSE).
+SoliditySHA3Miner is licensed under the [Apache License, Version 2.0 (the "License")](http://www.apache.org/licenses/LICENSE-2.0);
 
 Libraries are included in the Software under the following license terms:
-
-    Satoshi Nakamoto and The Bitcoin Core developers (uint256) [https://github.com/bitcoin/bitcoin/blob/master/COPYING]
     
     libkeccak-tiny [https://github.com/coruus/keccak-tiny/]
     
@@ -52,9 +50,9 @@ Options:
 
     help                    Display this help text and exit
 	
-    cpuMode                 Set this miner to run in CPU mode only, disables GPU (default: false)
-	
-    cpuID                   Comma separated list of CPU thread ID to use (default: all logical CPUs except first)
+    allowCPU                Allow to use CPU, may slow down system (default: false)
+  
+    cpuAffinity             Comma separated list of CPU affinity ID to use (default: all logical CPUs except first)
 	
     allowIntel              Allow to use Intel GPU (OpenCL) (default: true)
 	

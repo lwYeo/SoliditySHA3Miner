@@ -77,7 +77,6 @@ namespace SoliditySHA3Miner.Properties {
         ///#	define COMPUTE				0
         ///#endif
         ///
-        ///#define MAX_SOLUTION_COUNT		32u
         ///#define STATE_LENGTH			200u
         ///
         ///typedef union _nonce_t
@@ -88,7 +87,8 @@ namespace SoliditySHA3Miner.Properties {
         ///
         ///typedef union _state_t
         ///{
-        ///	uint2		uint2_s[ [rest of string was truncated]&quot;;.
+        ///	uint2		uint2_s[STATE_LENGTH / sizeof(uint2)];
+        ///	 [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string sha3Kernel {
             get {
@@ -113,13 +113,12 @@ namespace SoliditySHA3Miner.Properties {
         ///#define COMPUTE					0
         ///#endif
         ///
-        ///#define MAX_SOLUTION_COUNT		32u
         ///#define ADDRESS_LENGTH			20u
         ///#define UINT64_LENGTH			8u
         ///#define UINT256_LENGTH			32u
         ///#define MESSAGE_LENGTH			84u
         ///#define SPONGE_LENGTH			200u
-        ///#defi [rest of string was truncated]&quot;;.
+        ///#define NONCE_POSITION			UINT256_LENGT [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string sha3KingKernel {
             get {

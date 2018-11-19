@@ -1,463 +1,257 @@
-﻿using System;
+﻿/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using System.Timers;
 
 namespace SoliditySHA3Miner.Miner
 {
-    public class CPU : IMiner
+    public class CPU : MinerBase
     {
-        #region P/Invoke interface
-
-        public static class Solver
+        public CPU(NetworkInterface.INetworkInterface networkInterface, DeviceCPU devices, bool isSubmitStale, int pauseOnFailedScans)
+            : base(networkInterface, new DeviceBase[] { devices }, isSubmitStale, pauseOnFailedScans)
         {
-            public const string SOLVER_NAME = "CPUSoliditySHA3Solver";
+            try
+            {
+                HasMonitoringAPI = false;
 
-            public unsafe delegate void GetSolutionTemplateCallback(byte* solutionTemplate);
+                UnmanagedInstance = Helper.CPU.Solver.GetInstance();
 
-            public unsafe delegate void GetKingAddressCallback(byte* kingAddress);
-
-            public delegate void GetWorkPositionCallback(ref ulong lastWorkPosition);
-
-            public delegate void ResetWorkPositionCallback(ref ulong lastWorkPosition);
-
-            public delegate void IncrementWorkPositionCallback(ref ulong lastWorkPosition, ulong incrementSize);
-
-            public delegate void MessageCallback([In]int threadID, [In]StringBuilder type, [In]StringBuilder message);
-
-            public delegate void SolutionCallback([In]StringBuilder digest, [In]StringBuilder address, [In]StringBuilder challenge, [In]StringBuilder target, [In]StringBuilder solution);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void GetLogicalProcessorsCount(ref uint processorCount);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void GetNewSolutionTemplate(StringBuilder kingAddress, StringBuilder solutionTemplate);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern IntPtr GetInstance(StringBuilder threads);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void DisposeInstance(IntPtr instance);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static unsafe extern GetSolutionTemplateCallback SetOnGetSolutionTemplateHandler(IntPtr instance, GetSolutionTemplateCallback getSolutionTemplateCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static unsafe extern GetKingAddressCallback SetOnGetKingAddressHandler(IntPtr instance, GetKingAddressCallback getKingAddressCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern GetWorkPositionCallback SetOnGetWorkPositionHandler(IntPtr instance, GetWorkPositionCallback getWorkPositionCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern ResetWorkPositionCallback SetOnResetWorkPositionHandler(IntPtr instance, ResetWorkPositionCallback resetWorkPositionCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern IncrementWorkPositionCallback SetOnIncrementWorkPositionHandler(IntPtr instance, IncrementWorkPositionCallback incrementWorkPositionCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern MessageCallback SetOnMessageHandler(IntPtr instance, MessageCallback messageCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern SolutionCallback SetOnSolutionHandler(IntPtr instance, SolutionCallback solutionCallback);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void SetSubmitStale(IntPtr instance, bool submitStale);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void IsMining(IntPtr instance, ref bool isMining);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void IsPaused(IntPtr instance, ref bool isPaused);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void GetHashRateByThreadID(IntPtr instance, uint threadID, ref ulong hashRate);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void GetTotalHashRate(IntPtr instance, ref ulong totalHashRate);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void UpdatePrefix(IntPtr instance, StringBuilder prefix);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void UpdateTarget(IntPtr instance, StringBuilder target);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void PauseFinding(IntPtr instance, bool pause);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void StartFinding(IntPtr instance);
-
-            [DllImport(SOLVER_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern void StopFinding(IntPtr instance);
+                AssignDevices();
+            }
+            catch (Exception ex)
+            {
+                PrintMessage("CPU", string.Empty, -1, "Error", ex.Message);
+            }
         }
-
-        private Solver.GetSolutionTemplateCallback m_GetSolutionTemplateCallback;
-        private Solver.GetKingAddressCallback m_GetKingAddressCallback;
-        private Solver.GetWorkPositionCallback m_GetWorkPositionCallback;
-        private Solver.ResetWorkPositionCallback m_ResetWorkPositionCallback;
-        private Solver.IncrementWorkPositionCallback m_IncrementWorkPositionCallback;
-        private Solver.MessageCallback m_MessageCallback;
-        private Solver.SolutionCallback m_SolutionCallback;
-
-        #endregion P/Invoke interface
-
-        #region Static
-
-        public static uint GetLogicalProcessorCount()
-        {
-            var processorCount = 0u;
-            Solver.GetLogicalProcessorsCount(ref processorCount);
-            return processorCount;
-        }
-
-        public static string GetNewSolutionTemplate(string kingAddress = "")
-        {
-            var solutionTemplate = new StringBuilder(32 * 2 + 2);
-            Solver.GetNewSolutionTemplate(new StringBuilder(kingAddress), solutionTemplate);
-            return solutionTemplate.ToString();
-        }
-
-        #endregion Static
-
-        private Timer m_hashPrintTimer;
-        private int m_pauseOnFailedScan;
-        private int m_failedScanCount;
-        private bool m_isCurrentChallengeStopSolving;
-
-        public readonly IntPtr m_instance;
 
         #region IMiner
 
-        public NetworkInterface.INetworkInterface NetworkInterface { get; }
-
-        public bool HasAssignedDevices => m_instance != null && m_instance.ToInt64() != 0 && Devices.Any(d => d.AllowDevice);
-
-        public bool HasMonitoringAPI => false;
-
-        public Device[] Devices { get; }
-
-        public bool IsAnyInitialised => true; // CPU is always initialised
-
-        public bool IsMining
+        public override void Dispose()
         {
-            get
-            {
-                var isMining = false;
-
-                if (m_instance != null && m_instance.ToInt64() != 0)
-                    Solver.IsMining(m_instance, ref isMining);
-
-                return isMining;
-            }
-        }
-
-        public bool IsPaused
-        {
-            get
-            {
-                var isPaused = false;
-
-                if (m_instance != null && m_instance.ToInt64() != 0)
-                    Solver.IsPaused(m_instance, ref isPaused);
-
-                return isPaused;
-            }
-        }
-
-        public void Dispose()
-        {
+            var disposeTask = Task.Factory.StartNew(() => base.Dispose());
             try
             {
-                if (m_instance != null && m_instance.ToInt64() != 0)
-                    Solver.DisposeInstance(m_instance);
-
-                m_GetSolutionTemplateCallback = null;
-                m_GetKingAddressCallback = null;
-                m_GetWorkPositionCallback = null;
-                m_ResetWorkPositionCallback = null;
-                m_IncrementWorkPositionCallback = null;
-                m_MessageCallback = null;
-                m_SolutionCallback = null;
+                if (UnmanagedInstance != IntPtr.Zero)
+                    Helper.CUDA.Solver.DisposeInstance(UnmanagedInstance);
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                PrintMessage("CPU", string.Empty, -1, "Error", ex.Message);
             }
-        }
-
-        public ulong GetHashrateByDevice(string platformName, int deviceID)
-        {
-            if (IsPaused) return 0ul;
-
-            var hashrate = 0ul;
-
-            if (m_instance != null && m_instance.ToInt64() != 0)
-                Solver.GetHashRateByThreadID(m_instance, (uint)deviceID, ref hashrate);
-
-            return hashrate;
-        }
-
-        public ulong GetTotalHashrate()
-        {
-            if (IsPaused) return 0ul;
-
-            var hashrate = 0ul;
-
-            if (m_instance != null && m_instance.ToInt64() != 0)
-                Solver.GetTotalHashRate(m_instance, ref hashrate);
-
-            return hashrate;
-        }
-
-        public void StartMining(int networkUpdateInterval, int hashratePrintInterval)
-        {
-            try
-            {
-                NetworkInterface.UpdateMiningParameters();
-
-                m_hashPrintTimer = new Timer(hashratePrintInterval);
-                m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
-                m_hashPrintTimer.Start();
-
-                NetworkInterface.ResetEffectiveHashrate();
-                Solver.StartFinding(m_instance);
-            }
-            catch (Exception ex)
-            {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
-                StopMining();
-            }
-        }
-
-        public void StopMining()
-        {
-            try
-            {
-                m_hashPrintTimer.Stop();
-
-                NetworkInterface.ResetEffectiveHashrate();
-
-                Solver.StopFinding(m_instance);
-            }
-            catch (Exception ex)
-            {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
-            }
+            disposeTask.Wait();
         }
 
         #endregion IMiner
 
-        public CPU(NetworkInterface.INetworkInterface networkInterface, Device[] devices, bool isSubmitStale, int pauseOnFailedScans)
+        #region MinerBase abstracts
+
+        protected override void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            try
-            {
-                Devices = devices;
-                NetworkInterface = networkInterface;
-                m_pauseOnFailedScan = pauseOnFailedScans;
-                m_failedScanCount = 0;
-
-                var devicesStr = string.Empty;
-                foreach (var device in Devices)
-                {
-                    if (!device.AllowDevice) continue;
-
-                    if (!string.IsNullOrEmpty(devicesStr)) devicesStr += ',';
-                    devicesStr += device.DeviceID.ToString("X64");
-                }
-
-                NetworkInterface.OnGetTotalHashrate += NetworkInterface_OnGetTotalHashrate;
-
-                m_instance = Solver.GetInstance(new StringBuilder(devicesStr));
-                unsafe
-                {
-                    m_GetSolutionTemplateCallback = Solver.SetOnGetSolutionTemplateHandler(m_instance, Work.GetSolutionTemplate);
-                    m_GetKingAddressCallback = Solver.SetOnGetKingAddressHandler(m_instance, Work.GetKingAddress);
-                }
-                m_GetWorkPositionCallback = Solver.SetOnGetWorkPositionHandler(m_instance, Work.GetPosition);
-                m_ResetWorkPositionCallback = Solver.SetOnResetWorkPositionHandler(m_instance, Work.ResetPosition);
-                m_IncrementWorkPositionCallback = Solver.SetOnIncrementWorkPositionHandler(m_instance, Work.IncrementPosition);
-                m_MessageCallback = Solver.SetOnMessageHandler(m_instance, m_instance_OnMessage);
-                m_SolutionCallback = Solver.SetOnSolutionHandler(m_instance, m_instance_OnSolution);
-
-                NetworkInterface.OnGetMiningParameterStatus += NetworkInterface_OnGetMiningParameterStatus;
-                NetworkInterface.OnNewMessagePrefix += NetworkInterface_OnNewMessagePrefix;
-                NetworkInterface.OnNewTarget += NetworkInterface_OnNewTarget;
-                networkInterface.OnStopSolvingCurrentChallenge += NetworkInterface_OnStopSolvingCurrentChallenge;
-
-                Solver.SetSubmitStale(m_instance, isSubmitStale);
-
-                if (string.IsNullOrWhiteSpace(devicesStr))
-                {
-                    Program.Print("[INFO] No CPU assigned.");
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
-            }
-        }
-
-        private void m_hashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            var hashrate = 0ul;
             var hashString = new StringBuilder();
-            hashString.Append("CPU [INFO] Hashrates:");
+            hashString.Append("Hashrates:");
 
-            for (uint threadID = 0; threadID < Devices.Count(d => d.AllowDevice); threadID++)
-            {
-                if (IsPaused) hashrate = 0ul;
-                else
-                    Solver.GetHashRateByThreadID(m_instance, threadID, ref hashrate);
+            foreach (var device in Devices.Where(d => d.AllowDevice))
+                hashString.AppendFormat(" {0} MH/s", GetHashRateByDevice(device) / 1000000.0f);
 
-                hashString.AppendFormat(" {0} MH/s", hashrate / 1000000.0f);
-            }
-            Program.Print(hashString.ToString());
-
-            if (IsPaused)
-                hashrate = 0ul;
-            else
-                Solver.GetTotalHashRate(m_instance, ref hashrate);
-
-            Program.Print(string.Format("CPU [INFO] Total Hashrate: {0} MH/s", hashrate / 1000000.0f));
-
+            PrintMessage("CPU", string.Empty, -1, "Info", hashString.ToString());
+            
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, false);
         }
 
-        private void m_instance_OnMessage(int threadID, StringBuilder type, StringBuilder message)
+        protected override void AssignDevices()
         {
-            var sFormat = new StringBuilder();
-            if (threadID > -1) sFormat.Append("CPU Thread: {0} ");
-
-            switch (type.ToString().ToUpperInvariant())
+            if (!Program.AllowCPU || Devices.All(d => !d.AllowDevice))
             {
-                case "INFO":
-                    sFormat.Append(threadID > -1 ? "[INFO] {1}" : "[INFO] {0}");
-                    break;
-
-                case "WARN":
-                    sFormat.Append(threadID > -1 ? "[WARN] {1}" : "[WARN] {0}");
-                    break;
-
-                case "ERROR":
-                    sFormat.Append(threadID > -1 ? "[ERROR] {1}" : "[ERROR] {0}");
-                    break;
-
-                case "DEBUG":
-                default:
-#if DEBUG
-                    sFormat.Append(threadID > -1 ? "[DEBUG] {1}" : "[DEBUG] {0}");
-                    break;
-#else
-                    return;
-#endif
+                PrintMessage("CPU", string.Empty, -1, "Info", "Affinity not set.");
+                return;
             }
-            Program.Print(threadID > -1
-                ? string.Format(sFormat.ToString(), threadID, message.ToString())
-                : string.Format(sFormat.ToString(), message.ToString()));
-        }
 
-        private void NetworkInterface_OnStopSolvingCurrentChallenge(NetworkInterface.INetworkInterface sender, string currentTarget)
-        {
-            m_isCurrentChallengeStopSolving = true;
-            Solver.PauseFinding(m_instance, true);
-        }
+            var isKingMaking = !string.IsNullOrWhiteSpace(Work.GetKingAddressString());
 
-        private void NetworkInterface_OnNewMessagePrefix(NetworkInterface.INetworkInterface sender, string messagePrefix)
-        {
-            try
+            foreach (DeviceCPU device in Devices.Where(d => d.AllowDevice))
             {
-                if (m_instance != null && m_instance.ToInt64() != 0){
-                    Solver.UpdatePrefix(m_instance, new StringBuilder(messagePrefix));
+                PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Assigning device...");
 
-                    if (m_isCurrentChallengeStopSolving)
-                    {
-                        Solver.PauseFinding(m_instance, false);
-                        m_isCurrentChallengeStopSolving = false;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
-            }
-        }
+                var cpuName = new StringBuilder(256);
+                Helper.CPU.Solver.GetCpuName(cpuName);
 
-        private void NetworkInterface_OnNewTarget(NetworkInterface.INetworkInterface sender, string target)
-        {
-            try
-            {
-                if (m_instance != null && m_instance.ToInt64() != 0)
-                    Solver.UpdateTarget(m_instance, new StringBuilder(target));
-            }
-            catch (Exception ex)
-            {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
-            }
-        }
+                device.Name = (cpuName.Length > 0)
+                            ? cpuName.ToString().Trim()
+                            : "Unknown";
 
-        private void NetworkInterface_OnGetTotalHashrate(NetworkInterface.INetworkInterface sender, ref ulong totalHashrate)
-        {
-            if (IsPaused) return;
-            try
-            {
-                var hashrate = 0ul;
-                Solver.GetTotalHashRate(m_instance, ref hashrate);
+                device.IsAssigned = true;
 
-                totalHashrate += hashrate;
-            }
-            catch (Exception ex)
-            {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
-            }
-        }
+                PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", string.Format("Assigned device ({0})...", device.Name));
 
-        private void NetworkInterface_OnGetMiningParameterStatus(NetworkInterface.INetworkInterface sender,
-                                                                 bool success, NetworkInterface.MiningParameters miningParameters)
-        {
-            try
-            {
-                if (m_instance != null && m_instance.ToInt64() != 0)
+                if (!device.IsInitialized)
                 {
-                    if (success)
+                    PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Initializing device...");
+
+                    device.DeviceCPU_Struct.MaxSolutionCount = DeviceBase.MAX_SOLUTION_COUNT;
+                    device.DeviceCPU_Struct.ProcessorCount = device.Affinities.Length;
+                    device.Processor_Structs = (Structs.Processor[])Array.CreateInstance(typeof(Structs.Processor), device.Affinities.Length);
+
+                    for (var i = 0; i < device.Processor_Structs.Length; i++)
                     {
-                        var isPause = false;
-                        Solver.IsPaused(m_instance, ref isPause);
-
-                        if (m_isCurrentChallengeStopSolving) { isPause = true; }
-                        else if (isPause)
-                        {
-                            if (m_failedScanCount > m_pauseOnFailedScan)
-                                m_failedScanCount = 0;
-
-                            isPause = false;
-                        }
-                        Solver.PauseFinding(m_instance, isPause);
+                        device.Processor_Structs[i].Affinity = device.Affinities[i];
+                        device.Processor_Structs[i].WorkSize = (ulong)Math.Pow(2, 16);
                     }
-                    else
-                    {
-                        m_failedScanCount += 1;
 
-                        var isMining = false;
-                        Solver.IsMining(m_instance, ref isMining);
+                    var processorsHandle = GCHandle.Alloc(device.Processor_Structs, GCHandleType.Pinned);
+                    device.DeviceCPU_Struct.Processors = processorsHandle.AddrOfPinnedObject();
+                    device.AddHandle(processorsHandle);
 
-                        if (m_failedScanCount > m_pauseOnFailedScan && IsMining)
-                            Solver.PauseFinding(m_instance, true);
-                    }
+                    device.SolutionTemplate = Work.SolutionTemplate.ToArray();
+                    var solutionTemplateHandle = GCHandle.Alloc(device.SolutionTemplate, GCHandleType.Pinned);
+                    device.DeviceCPU_Struct.SolutionTemplate = solutionTemplateHandle.AddrOfPinnedObject();
+                    device.AddHandle(solutionTemplateHandle);
+
+                    device.Solutions = (ulong[])Array.CreateInstance(typeof(ulong), DeviceBase.MAX_SOLUTION_COUNT);
+                    var solutionsHandle = GCHandle.Alloc(device.Solutions, GCHandleType.Pinned);
+                    device.DeviceCPU_Struct.Solutions = solutionsHandle.AddrOfPinnedObject();
+                    device.AddHandle(solutionsHandle);
+
+                    device.DeviceCPU_Struct.Message = device.CommonPointers.Message;
+                    device.DeviceCPU_Struct.MidState = device.CommonPointers.MidState;
+                    device.DeviceCPU_Struct.High64Target = device.CommonPointers.High64Target;
+                    device.DeviceCPU_Struct.Target = device.CommonPointers.Target;
+
+                    device.IsInitialized = true;
                 }
-            }
-            catch (Exception ex)
-            {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
             }
         }
 
-        private void m_instance_OnSolution(StringBuilder digest, StringBuilder address, StringBuilder challenge, StringBuilder target, StringBuilder solution)
+        protected override void PushHigh64Target(DeviceBase device)
         {
-            var difficulty = NetworkInterface.Difficulty.ToString("X64");
+            // Do nothing
+        }
 
-            NetworkInterface.SubmitSolution(digest.ToString(), address.ToString(), challenge.ToString(), difficulty, target.ToString(), solution.ToString(), this);
+        protected override void PushTarget(DeviceBase device)
+        {
+            // Do nothing
+        }
+
+        protected override void PushMidState(DeviceBase device)
+        {
+            // Do nothing
+        }
+
+        protected override void PushMessage(DeviceBase device)
+        {
+            // Do nothing
+        }
+
+        protected override void StartFinding(DeviceBase device, bool isKingMaking)
+        {
+            var deviceCPU = (DeviceCPU)device;
+
+            if (!deviceCPU.IsInitialized) return;
+
+            while (!deviceCPU.HasNewTarget || !deviceCPU.HasNewChallenge)
+                Task.Delay(500).Wait();
+
+            PrintMessage(device.Type, device.Platform, deviceCPU.DeviceID, "Info", "Start mining...");
+
+            foreach (var processor in deviceCPU.Processor_Structs)
+                Task.Factory.StartNew(() => StartThreadFinding(deviceCPU, processor, isKingMaking));
+        }
+
+        #endregion
+
+        private void StartThreadFinding(DeviceCPU device, Structs.Processor processor, bool isKingMaking)
+        {
+            try
+            {
+                var errorMessage = new StringBuilder(1024);
+                var currentChallenge = (byte[])Array.CreateInstance(typeof(byte), UINT256_LENGTH);
+
+                double timeAccuracy;
+                int loopTimeElapsed;
+                DateTime loopStartTime;
+                var loopTimeTarget = (int)(m_hashPrintTimer.Interval * 0.1);
+
+                Helper.CPU.Solver.SetThreadAffinity(UnmanagedInstance, processor.Affinity, errorMessage);
+                if (errorMessage.Length > 0)
+                {
+                    PrintMessage(device.Type, device.Platform, Array.IndexOf(device.Processor_Structs, processor), "Error", errorMessage.ToString());
+                    return;
+                }
+
+                // reduce excessive high hashrate reporting
+                device.HashStartTime = DateTime.Now.AddMilliseconds(-500);
+                device.HashCount = 0;
+                device.IsMining = true;
+                do
+                {
+                    while (device.IsPause)
+                    {
+                        Task.Delay(500).Wait();
+                        // reduce excessive high hashrate reporting
+                        device.HashStartTime = DateTime.Now.AddMilliseconds(-500);
+                        device.HashCount = 0;
+                    }
+
+                    CheckInputs(device, isKingMaking, ref currentChallenge);
+
+                    Work.IncrementPosition(ref processor.WorkPosition, processor.WorkSize);
+
+                    lock (device)
+                        device.HashCount += processor.WorkSize;
+
+                    loopStartTime = DateTime.Now;
+
+                    if (isKingMaking)
+                        Helper.CPU.Solver.HashMessage(UnmanagedInstance, ref device.DeviceCPU_Struct, ref processor);
+                    else
+                        Helper.CPU.Solver.HashMidState(UnmanagedInstance, ref device.DeviceCPU_Struct, ref processor);
+
+                    loopTimeElapsed = (int)(DateTime.Now - loopStartTime).TotalMilliseconds;
+
+                    timeAccuracy = (float)loopTimeTarget / loopTimeElapsed;
+
+                    if (timeAccuracy > 1.2f || timeAccuracy < 0.8f)
+                        processor.WorkSize = (ulong)(timeAccuracy * processor.WorkSize);
+
+                    if (device.DeviceCPU_Struct.SolutionCount > 0)
+                        lock (this)
+                            if (device.DeviceCPU_Struct.SolutionCount > 0)
+                            {
+                                SubmitSolutions(device.Solutions.ToArray(), currentChallenge,
+                                                device.Type, device.Platform, device.DeviceID,
+                                                device.DeviceCPU_Struct.SolutionCount, isKingMaking);
+
+                                device.DeviceCPU_Struct.SolutionCount = 0;
+                            }
+                } while (device.IsMining);
+
+                PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Stop mining...");
+
+                device.HashCount = 0;
+                device.IsInitialized = false;
+            }
+            catch (Exception ex)
+            {
+                PrintMessage(device.Type, device.Platform, -1, "Error", ex.Message);
+            }
+            PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Mining stopped.");
         }
     }
 }

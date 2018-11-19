@@ -4,15 +4,14 @@ All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work
 Current latest public release version: 2.0.6
 Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
 
-Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)
+Built with .NET Core 2.1.5 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)
 .NET Core 2.1 can be downloaded from https://www.microsoft.com/net/download
 VC++ 2017 can be downloaded from https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads
 CUDA 9.2 requires a minimum nVidia driver version of 396 [https://www.nvidia.com/drivers/beta]
 
 LICENSE
-SoliditySHA3Miner is licensed under the MIT license.
+SoliditySHA3Miner is licensed under the Apache License, Version 2.0 (the "License");
 Libraries are included in the Software under the following license terms:
-- Satoshi Nakamoto and The Bitcoin Core developers (uint256) https://github.com/bitcoin/bitcoin/blob/master/COPYING
 - libkeccak-tiny https://github.com/coruus/keccak-tiny/
 - Nethereum https://github.com/Nethereum/Nethereum/blob/master/LICENSE.md
 - Json.NET https://github.com/JamesNK/Newtonsoft.Json/blob/master/LICENSE.md
@@ -27,8 +26,8 @@ LTC                             : LbFkAto1qYt8RdTFHL871H4djendcHyCyB
 Usage: SoliditySHA3Miner [OPTIONS]
 Options:
   help                    Display this help text and exit
-  cpuMode                 Set this miner to run in CPU mode only, disables GPU (default: false)
-  cpuID                   Comma separated list of CPU thread ID to use (default: all logical CPUs except first)
+  allowCPU                Allow to use CPU, may slow down system (default: false)
+  cpuAffinity             Comma separated list of CPU affinity ID to use (default: all logical CPUs except first)
   allowIntel              Allow to use Intel GPU (OpenCL) (default: true)
   allowAMD                Allow to use AMD GPU (OpenCL) (default: true)
   allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)

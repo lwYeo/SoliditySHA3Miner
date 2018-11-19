@@ -1,52 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="uint256\arith_uint256.cpp">
-      <Filter>uint256</Filter>
-    </ClCompile>
-    <ClCompile Include="uint256\uint256.cpp">
-      <Filter>uint256</Filter>
-    </ClCompile>
-    <ClCompile Include="uint256\utilstrencodings.cpp">
-      <Filter>uint256</Filter>
-    </ClCompile>
     <ClCompile Include="openCLSolver.cpp" />
-    <ClCompile Include="device\device.cpp">
-      <Filter>device</Filter>
-    </ClCompile>
     <ClCompile Include="device\adl_api.cpp">
       <Filter>device</Filter>
     </ClCompile>
-    <ClCompile Include="sha3.cpp" />
     <ClCompile Include="solver.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="uint256\arith_uint256.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\compat_byteswap.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\compat_endian.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\crypto_common.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\tinyformat.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\uint256.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\utilstrencodings.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
     <ClInclude Include="types.h" />
     <ClInclude Include="openCLSolver.h" />
-    <ClInclude Include="device\device.h">
-      <Filter>device</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h" />
     <ClInclude Include="device\adl_include\adl_defines.h">
       <Filter>device\adl_include</Filter>
@@ -57,16 +20,16 @@
     <ClInclude Include="device\adl_include\adl_structures.h">
       <Filter>device\adl_include</Filter>
     </ClInclude>
+    <ClInclude Include="solver.h" />
     <ClInclude Include="device\adl_api.h">
       <Filter>device</Filter>
     </ClInclude>
-    <ClInclude Include="sha3.h" />
-    <ClInclude Include="solver.h" />
+    <ClInclude Include="cl_error.hpp" />
+    <ClInclude Include="device\instance.h">
+      <Filter>device</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="uint256">
-      <UniqueIdentifier>{9e554012-3d3d-4ac3-bf66-c67ac50e4870}</UniqueIdentifier>
-    </Filter>
     <Filter Include="device">
       <UniqueIdentifier>{38830ddd-4e18-4b61-99dd-acd18b0f005a}</UniqueIdentifier>
     </Filter>

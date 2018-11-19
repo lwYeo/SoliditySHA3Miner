@@ -1,3 +1,19 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -64,7 +80,7 @@ namespace SoliditySHA3Miner.Miner.API
                 });
 
                 if (queryDir != null)
-                    if (Int32.TryParse(queryDir.Name, NumberStyles.None, CultureInfo.InvariantCulture, out int devEnum))
+                    if (int.TryParse(queryDir.Name, NumberStyles.None, CultureInfo.InvariantCulture, out int devEnum))
                         deviceEnum = devEnum;
 
                 return queryDir;                
@@ -103,8 +119,8 @@ namespace SoliditySHA3Miner.Miner.API
             var query = GetLsPciQuery();
             if (string.IsNullOrWhiteSpace(query)) return defaultName;
 
-            var outputArr = query.Split(Environment.NewLine).
-                                  Where(l => !string.IsNullOrEmpty(l) && !l.StartsWith(' ') 
+            var outputArr = query.Split(new string[] { Environment.NewLine }, StringSplitOptions.None).
+                                  Where(l => !string.IsNullOrEmpty(l) && !l.StartsWith(" ") 
                                               && l.Contains("VGA") && l.Contains("Advanced Micro Devices") && l.Contains("[AMD/ATI]")).
                                   ToArray();
 
@@ -131,9 +147,9 @@ namespace SoliditySHA3Miner.Miner.API
             var query = File.ReadAllLines(queryFile.FullName).FirstOrDefault(l => l.TrimEnd().EndsWith("(SCLK)"));
             if (string.IsNullOrWhiteSpace(query)) return -1;
 
-            var value = (query.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty).Trim();
+            var value = (query.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty).Trim();
 
-            if (Int32.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int iValue))
+            if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int iValue))
                 return iValue;
             else
                 return -1;
@@ -147,9 +163,9 @@ namespace SoliditySHA3Miner.Miner.API
             var query = File.ReadAllLines(queryFile.FullName).FirstOrDefault(l => l.TrimEnd().EndsWith("(MCLK)"));
             if (string.IsNullOrWhiteSpace(query)) return -1;
 
-            var value = (query.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty).Trim();
+            var value = (query.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries)[0] ?? string.Empty).Trim();
 
-            if (Int32.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int iValue))
+            if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int iValue))
                 return iValue;
             else
                 return -1;
@@ -158,17 +174,17 @@ namespace SoliditySHA3Miner.Miner.API
         public static int GetDeviceCurrentTemperature(uint pciBusID)
         {
             var queryFile = QueryAmdgpuPmInfo(pciBusID, out int deviceEnum);
-            if (queryFile == null) return Int32.MinValue;
+            if (queryFile == null) return int.MinValue;
             
             var query = File.ReadAllLines(queryFile.FullName).FirstOrDefault(l => l.TrimStart().StartsWith("GPU Temperature:"));
-            if (string.IsNullOrWhiteSpace(query)) return Int32.MinValue;
+            if (string.IsNullOrWhiteSpace(query)) return int.MinValue;
 
-            var value = (query.Split(' ', StringSplitOptions.RemoveEmptyEntries)[2] ?? string.Empty).Trim();
+            var value = (query.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries)[2] ?? string.Empty).Trim();
 
-            if (Int32.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int iValue))
+            if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int iValue))
                 return iValue;
             else
-                return Int32.MinValue;
+                return int.MinValue;
         }
 
         public static int GetDeviceCurrentUtilizationPercent(uint pciBusID)
@@ -179,9 +195,9 @@ namespace SoliditySHA3Miner.Miner.API
             var query = File.ReadAllLines(queryFile.FullName).FirstOrDefault(l => l.TrimStart().StartsWith("GPU Load:"));
             if (string.IsNullOrWhiteSpace(query)) return -1;
 
-            var value = (query.Split(' ', StringSplitOptions.RemoveEmptyEntries)[2] ?? string.Empty).Trim();
+            var value = (query.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries)[2] ?? string.Empty).Trim();
 
-            if (Int32.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int iValue))
+            if (int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int iValue))
                 return iValue;
             else
                 return -1;
@@ -204,7 +220,7 @@ namespace SoliditySHA3Miner.Miner.API
 
                 var query = (File.ReadAllText(queryFile.FullName) ?? string.Empty).Trim();
 
-                if (Int32.TryParse(query, NumberStyles.None, CultureInfo.InvariantCulture, out int value))
+                if (int.TryParse(query, NumberStyles.None, CultureInfo.InvariantCulture, out int value))
                     return value;
                 else
                     return -1;
@@ -228,7 +244,7 @@ namespace SoliditySHA3Miner.Miner.API
 
                 var query = (File.ReadAllText(queryFile.FullName) ?? string.Empty).Trim();
 
-                if (!Int32.TryParse(query, NumberStyles.None, CultureInfo.InvariantCulture, out int maxPWM))
+                if (!int.TryParse(query, NumberStyles.None, CultureInfo.InvariantCulture, out int maxPWM))
                     return -1;
 
                 if (maxPWM < 1) return -1;
@@ -240,7 +256,7 @@ namespace SoliditySHA3Miner.Miner.API
 
                 query = (File.ReadAllText(queryFile.FullName) ?? string.Empty).Trim();
 
-                if (!Int32.TryParse(query, NumberStyles.None, CultureInfo.InvariantCulture, out int pwm))
+                if (!int.TryParse(query, NumberStyles.None, CultureInfo.InvariantCulture, out int pwm))
                     return -1;
                     
                 return (int)(100 * pwm / maxPWM);

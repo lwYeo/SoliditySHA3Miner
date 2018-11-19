@@ -1,232 +1,196 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #include "solver.h"
 
 namespace OpenCLSolver
 {
 	void FoundADL_API(bool *hasADL_API)
 	{
-		*hasADL_API = openCLSolver::foundAdlApi();
+		*hasADL_API = OpenCLSolver::FoundAdlApi();
 	}
 
-	void PreInitialize(bool allowIntel, const char *sha3Kernel, uint64_t sha3KernelSize, const char *sha3KingKernel, uint64_t sha3KingKernelSize, const char *errorMessage, uint64_t *errorSize)
+	void PreInitialize(const char *sha3Kernel, const char *sha3KingKernel, size_t kernelSize, size_t kingKernelSize)
 	{
-		std::string errMsg{ 0 };
-		openCLSolver::preInitialize(allowIntel, sha3Kernel, sha3KingKernel, errMsg);
-
-		#ifdef __linux__
-		strcpy((char *)errorMessage, errMsg.c_str());
-		#else
-		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
-		#endif
-
-		*errorSize = errMsg.length();
+		OpenCLSolver::PreInitialize(sha3Kernel, sha3KingKernel, kernelSize, kingKernelSize);
 	}
 
-	void GetPlatformNames(const char *platformNames)
+	void GetPlatforms(Platform **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage)
 	{
-		platformNames = openCLSolver::getPlatformNames().c_str();
+		OpenCLSolver::GetPlatforms(platforms, maxPlatforms, platformCount, errorMessage);
 	}
 
-	void GetDeviceCount(const char *platformName, int *deviceCount, const char *errorMessage, uint64_t *errorSize)
+	void GetDevicesByPlatform(Platform platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage)
 	{
-		std::string errMsg{ 0 };
-		*deviceCount = openCLSolver::getDeviceCount(platformName, errMsg);
-
-		#ifdef __linux__
-		strcpy((char *)errorMessage, errMsg.c_str());
-		#else
-		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
-		#endif
-
-		*errorSize = errMsg.length();
+		OpenCLSolver::GetDevicesByPlatform(platform, maxDeviceCount, deviceCount, devices, errorMessage);
 	}
 
-	void GetDeviceName(const char *platformName, int deviceEnum, const char *deviceName, uint64_t *nameSize, const char *errorMessage, uint64_t *errorSize)
+	OpenCLSolver *GetInstance() noexcept
 	{
-		std::string errMsg{ 0 };
-		auto devName = openCLSolver::getDeviceName(platformName, deviceEnum, errMsg);
-
-		#ifdef __linux__
-		strcpy((char *)deviceName, devName.c_str());
-		strcpy((char *)errorMessage, errMsg.c_str());
-		#else
-		strcpy_s((char *)deviceName, devName.size() + 1, devName.c_str());
-		strcpy_s((char *)errorMessage, errMsg.size() + 1, errMsg.c_str());
-		#endif
-		
-		*nameSize = (uint64_t)devName.length();
-		*errorSize = (uint64_t)errMsg.length();
+		return new OpenCLSolver();
 	}
 
-	openCLSolver *GetInstance() noexcept
+	void DisposeInstance(OpenCLSolver *instance) noexcept
 	{
-		try { return new openCLSolver(); }
-		catch (...) { return nullptr; }
+		instance->~OpenCLSolver();
+		free(instance);
 	}
 
-	void DisposeInstance(openCLSolver *instance) noexcept
+	void InitializeDevice(OpenCLSolver *instance, DeviceCL *device, bool isKingMaking, const char *errorMessage)
 	{
-		try
-		{
-			instance->~openCLSolver();
-			free(instance);
-		}
-		catch (...) {}
+		instance->InitializeDevice(device, isKingMaking, errorMessage);
 	}
 
-	GetKingAddressCallback SetOnGetKingAddressHandler(openCLSolver *instance, GetKingAddressCallback getKingAddressCallback)
+	void PushHigh64Target(OpenCLSolver *instance, DeviceCL device, cl_ulong *high64Target, const char *errorMessage)
 	{
-		instance->m_getKingAddressCallback = getKingAddressCallback;
-		return getKingAddressCallback;
+		instance->PushHigh64Target(device, high64Target, errorMessage);
 	}
 
-	GetSolutionTemplateCallback SetOnGetSolutionTemplateHandler(openCLSolver *instance, GetSolutionTemplateCallback getSolutionTemplateCallback)
+	void PushTarget(OpenCLSolver *instance, DeviceCL device, byte32_t *target, const char *errorMessage)
 	{
-		instance->m_getSolutionTemplateCallback = getSolutionTemplateCallback;
-		return getSolutionTemplateCallback;
+		instance->PushTarget(device, target, errorMessage);
 	}
 
-	GetWorkPositionCallback SetOnGetWorkPositionHandler(openCLSolver *instance, GetWorkPositionCallback getWorkPositionCallback)
+	void PushMidState(OpenCLSolver *instance, DeviceCL device, sponge_ut *midState, const char *errorMessage)
 	{
-		instance->m_getWorkPositionCallback = getWorkPositionCallback;
-		return getWorkPositionCallback;
+		instance->PushMidState(device, midState, errorMessage);
 	}
 
-	ResetWorkPositionCallback SetOnResetWorkPositionHandler(openCLSolver *instance, ResetWorkPositionCallback resetWorkPositionCallback)
+	void PushMessage(OpenCLSolver *instance, DeviceCL device, message_ut *message, const char *errorMessage)
 	{
-		instance->m_resetWorkPositionCallback = resetWorkPositionCallback;
-		return resetWorkPositionCallback;
+		instance->PushMessage(device, message, errorMessage);
 	}
 
-	IncrementWorkPositionCallback SetOnIncrementWorkPositionHandler(openCLSolver *instance, IncrementWorkPositionCallback incrementWorkPositionCallback)
+	void Hash(OpenCLSolver *instance, DeviceCL *device, const char *errorMessage)
 	{
-		instance->m_incrementWorkPositionCallback = incrementWorkPositionCallback;
-		return incrementWorkPositionCallback;
+		instance->Hash(device, errorMessage);
 	}
 
-	MessageCallback SetOnMessageHandler(openCLSolver *instance, MessageCallback messageCallback)
+	void ReleaseDeviceObjects(OpenCLSolver *instance, DeviceCL *device, const char *errorMessage)
 	{
-		instance->m_messageCallback = messageCallback;
-		return messageCallback;
+		instance->ReleaseDeviceObjects(device, errorMessage);
 	}
 
-	SolutionCallback SetOnSolutionHandler(openCLSolver *instance, SolutionCallback solutionCallback)
+	void GetDeviceSettingMaxCoreClock(DeviceCL device, int *coreClock, const char *errorMessage)
 	{
-		instance->m_solutionCallback = solutionCallback;
-		return solutionCallback;
+		*coreClock = -1;
+		std::string errorMsg;
+		device.Instance->API.GetSettingMaxCoreClock(coreClock, &errorMsg);
+
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 
-	void SetSubmitStale(openCLSolver *instance, const bool submitStale)
+	void GetDeviceSettingMaxMemoryClock(DeviceCL device, int *memoryClock, const char *errorMessage)
 	{
-		instance->isSubmitStale = submitStale;
+		*memoryClock = -1;
+		std::string errorMsg;
+		device.Instance->API.GetSettingMaxMemoryClock(memoryClock, &errorMsg);
+
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 
-	void AssignDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, float *intensity, unsigned int *pciBusID, const char *deviceName, uint64_t *nameSize)
+	void GetDeviceSettingPowerLimit(DeviceCL device, int *powerLimit, const char *errorMessage)
 	{
-		instance->assignDevice(platformName, deviceEnum, *intensity, *pciBusID, deviceName, nameSize);
+		*powerLimit = -1;
+		std::string errorMsg;
+		device.Instance->API.GetSettingPowerLimit(powerLimit, &errorMsg);
+
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 
-	void IsAssigned(openCLSolver *instance, bool *isAssigned)
+	void GetDeviceSettingThermalLimit(DeviceCL device, int *thermalLimit, const char *errorMessage)
 	{
-		*isAssigned = instance->isAssigned();
+		*thermalLimit = INT32_MIN;
+		std::string errorMsg;
+		device.Instance->API.GetSettingThermalLimit(thermalLimit, &errorMsg);
+
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 
-	void IsAnyInitialised(openCLSolver *instance, bool *isAnyInitialised)
+	void GetDeviceSettingFanLevelPercent(DeviceCL device, int *fanLevel, const char *errorMessage)
 	{
-		*isAnyInitialised = instance->isAnyInitialised();
+		*fanLevel = -1;
+		std::string errorMsg;
+		device.Instance->API.GetSettingFanLevelPercent(fanLevel, &errorMsg);
+
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 
-	void IsMining(openCLSolver *instance, bool *isMining)
+	void GetDeviceCurrentFanTachometerRPM(DeviceCL device, int *tachometerRPM, const char *errorMessage)
 	{
-		*isMining = instance->isMining();
+		*tachometerRPM = -1;
+		std::string errorMsg;
+		device.Instance->API.GetCurrentFanTachometerRPM(tachometerRPM, &errorMsg);
+
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 
-	void IsPaused(openCLSolver *instance, bool *isPaused)
+	void GetDeviceCurrentTemperature(DeviceCL device, int *temperature, const char *errorMessage)
 	{
-		*isPaused = instance->isPaused();
+		*temperature = INT32_MIN;
+		std::string errorMsg;
+		device.Instance->API.GetCurrentTemperature(temperature, &errorMsg);
+
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 
-	void GetHashRateByDevice(openCLSolver *instance, const char *platformName, const int deviceEnum, uint64_t *hashRate)
+	void GetDeviceCurrentCoreClock(DeviceCL device, int *coreClock, const char *errorMessage)
 	{
-		*hashRate = instance->getHashRateByDevice(platformName, deviceEnum);
+		*coreClock = -1;
+		std::string errorMsg;
+		device.Instance->API.GetCurrentCoreClock(coreClock, &errorMsg);
+
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 
-	void GetTotalHashRate(openCLSolver *instance, uint64_t *totalHashRate)
+	void GetDeviceCurrentMemoryClock(DeviceCL device, int *memoryClock, const char *errorMessage)
 	{
-		*totalHashRate = instance->getTotalHashRate();
+		*memoryClock = -1;
+		std::string errorMsg;
+		device.Instance->API.GetCurrentMemoryClock(memoryClock, &errorMsg);
+
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 
-	void UpdatePrefix(openCLSolver *instance, const char *prefix)
+	void GetDeviceCurrentUtilizationPercent(DeviceCL device, int *utiliztion, const char *errorMessage)
 	{
-		instance->updatePrefix(prefix);
-	}
+		*utiliztion = -1;
+		std::string errorMsg;
+		device.Instance->API.GetCurrentUtilizationPercent(utiliztion, &errorMsg);
 
-	void UpdateTarget(openCLSolver *instance, const char *target)
-	{
-		instance->updateTarget(target);
-	}
-
-	void PauseFinding(openCLSolver *instance, const bool pause)
-	{
-		instance->pauseFinding(pause);
-	}
-
-	void StartFinding(openCLSolver *instance)
-	{
-		instance->startFinding();
-	}
-
-	void StopFinding(openCLSolver *instance)
-	{
-		instance->stopFinding();
-	}
-
-	void GetDeviceSettingMaxCoreClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *coreClock)
-	{
-		*coreClock = instance->getDeviceSettingMaxCoreClock(platformName, deviceEnum);
-	}
-
-	void GetDeviceSettingMaxMemoryClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *memoryClock)
-	{
-		*memoryClock = instance->getDeviceSettingMaxMemoryClock(platformName, deviceEnum);
-	}
-
-	void GetDeviceSettingPowerLimit(openCLSolver *instance, const char *platformName, const int deviceEnum, int *powerLimit)
-	{
-		*powerLimit = instance->getDeviceSettingPowerLimit(platformName, deviceEnum);
-	}
-
-	void GetDeviceSettingThermalLimit(openCLSolver *instance, const char *platformName, const int deviceEnum, int *thermalLimit)
-	{
-		*thermalLimit = instance->getDeviceSettingThermalLimit(platformName, deviceEnum);
-	}
-
-	void GetDeviceSettingFanLevelPercent(openCLSolver *instance, const char *platformName, const int deviceEnum, int *fanLevel)
-	{
-		*fanLevel = instance->getDeviceSettingFanLevelPercent(platformName, deviceEnum);
-	}
-
-	void GetDeviceCurrentFanTachometerRPM(openCLSolver *instance, const char *platformName, const int deviceEnum, int *tachometerRPM)
-	{
-		*tachometerRPM = instance->getDeviceCurrentFanTachometerRPM(platformName, deviceEnum);
-	}
-
-	void GetDeviceCurrentTemperature(openCLSolver *instance, const char *platformName, const int deviceEnum, int *temperature)
-	{
-		*temperature = instance->getDeviceCurrentTemperature(platformName, deviceEnum);
-	}
-
-	void GetDeviceCurrentCoreClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *coreClock)
-	{
-		*coreClock = instance->getDeviceCurrentCoreClock(platformName, deviceEnum);
-	}
-
-	void GetDeviceCurrentMemoryClock(openCLSolver *instance, const char *platformName, const int deviceEnum, int *memoryClock)
-	{
-		*memoryClock = instance->getDeviceCurrentMemoryClock(platformName, deviceEnum);
-	}
-
-	void GetDeviceCurrentUtilizationPercent(openCLSolver *instance, const char *platformName, const int deviceEnum, int *utiliztion)
-	{
-		*utiliztion = instance->getDeviceCurrentUtilizationPercent(platformName, deviceEnum);
+		auto errorChar = errorMsg.c_str();
+		std::memcpy((void *)errorMessage, errorChar, errorMsg.length());
+		std::memset((void *)&errorMessage[errorMsg.length()], 0, 1);
 	}
 }

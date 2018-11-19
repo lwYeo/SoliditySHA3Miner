@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <Version>2.0.6</Version>
+    <Version>2.1.0</Version>
     <Authors>lwYeo</Authors>
     <Company>lwYeo@github</Company>
     <PackageLicenseUrl>https://github.com/lwYeo/SoliditySHA3Miner/blob/master/LICENSE</PackageLicenseUrl>
@@ -35,7 +35,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BouncyCastle" Version="1.8.2" />
+    <PackageReference Include="BouncyCastle" Version="1.8.4" />
     <PackageReference Include="Common.Logging.Core" Version="3.4.1" />
     <PackageReference Include="Nethereum.Portable" Version="2.5.1" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
@@ -61,6 +61,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="0xbtc.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="0xbtcPool-allDevices.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="0xbtcPool-ethOS-screen.sh">
@@ -150,7 +153,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(OS)' == 'Windows_NT' ">
-    <Exec Command="if not exist &quot;$(SolutionDir)Build\$(ConfigurationName)\&quot; mkdir &quot;$(SolutionDir)build\$(ConfigurationName)\&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.abi&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.bat&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.bat&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.conf&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.conf&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.sh&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.sh&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.cl&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.cl&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.dll&quot;" />
+    <Exec Command="if not exist &quot;$(SolutionDir)Build\$(ConfigurationName)\&quot; mkdir &quot;$(SolutionDir)build\$(ConfigurationName)\&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.abi&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.bat&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.bat&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.conf&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.conf&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.sh&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.sh&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.dll&quot;" />
   </Target>
 
 </Project>

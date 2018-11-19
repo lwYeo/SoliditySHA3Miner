@@ -1,3 +1,19 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #ifdef __linux__ // equivalent functions in linux
 #	include <dlfcn.h>
 
@@ -45,7 +61,7 @@ bool NV_API::isInitialized{ false };
 NvPhysicalGpuHandle NV_API::gpuHandles[NVAPI_MAX_PHYSICAL_GPUS];
 NvU32 NV_API::gpuCount{ 0 };
 
-bool NV_API::foundNvAPI64()
+bool NV_API::FoundNvAPI64()
 {
 	return (LoadLibrary(NvAPI64) != NULL);
 }
@@ -95,10 +111,12 @@ void NV_API::unload()
 // Public
 // --------------------------------------------------------------------
 
-void NV_API::assignPciBusID(uint32_t pciBusID)
-{
+NV_API::NV_API(const int deviceID, NvU32 pciBusID) :
+	deviceID{ deviceID },
+	pciBusID{ pciBusID }
+{ 
 	NvU32 tempBusID;
-	deviceBusID = pciBusID;
+	pciBusID = pciBusID;
 	deviceHandle = NULL;
 
 	for (NvU32 h{ 0 }; h < gpuCount; ++h)
@@ -294,9 +312,11 @@ NvAPI_Status NV_API::getCurrentPstate(int *pstate)
 	return NVAPI_OK;
 }
 
-NvAPI_Status NV_API::getCurrentThrottleReasons(std::string *reasons)
+NvAPI_Status NV_API::getCurrentThrottleReasons(const char *reasons)
 {
-	*reasons = "";
+	std::string tempReason{ 0 };
+	std::memset((void *)reasons, 0, 1024);
+
 	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
 
 	NVAPI_GPU_PERF_DECREASE perfDescInfo{ NV_GPU_PERF_DECREASE_NONE };
@@ -304,25 +324,32 @@ NvAPI_Status NV_API::getCurrentThrottleReasons(std::string *reasons)
 	auto status = GPU_GetPerfDecreaseInfo(deviceHandle, &perfDescInfo);
 	if (status != NVAPI_OK) return status;
 
-	if (perfDescInfo == NV_GPU_PERF_DECREASE_NONE) *reasons = "";
-	else if (perfDescInfo == NV_GPU_PERF_DECREASE_REASON_UNKNOWN) *reasons = "Unknown";
-	else
+	if (perfDescInfo == NV_GPU_PERF_DECREASE_REASON_UNKNOWN) tempReason = "Unknown";
+
+	else if (perfDescInfo != NV_GPU_PERF_DECREASE_NONE)
 	{
-		*reasons = "";
 		if ((perfDescInfo & NV_GPU_PERF_DECREASE_REASON_THERMAL_PROTECTION) == NV_GPU_PERF_DECREASE_REASON_THERMAL_PROTECTION)
-			*reasons += reasons->empty() ? "Thermal protection" : ", Thermal protection";
+			tempReason += tempReason.empty() ? "Thermal protection" : ", Thermal protection";
 
 		if ((perfDescInfo & NV_GPU_PERF_DECREASE_REASON_POWER_CONTROL) == NV_GPU_PERF_DECREASE_REASON_POWER_CONTROL)
-			*reasons += reasons->empty() ? "Power cap" : ", Power cap";
+			tempReason += tempReason.empty() ? "Power cap" : ", Power cap";
 
 		if ((perfDescInfo & NV_GPU_PERF_DECREASE_REASON_AC_BATT) == NV_GPU_PERF_DECREASE_REASON_AC_BATT)
-			*reasons += reasons->empty() ? "Battery power" : ", Battery power";
+			tempReason += tempReason.empty() ? "Battery power" : ", Battery power";
 
 		if ((perfDescInfo & NV_GPU_PERF_DECREASE_REASON_API_TRIGGERED) == NV_GPU_PERF_DECREASE_REASON_API_TRIGGERED)
-			*reasons += reasons->empty() ? "Application setting" : ", Application setting";
+			tempReason += tempReason.empty() ? "Application setting" : ", Application setting";
 
 		if ((perfDescInfo & NV_GPU_PERF_DECREASE_REASON_INSUFFICIENT_POWER) == NV_GPU_PERF_DECREASE_REASON_INSUFFICIENT_POWER)
-			*reasons += reasons->empty() ? "Insufficient power" : ", Insufficient power";
+			tempReason += tempReason.empty() ? "Insufficient power" : ", Insufficient power";
+	}
+
+	if (!tempReason.empty())
+	{
+		auto tempReasonChar = tempReason.c_str();
+
+		std::memcpy((void *)reasons, tempReasonChar, tempReason.length());
+		std::memset((void *)&reasons[tempReason.length()], 0, 1);
 	}
 
 	return NVAPI_OK;

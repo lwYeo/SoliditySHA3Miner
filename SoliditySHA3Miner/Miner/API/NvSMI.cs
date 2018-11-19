@@ -1,3 +1,19 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -20,7 +36,8 @@ namespace SoliditySHA3Miner.Miner.API
                 {
                     NvSMI_PATH = @"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe";
                     return true;
-                }}
+                }
+            }
             else
             {
                 var values = Environment.GetEnvironmentVariable("PATH");
@@ -191,7 +208,7 @@ namespace SoliditySHA3Miner.Miner.API
             
             if (string.IsNullOrWhiteSpace(pStateStr)) return -1;
 
-            if (int.TryParse(pStateStr.Skip(1).Take(1).ToArray(), NumberStyles.Number, CultureInfo.InvariantCulture, out int powerState))
+            if (int.TryParse(string.Concat(pStateStr.Skip(1).Take(1)), NumberStyles.Number, CultureInfo.InvariantCulture, out int powerState))
                 return powerState;
             else
                 return -1;

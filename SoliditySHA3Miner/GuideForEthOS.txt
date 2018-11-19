@@ -8,6 +8,6 @@
 1b) This process will take about 5-10 minutes before rebooting itself.
 
 2) Go to the extracted miner folder and run the following command to install miner dependancy
- su install-deps-ethOS.sh
+ sudo ./install-deps-ethOS.sh
 
 3) Follow 'GuideForPoolMining.txt' or 'GuideForSoloMining.txt' for essential miner setup

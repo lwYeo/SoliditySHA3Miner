@@ -1,3 +1,19 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #include "adl_api.h"
 
 #ifdef __linux__ // equivalent functions in linux
@@ -57,7 +73,7 @@ void* __stdcall ADL_API::ADL_Main_Memory_Alloc(int iSize)
 	return lpBuffer;
 }
 
-bool ADL_API::foundAdlApi()
+bool ADL_API::FoundAdlApi()
 {
 	return (LoadLibrary(TEXT(ADL64_API)) != NULL);
 }
@@ -106,6 +122,16 @@ void ADL_API::unload()
 	if (hDLL != NULL) FreeLibrary(hDLL);
 }
 
+void ADL_API::GetAdapterName(int adapterBusID, char *adapterName)
+{
+	for (int i = 0; i < numberOfAdapters; ++i)
+		if (lpAdapterInfo[i].iBusNumber == adapterBusID)
+		{
+			std::memcpy((void *)adapterName, lpAdapterInfo[i].strAdapterName, sizeof(lpAdapterInfo[i].strAdapterName));
+			return;
+		}
+}
+
 // --------------------------------------------------------------------
 // Private
 // --------------------------------------------------------------------
@@ -133,7 +159,7 @@ bool ADL_API::getOverDriveNCapabilities(ADLODNCapabilities *capabilities, std::s
 // Public
 // --------------------------------------------------------------------
 
-void ADL_API::assignPciBusID(unsigned int adapterBusID)
+void ADL_API::AssignPciBusID(uint32_t adapterBusID)
 {
 	m_context = NULL;
 	m_enabled = 0;
@@ -147,12 +173,12 @@ void ADL_API::assignPciBusID(unsigned int adapterBusID)
 	ADL2_Overdrive_Caps(m_context, m_adapterInfo.iAdapterIndex, &m_supported, &m_enabled, &m_version);
 }
 
-void ADL_API::getAdapterName(std::string *adapterName)
+void ADL_API::GetAdapterName(std::string *adapterName)
 {
 	*adapterName = m_adapterInfo.strAdapterName;
 }
 
-bool ADL_API::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage)
+bool ADL_API::GetSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage)
 {
 	*maxCoreClock = -1;
 
@@ -198,7 +224,7 @@ bool ADL_API::getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessag
 	return false;
 }
 
-bool ADL_API::getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage)
+bool ADL_API::GetSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage)
 {
 	*maxMemoryClock = -1;
 
@@ -245,7 +271,7 @@ bool ADL_API::getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMe
 	return false;
 }
 
-bool ADL_API::getSettingPowerLimit(int *powerLimit, std::string *errorMessage)
+bool ADL_API::GetSettingPowerLimit(int *powerLimit, std::string *errorMessage)
 {
 	*powerLimit = INT32_MIN;
 
@@ -263,7 +289,7 @@ bool ADL_API::getSettingPowerLimit(int *powerLimit, std::string *errorMessage)
 	return false;
 }
 
-bool ADL_API::getSettingThermalLimit(int *thermalLimit, std::string *errorMessage)
+bool ADL_API::GetSettingThermalLimit(int *thermalLimit, std::string *errorMessage)
 {
 	*thermalLimit = INT32_MIN;
 
@@ -281,7 +307,7 @@ bool ADL_API::getSettingThermalLimit(int *thermalLimit, std::string *errorMessag
 	return false;
 }
 
-bool ADL_API::getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage)
+bool ADL_API::GetSettingFanLevelPercent(int *fanLevel, std::string *errorMessage)
 {
 	*fanLevel = -1;
 
@@ -303,7 +329,7 @@ bool ADL_API::getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage
 	return false;
 }
 
-bool ADL_API::getCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorMessage)
+bool ADL_API::GetCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorMessage)
 {
 	*tachometerRPM = -1;
 
@@ -321,7 +347,7 @@ bool ADL_API::getCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorM
 	return false;
 }
 
-bool ADL_API::getCurrentTemperature(int *temperature, std::string *errorMessage)
+bool ADL_API::GetCurrentTemperature(int *temperature, std::string *errorMessage)
 {
 	*temperature = INT32_MIN;
 	int tempTemperature{ 0 };
@@ -336,7 +362,7 @@ bool ADL_API::getCurrentTemperature(int *temperature, std::string *errorMessage)
 	return false;
 }
 
-bool ADL_API::getCurrentCoreClock(int *coreClock, std::string *errorMessage)
+bool ADL_API::GetCurrentCoreClock(int *coreClock, std::string *errorMessage)
 {
 	*coreClock = -1;
 
@@ -352,7 +378,7 @@ bool ADL_API::getCurrentCoreClock(int *coreClock, std::string *errorMessage)
 	return false;
 }
 
-bool ADL_API::getCurrentMemoryClock(int *memoryClock, std::string *errorMessage)
+bool ADL_API::GetCurrentMemoryClock(int *memoryClock, std::string *errorMessage)
 {
 	*memoryClock = -1;
 
@@ -368,7 +394,7 @@ bool ADL_API::getCurrentMemoryClock(int *memoryClock, std::string *errorMessage)
 	return false;
 }
 
-bool ADL_API::getCurrentUtilizationPercent(int *utilization, std::string *errorMessage)
+bool ADL_API::GetCurrentUtilizationPercent(int *utilization, std::string *errorMessage)
 {
 	*utilization = -1;
 

@@ -1,3 +1,19 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #pragma once
 
 #ifdef __linux__
@@ -71,22 +87,23 @@ private:
 public:
 	static bool isInitialized;
 
-	static bool foundAdlApi();
+	static bool FoundAdlApi();
 	static void initialize();
 	static void unload();
+	static void GetAdapterName(int adapterBusID, char *adapterName);
 
-	void assignPciBusID(unsigned int adapterBusID);
-	void getAdapterName(std::string *adapterName);
+	void AssignPciBusID(uint32_t adapterBusID);
+	void GetAdapterName(std::string *adapterName);
 
-	bool getSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage);
-	bool getSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage);
-	bool getSettingPowerLimit(int *powerLimit, std::string *errorMessage);
-	bool getSettingThermalLimit(int *thermalLimit, std::string *errorMessage);
-	bool getSettingFanLevelPercent(int *fanLevel, std::string *errorMessage);
+	bool GetSettingMaxCoreClock(int *maxCoreClock, std::string *errorMessage);
+	bool GetSettingMaxMemoryClock(int *maxMemoryClock, std::string *errorMessage);
+	bool GetSettingPowerLimit(int *powerLimit, std::string *errorMessage);
+	bool GetSettingThermalLimit(int *thermalLimit, std::string *errorMessage);
+	bool GetSettingFanLevelPercent(int *fanLevel, std::string *errorMessage);
 
-	bool getCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorMessage);
-	bool getCurrentTemperature(int *temperature, std::string *errorMessage);
-	bool getCurrentCoreClock(int *coreClock, std::string *errorMessage);
-	bool getCurrentMemoryClock(int *memoryClock, std::string *errorMessage);
-	bool getCurrentUtilizationPercent(int *utilization, std::string *errorMessage);
+	bool GetCurrentFanTachometerRPM(int *tachometerRPM, std::string *errorMessage);
+	bool GetCurrentTemperature(int *temperature, std::string *errorMessage);
+	bool GetCurrentCoreClock(int *coreClock, std::string *errorMessage);
+	bool GetCurrentMemoryClock(int *memoryClock, std::string *errorMessage);
+	bool GetCurrentUtilizationPercent(int *utilization, std::string *errorMessage);
 };
