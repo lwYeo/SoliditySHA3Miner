@@ -16,6 +16,7 @@
 
 #include <cuda_runtime.h>
 #include <iostream>
+#include <cstring>
 #include <string>
 
 // Define this to turn on error checking

@@ -55,7 +55,7 @@ namespace OpenCLSolver
 			ADL_API::initialize();
 	}
 
-	void OpenCLSolver::GetPlatforms(Platform **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage)
+	void OpenCLSolver::GetPlatforms(Platform_t **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage)
 	{
 		cl_int status{ CL_SUCCESS };
 
@@ -83,7 +83,7 @@ namespace OpenCLSolver
 			return;
 		}
 
-		*platforms = new Platform[*platformCount];
+		*platforms = new Platform_t[*platformCount];
 
 		for (int i{ 0 }; i < *platformCount; ++i)
 		{
@@ -100,7 +100,7 @@ namespace OpenCLSolver
 		}
 	}
 
-	void OpenCLSolver::GetDevicesByPlatform(Platform platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage)
+	void OpenCLSolver::GetDevicesByPlatform(Platform_t platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage)
 	{
 		if (!CL_Error::CheckError(
 			clGetDeviceIDs(platform.ID, CL_DEVICE_TYPE_GPU, 0, NULL, deviceCount)
@@ -203,7 +203,7 @@ namespace OpenCLSolver
 		if (!CL_Error::CheckError(status, errorMessage, "Failed to create context"))
 			return;
 
-		device->Instance->Queue = clCreateCommandQueue(device->Instance->Context, device->CL_ID, 0, &status);
+		device->Instance->Queue = clCreateCommandQueueWithProperties(device->Instance->Context, device->CL_ID, 0, &status);
 
 		if (!CL_Error::CheckError(status, errorMessage, "Failed to create command queue"))
 			return;
@@ -231,7 +231,7 @@ namespace OpenCLSolver
 		if (isKingMaking)
 		{
 			newSource = kernelKingSource;
-			kernelEntryName = "hashMessage";
+			kernelEntryName = (char *)"hashMessage";
 
 			device->Instance->MessageBuffer = clCreateBuffer(device->Instance->Context, CL_MEM_READ_ONLY, MESSAGE_LENGTH, NULL, &status);
 			if (!CL_Error::CheckError(status, errorMessage, "Failed to allocate message buffer"))
@@ -244,7 +244,7 @@ namespace OpenCLSolver
 		else
 		{
 			newSource = kernelSource;
-			kernelEntryName = "hashMidstate";
+			kernelEntryName = (char *)"hashMidstate";
 
 			device->Instance->MidStateBuffer = clCreateBuffer(device->Instance->Context, CL_MEM_READ_ONLY, SPONGE_LENGTH, NULL, &status);
 			if (!CL_Error::CheckError(status, errorMessage, "Failed to allocate midstate buffer"))

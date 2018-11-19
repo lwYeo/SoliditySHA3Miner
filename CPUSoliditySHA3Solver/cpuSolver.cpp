@@ -25,6 +25,7 @@ namespace CPUSolver
 
 	void CpuSolver::GetCpuName(const char *cpuName)
 	{
+#	if defined(_MSC_VER)
 		int info[4];
 		__cpuidex(info, 0x80000000, 0);
 
@@ -37,6 +38,7 @@ namespace CPUSolver
 			std::memcpy((void *)&cpuName[x], (void *)info, 16);
 		}
 		std::memset((void *)&cpuName[x + 1], 0, 1);
+#	endif
 	}
 
 #ifdef __linux__

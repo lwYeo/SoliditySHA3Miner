@@ -17,12 +17,16 @@
 #pragma once
 
 #include <list>
+#include <cstring>
 #include <string>
-#include <intrin.h>
 #include "types.h"
 #include "instance.h"
 #include "sha3/keccak-tiny.h"
 #include "sha3/sha3-midstate.h"
+
+#if defined(_MSC_VER)
+#	include <intrin.h>
+#endif
 
 namespace CPUSolver
 {

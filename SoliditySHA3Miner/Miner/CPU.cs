@@ -91,11 +91,25 @@ namespace SoliditySHA3Miner.Miner
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Assigning device...");
 
                 var cpuName = new StringBuilder(256);
-                Helper.CPU.Solver.GetCpuName(cpuName);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    Helper.CPU.Solver.GetCpuName(cpuName);
+                    
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    if (System.IO.File.Exists("/proc/cpuinfo"))
+                    {
+                        var cpuInfo = System.IO.File.ReadAllLines("/proc/cpuinfo");
+                        var cpuNameLine = cpuInfo.FirstOrDefault(i => i.StartsWith("model name", StringComparison.OrdinalIgnoreCase));
+
+                        if (!string.IsNullOrWhiteSpace(cpuNameLine))
+                            cpuName.Append(cpuNameLine.Split(':')[1].Trim());
+                    }
+                }
 
                 device.Name = (cpuName.Length > 0)
                             ? cpuName.ToString().Trim()
-                            : "Unknown";
+                            : "Unknown CPU";
 
                 var affinities = new StringBuilder();
                 affinities.AppendJoin(',', device.Affinities);

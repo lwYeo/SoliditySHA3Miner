@@ -141,42 +141,59 @@ namespace SoliditySHA3Miner.NetworkInterface
                                  JObject getMinimumShareDifficulty,
                                  JObject getMinimumShareTarget)
         {
-            try
-            {
-                EthAddress = Utils.Json.InvokeJObjectRPC(poolURL, getPoolEthAddress).SelectToken("$.result").Value<string>();
-            }
-            catch (Exception ex)
-            {
-                throw new OperationCanceledException("Failed to get pool address: " + ex.Message, ex.InnerException);
-            }
-            try
-            {
-                Challenge = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getChallengeNumber).SelectToken("$.result").Value<string>());
-                ChallengeByte32 = Utils.Numerics.FilterByte32Array(Challenge.Value.ToByteArray(littleEndian: false));
-                ChallengeByte32String = Utils.Numerics.Byte32ArrayToHexString(ChallengeByte32);
-            }
-            catch (Exception ex)
-            {
-                throw new OperationCanceledException("Failed to get pool challenge: " + ex.Message, ex.InnerException);
-            }
-            try
-            {
-                MiningDifficulty = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareDifficulty).SelectToken("$.result").Value<ulong>());
-            }
-            catch (Exception ex)
-            {
-                throw new OperationCanceledException("Failed to get pool difficulty: " + ex.Message, ex.InnerException);
-            }
-            try
-            {
-                MiningTarget = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareTarget).SelectToken("$.result").Value<string>()));
-                MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false));
-                MiningTargetByte32String = Utils.Numerics.Byte32ArrayToHexString(MiningTargetByte32);
-            }
-            catch (Exception ex)
-            {
-                throw new OperationCanceledException("Failed to get pool target: " + ex.Message, ex.InnerException);
-            }
+            var retryCount = 0;
+            
+            while (true)
+                try
+                {
+                    EthAddress = Utils.Json.InvokeJObjectRPC(poolURL, getPoolEthAddress).SelectToken("$.result").Value<string>();
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (retryCount >= 10)
+                        throw new OperationCanceledException("Failed to get pool address: " + ex.Message, ex.InnerException);
+                }
+
+            while (true)
+                try
+                {
+                    Challenge = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getChallengeNumber).SelectToken("$.result").Value<string>());
+                    ChallengeByte32 = Utils.Numerics.FilterByte32Array(Challenge.Value.ToByteArray(littleEndian: false));
+                    ChallengeByte32String = Utils.Numerics.Byte32ArrayToHexString(ChallengeByte32);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (retryCount >= 10)
+                        throw new OperationCanceledException("Failed to get pool challenge: " + ex.Message, ex.InnerException);
+                }
+
+            while (true)
+                try
+                {
+                    MiningDifficulty = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareDifficulty).SelectToken("$.result").Value<ulong>());
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (retryCount >= 10)
+                        throw new OperationCanceledException("Failed to get pool difficulty: " + ex.Message, ex.InnerException);
+                }
+
+            while (true)
+                try
+                {
+                    MiningTarget = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareTarget).SelectToken("$.result").Value<string>()));
+                    MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false));
+                    MiningTargetByte32String = Utils.Numerics.Byte32ArrayToHexString(MiningTargetByte32);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (retryCount >= 10)
+                        throw new OperationCanceledException("Failed to get pool target: " + ex.Message, ex.InnerException);
+                }
         }
     }
 }

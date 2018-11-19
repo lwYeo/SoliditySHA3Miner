@@ -13,7 +13,7 @@ set(OUTPUT_REL bin/Release/)
 #        The main options of project        #
 #############################################
 
-project(${PROJECT_NAME} CXX)
+project(${PROJECT_NAME})
 find_package(OpenCL REQUIRED)
 
 # Define Release by default.
@@ -75,22 +75,16 @@ endif()
 #   --   Add files to project.   --   #
 #######################################
 
-set(CPP_DIR_1 ./)
-set(CPP_DIR_2 device)
-set(CPP_DIR_3 uint256)
-set(HEADER_DIR_1 )
-set(HEADER_DIR_2 uint256)
-set(HEADER_DIR_3 device)
-set(HEADER_DIR_4 device/adl_include)
+set(DIR_1 ./)
+set(DIR_2 ./device)
+set(DIR_3 ./device/adl_include)
 
 file(GLOB SRC_FILES
-  ${CPP_DIR_1}/*.cpp
-  ${CPP_DIR_2}/*.cpp
-  ${CPP_DIR_3}/*.cpp
-  ${HEADER_DIR_1}/*.h
-  ${HEADER_DIR_2}/*.h
-  ${HEADER_DIR_3}/*.h
-  ${HEADER_DIR_4}/*.h
+  ${DIR_1}/*.cpp
+  ${DIR_2}/*.cpp
+  ${DIR_1}/*.h
+  ${DIR_2}/*.h
+  ${DIR_3}/*.h
 )
 
 include_directories($ENV{AMDAPPSDKROOT}/include)

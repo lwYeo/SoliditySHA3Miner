@@ -25,8 +25,8 @@
 #	define ROTL_64(x, n)		__builtin_rotateleft64(x, n)
 #	define ROTR_64(x, n)		__builtin_rotateright64(x, n)
 #elif defined(__x86_64__)
-#	define ROTL_64(x, n)		({ u64 r; asm("rolq %1,%0" : "=r"(r) : "J"(n),"0"(x) : "cc"); r; })
-#	define ROTR_64(x, n)		({ u64 r; asm("rorq %1,%0" : "=r"(r) : "J"(n),"0"(x) : "cc"); r; })
+#	define ROTL_64(x, n)		({ uint64_t r; asm("rolq %1,%0" : "=r"(r) : "J"(n),"0"(x) : "cc"); r; })
+#	define ROTR_64(x, n)		({ uint64_t r; asm("rorq %1,%0" : "=r"(r) : "J"(n),"0"(x) : "cc"); r; })
 #else
 #	define ROTL_64(x, n)		((x << n) | (x >> (64 - n)))
 #	define ROTR_64(x, n)		((x >> n) | (x << (64 - n)))

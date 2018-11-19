@@ -56,20 +56,20 @@ namespace OpenCLSolver
 		};
 	}
 
-	typedef struct
+	typedef struct Platform_t
 	{
 		cl_platform_id ID;
 		const char *Name;
-	} Platform;
+	} Platform_t;
 
-	struct DeviceCL
+	typedef struct DeviceCL
 	{
 		int Enum;
 		int PciBusID;
 		const char *Name;
 		cl_device_id CL_ID;
 		cl_device_type Type; // same as cl_ulong
-		Platform Platform;
+		Platform_t Platform;
 		bool IsAMD;
 		size_t MaxWorkGroupSize;
 		size_t GlobalWorkSize;
@@ -80,6 +80,5 @@ namespace OpenCLSolver
 		cl_uint SolutionCount;
 		cl_ulong *Solutions;
 		Device::Instance *Instance;
-	};
-	typedef struct DeviceCL DeviceCL;
+	} DeviceCL;
 }

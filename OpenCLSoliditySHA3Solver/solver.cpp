@@ -28,12 +28,12 @@ namespace OpenCLSolver
 		OpenCLSolver::PreInitialize(sha3Kernel, sha3KingKernel, kernelSize, kingKernelSize);
 	}
 
-	void GetPlatforms(Platform **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage)
+	void GetPlatforms(Platform_t **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage)
 	{
 		OpenCLSolver::GetPlatforms(platforms, maxPlatforms, platformCount, errorMessage);
 	}
 
-	void GetDevicesByPlatform(Platform platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage)
+	void GetDevicesByPlatform(Platform_t platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage)
 	{
 		OpenCLSolver::GetDevicesByPlatform(platform, maxDeviceCount, deviceCount, devices, errorMessage);
 	}

@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <cstring>
 #include <string>
 #include "nv_apiEnum.h"
 #include "../types.h"

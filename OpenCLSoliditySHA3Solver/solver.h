@@ -37,9 +37,9 @@ namespace OpenCLSolver
 
 		EXPORT void __CDECL__ PreInitialize(const char *sha3Kernel, const char *sha3KingKernel, size_t kernelSize, size_t kingKernelSize);
 
-		EXPORT void __CDECL__ GetPlatforms(Platform **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage);
+		EXPORT void __CDECL__ GetPlatforms(Platform_t **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage);
 
-		EXPORT void __CDECL__ GetDevicesByPlatform(Platform platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage);
+		EXPORT void __CDECL__ GetDevicesByPlatform(Platform_t platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage);
 
 		EXPORT OpenCLSolver *__CDECL__ GetInstance() noexcept;
 

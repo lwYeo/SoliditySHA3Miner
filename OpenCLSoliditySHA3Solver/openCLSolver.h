@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <thread>
 #include "cl_error.hpp"
 #include "device/instance.h"
@@ -38,8 +39,8 @@ namespace OpenCLSolver
 
 		static bool FoundAdlApi();
 		static void PreInitialize(const char *sha3Kernel, const char *sha3KingKernel, size_t kernelSize, size_t kingKernelSize);
-		static void GetPlatforms(Platform **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage);
-		static void GetDevicesByPlatform(Platform platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage);
+		static void GetPlatforms(Platform_t **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage);
+		static void GetDevicesByPlatform(Platform_t platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage);
 
 		OpenCLSolver() noexcept;
 		~OpenCLSolver() noexcept;

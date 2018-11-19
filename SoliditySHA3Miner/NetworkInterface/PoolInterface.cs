@@ -456,10 +456,13 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
                 catch (Exception ex)
                 {
-                    Program.Print(string.Format("[ERROR] {0}", ex.Message));
-
                     retryCount += 1;
-                    if (retryCount < maxRetries) Task.Delay(500);
+
+                    if (retryCount >= Math.Min(maxRetries, 3))
+                        Program.Print(string.Format("[ERROR] {0}", ex.Message));
+
+                    if (retryCount < maxRetries)
+                        Task.Delay(500);
                 }
             } while (!submitted && retryCount < maxRetries);
 
