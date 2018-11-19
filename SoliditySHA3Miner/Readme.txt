@@ -1,5 +1,5 @@
 ﻿SoliditySHA3Miner
-All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported ERC20/918 tokens in a single instance (with API).
+All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported EIP918 tokens in a single instance (with API).
 
 Current latest public release version: 2.0.6
 Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
@@ -63,13 +63,14 @@ Options:
   pool                    (Pool only) URL of pool mining server (default: http://mike.rs:8080)
   secondaryPool           (Optional) URL of failover pool mining server
   logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)
-  devFee                  Set developer fee in percentage (default: 2%, minimum: 1.5%)
+  devFee                  Set developer fee in percentage (default: 2.0%, minimum: 1.5%)
 
 NOTES
 For HiveOS, refer to 'GuideForHiveOS.txt' on how to get started.
 For EthOS, refer to 'GuideForEthOS.txt' on how to get started.
 Do refer to 'GuideForPoolMining.txt' and 'GuideForSoloMining.txt' on how to get started.
 Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
+Note that there is a configuration file "SoliditySHA3Miner.conf" that saves previous CLI parameters/settings, delete it prior to changing CLI parameters.
 A sample CLI launch parameter can be found in the ".bat" file found together with this miner, please refer to it if you need help.
 You will have to supply your own Ethereum address (or Private key if you solo mine). It is your own responsibility to mine to the correct address/account.
 It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
