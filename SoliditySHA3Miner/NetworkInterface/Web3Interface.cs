@@ -460,7 +460,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (m_maxTarget != null && m_maxTarget.Value > 0u)
                 return m_maxTarget;
 
-            Program.Print("[INFO] Checking maximum difficulity from network...");
+            Program.Print("[INFO] Checking maximum target from network...");
             while (true)
             {
                 try
@@ -480,7 +480,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         errorMessage += "\n " + currentEx.Message;
                         currentEx = currentEx.InnerException;
                     }
-                    Program.Print("[ERROR] " + errorMessage);
+                    Program.Print("[ERROR] Failed to get maximum target: " + errorMessage);
 
                     Task.Delay(m_updateInterval / 2).Wait();
                 }

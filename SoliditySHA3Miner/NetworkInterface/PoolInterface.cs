@@ -459,7 +459,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     retryCount += 1;
 
                     if (retryCount >= Math.Min(maxRetries, 3))
-                        Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                        Program.Print(string.Format("[ERROR] Pool not receiving nonce: {0}", ex.Message));
 
                     if (retryCount < maxRetries)
                         Task.Delay(500);

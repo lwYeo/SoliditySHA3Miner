@@ -240,7 +240,7 @@ namespace SoliditySHA3Miner.Miner
                         device.IsInitialized = true;
 
                         device.Name = UseLinuxQuery
-                                    ? API.AmdLinuxQuery.GetDeviceRealName(device.PciBusID, deviceName.ToString())
+                                    ? API.AmdLinuxQuery.GetDeviceRealName((uint)device.DeviceCL_Struct.PciBusID, "Unknown AMD GPU")
                                     : device.DeviceCL_Struct.NameToString();
 
                         device.PciBusID = (uint)device.DeviceCL_Struct.PciBusID;
