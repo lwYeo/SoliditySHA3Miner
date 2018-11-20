@@ -294,8 +294,7 @@ namespace SoliditySHA3Miner.Miner
                     return;
                 }
 
-                // reduce excessive high hashrate reporting
-                deviceCUDA.HashStartTime = DateTime.Now.AddMilliseconds(-500);
+                deviceCUDA.HashStartTime = DateTime.Now;
                 deviceCUDA.HashCount = 0;
                 deviceCUDA.IsMining = true;
 
@@ -309,8 +308,7 @@ namespace SoliditySHA3Miner.Miner
                         while (deviceCUDA.IsPause)
                         {
                             Task.Delay(500).Wait();
-                            // reduce excessive high hashrate reporting
-                            deviceCUDA.HashStartTime = DateTime.Now.AddMilliseconds(-500);
+                            deviceCUDA.HashStartTime = DateTime.Now;
                             deviceCUDA.HashCount = 0;
                         }
 

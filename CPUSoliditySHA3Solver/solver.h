@@ -38,9 +38,9 @@ namespace CPUSolver
 
 		EXPORT void __CDECL__ GetCpuName(const char *cpuName);
 
-		EXPORT CpuSolver *__CDECL__ GetInstance() noexcept;
+		EXPORT CpuSolver *__CDECL__ GetInstance();
 
-		EXPORT void __CDECL__ DisposeInstance(CpuSolver *instance) noexcept;
+		EXPORT void __CDECL__ DisposeInstance(CpuSolver *instance);
 
 		EXPORT void __CDECL__ SetThreadAffinity(CpuSolver *instance, int affinityMask, const char *errorMessage);
 

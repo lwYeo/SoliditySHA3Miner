@@ -28,12 +28,12 @@ namespace CPUSolver
 		CpuSolver::GetCpuName(cpuName);
 	}
 
-	CpuSolver *GetInstance() noexcept
+	CpuSolver *GetInstance()
 	{
 		return new CpuSolver();
 	}
 
-	void DisposeInstance(CpuSolver *instance) noexcept
+	void DisposeInstance(CpuSolver *instance)
 	{
 		instance->~CpuSolver();
 		free(instance);

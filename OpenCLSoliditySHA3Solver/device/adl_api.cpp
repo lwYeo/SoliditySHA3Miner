@@ -109,7 +109,7 @@ void ADL_API::initialize()
 	if (0 < numberOfAdapters)
 	{
 		lpAdapterInfo = (LPAdapterInfo)malloc(sizeof(AdapterInfo) * numberOfAdapters);
-		std::memset(lpAdapterInfo, '\0', sizeof(AdapterInfo) * numberOfAdapters);
+		std::memset(lpAdapterInfo, 0, sizeof(AdapterInfo) * numberOfAdapters);
 
 		ADL_Adapter_AdapterInfo_Get(lpAdapterInfo, sizeof(AdapterInfo) * numberOfAdapters);
 	}

@@ -163,7 +163,7 @@ namespace OpenCLSolver
 
 			auto msgChar = errMsg.c_str();
 			std::memcpy((void *)errorMessage, msgChar, errMsg.length());
-			std::memset((void *)&errorMessage[errMsg.length()], '\0', 1ull);
+			std::memset((void *)&errorMessage[errMsg.length()], 0, 1);
 
 			return false;
 		}

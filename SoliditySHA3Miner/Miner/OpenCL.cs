@@ -314,8 +314,7 @@ namespace SoliditySHA3Miner.Miner
                 var errorMessage = new StringBuilder(1024);
                 var currentChallenge = (byte[])Array.CreateInstance(typeof(byte), UINT256_LENGTH);
 
-                // reduce excessive high hashrate reporting
-                device.HashStartTime = DateTime.Now.AddMilliseconds(-500);
+                device.HashStartTime = DateTime.Now;
                 device.HashCount = 0;
                 device.IsMining = true;
                 deviceCL.SolutionCount = 0;
@@ -325,8 +324,7 @@ namespace SoliditySHA3Miner.Miner
                     while (device.IsPause)
                     {
                         Task.Delay(500).Wait();
-                        // reduce excessive high hashrate reporting
-                        device.HashStartTime = DateTime.Now.AddMilliseconds(-500);
+                        device.HashStartTime = DateTime.Now;
                         device.HashCount = 0;
                     }
 

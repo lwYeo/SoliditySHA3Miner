@@ -22,6 +22,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Numerics;
+using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -71,10 +72,9 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             get
             {
-                if (m_runFailover)
-                    return SecondaryPool.SubmitURL;
-                else
-                    return s_PoolURL;
+                return m_runFailover
+                    ? SecondaryPool.SubmitURL
+                    : s_PoolURL;
             }
         }
 
@@ -164,7 +164,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             var getPoolMinimumShareDifficulty = GetPoolParameter("getMinimumShareDifficulty", MinerAddress);
             var getPoolMinimumShareTarget = GetPoolParameter("getMinimumShareTarget", MinerAddress);
 
-            bool success = true;
+            var success = true;
             var startTime = DateTime.Now;
             try
             {
@@ -173,14 +173,18 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
             catch (Exception ex)
             {
-                success = false;
                 m_retryCount++;
+                success = false;
+                var errorMessage = new StringBuilder("[ERROR] " + ex.Message);
 
-                string errorMsg = ex.Message;
-                if (ex.InnerException != null)
-                    errorMsg += ("\n " + ex.InnerException.ToString());
+                var innerEx = ex.InnerException;
+                while (innerEx != null)
+                {
+                    errorMessage.AppendFormat("\n {0}", innerEx.Message);
+                    innerEx = innerEx.InnerException;
+                }
 
-                Program.Print("[ERROR] " + errorMsg);
+                Program.Print(errorMessage.ToString());
             }
             finally
             {

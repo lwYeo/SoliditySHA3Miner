@@ -28,6 +28,7 @@ using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Numerics;
+using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -457,7 +458,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public HexBigInteger GetMaxTarget()
         {
-            if (m_maxTarget != null && m_maxTarget.Value > 0u)
+            if (m_maxTarget != null && m_maxTarget.Value > 0)
                 return m_maxTarget;
 
             Program.Print("[INFO] Checking maximum target from network...");
@@ -465,23 +466,27 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 try
                 {
-                    if (m_MAXIMUM_TARGET != null)
-                        return new HexBigInteger(m_MAXIMUM_TARGET.CallAsync<BigInteger>().Result);
-                    else
+                    if (m_MAXIMUM_TARGET == null) // assume the same as 0xbtc if not available
                         return new HexBigInteger("0x40000000000000000000000000000000000000000000000000000000000");
+
+                    var maxTarget = new HexBigInteger(m_MAXIMUM_TARGET.CallAsync<BigInteger>().Result);
+
+                    if (maxTarget.Value > 0)
+                        return maxTarget;
+                    else
+                        throw new InvalidOperationException("Network returned maximum target of zero.");
                 }
-                catch (AggregateException ex)
+                catch (Exception ex)
                 {
-                    var errorMessage = ex.Message;
-                    var currentEx = ex.InnerExceptions[0] ?? ex.InnerException;
+                    var errorMessage = new StringBuilder("[ERROR] Failed to get maximum target: " + ex.Message);
 
-                    while (currentEx != null)
+                    var innerEx = ex.InnerException;
+                    while (innerEx != null)
                     {
-                        errorMessage += "\n " + currentEx.Message;
-                        currentEx = currentEx.InnerException;
+                        errorMessage.AppendFormat("\n {0}", innerEx.Message);
+                        innerEx = innerEx.InnerException;
                     }
-                    Program.Print("[ERROR] Failed to get maximum target: " + errorMessage);
-
+                    Program.Print(errorMessage.ToString());
                     Task.Delay(m_updateInterval / 2).Wait();
                 }
             }
@@ -490,7 +495,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public MiningParameters GetMiningParameters()
         {
             Program.Print("[INFO] Checking latest parameters from network...");
-            bool success = true;
+            var success = true;
             var startTime = DateTime.Now;
             try
             {
@@ -499,7 +504,16 @@ namespace SoliditySHA3Miner.NetworkInterface
             catch (Exception ex)
             {
                 success = false;
-                Program.Print("[ERROR] " + ex.Message);
+                var errorMessage = new StringBuilder("[ERROR] " + ex.Message);
+
+                var innerEx = ex.InnerException;
+                while (innerEx != null)
+                {
+                    errorMessage.AppendFormat("\n {0}", innerEx.Message);
+                    innerEx = innerEx.InnerException;
+                }
+
+                Program.Print(errorMessage.ToString());
                 return null;
             }
             finally

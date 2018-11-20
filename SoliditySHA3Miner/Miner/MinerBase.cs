@@ -382,8 +382,7 @@ namespace SoliditySHA3Miner.Miner
                     device.HasNewChallenge = false;
                 }
 
-                // reduce GPU hashrate spike on new challenge
-                device.HashStartTime = DateTime.Now.AddMilliseconds(-500);
+                device.HashStartTime = DateTime.Now;
                 device.HashCount = 0;
             }
         }

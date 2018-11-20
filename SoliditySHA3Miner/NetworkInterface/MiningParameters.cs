@@ -19,8 +19,6 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -62,31 +60,23 @@ namespace SoliditySHA3Miner.NetworkInterface
             EthAddress = ethAddress;
 
             var retryCount = 0;
-            var exceptions = new List<Exception>();
 
             while (retryCount < 10)
-            {
                 try
                 {
                     MiningDifficulty = new HexBigInteger(getMiningDifficulty.CallAsync<BigInteger>().Result);
                     break;
                 }
-                catch (AggregateException ex)
-                {
-                    retryCount++;
-                    if (retryCount == 10) exceptions.Add(ex.InnerExceptions[0]);
-                    else { Task.Delay(200).Wait(); }
-                }
                 catch (Exception ex)
                 {
                     retryCount++;
-                    if (retryCount == 10) exceptions.Add(ex);
-                    else { Task.Delay(200).Wait(); }
+                    if (retryCount < 10)
+                        Task.Delay(200).Wait();
+                    else
+                        throw new OperationCanceledException("Failed to get difficulty from network: " + ex.Message, ex.InnerException);
                 }
-            }
 
             while (retryCount < 10)
-            {
                 try
                 {
                     MiningTarget = new HexBigInteger(getMiningTarget.CallAsync<BigInteger>().Result);
@@ -94,22 +84,16 @@ namespace SoliditySHA3Miner.NetworkInterface
                     MiningTargetByte32String = Utils.Numerics.Byte32ArrayToHexString(MiningTargetByte32);
                     break;
                 }
-                catch (AggregateException ex)
-                {
-                    retryCount++;
-                    if (retryCount == 10) exceptions.Add(ex.InnerExceptions[0]);
-                    else { Task.Delay(200).Wait(); }
-                }
                 catch (Exception ex)
                 {
                     retryCount++;
-                    if (retryCount == 10) exceptions.Add(ex);
-                    else { Task.Delay(200).Wait(); }
+                    if (retryCount < 10)
+                        Task.Delay(200).Wait();
+                    else
+                        throw new OperationCanceledException("Failed to get target from network: " + ex.Message, ex.InnerException);
                 }
-            }
 
             while (retryCount < 10)
-            {
                 try
                 {
                     ChallengeByte32 = Utils.Numerics.FilterByte32Array(getChallengeNumber.CallAsync<byte[]>().Result);
@@ -117,22 +101,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                     ChallengeByte32String = Utils.Numerics.Byte32ArrayToHexString(ChallengeByte32);
                     break;
                 }
-                catch (AggregateException ex)
-                {
-                    retryCount++;
-                    if (retryCount == 10) exceptions.Add(ex.InnerExceptions[0]);
-                    else { Task.Delay(200).Wait(); }
-                }
                 catch (Exception ex)
                 {
                     retryCount++;
-                    if (retryCount == 10) exceptions.Add(ex);
-                    else { Task.Delay(200).Wait(); }
+                    if (retryCount < 10)
+                        Task.Delay(200).Wait();
+                    else
+                        throw new OperationCanceledException("Failed to get challenge from network: " + ex.Message, ex.InnerException);
                 }
-            }
-
-            var exMessage = string.Join(Environment.NewLine, exceptions.Select(ex => ex.Message));
-            if (exceptions.Any()) throw new Exception(exMessage);
         }
 
         private MiningParameters(string poolURL,
@@ -151,7 +127,10 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
                 catch (Exception ex)
                 {
-                    if (retryCount >= 10)
+                    retryCount++;
+                    if (retryCount < 10)
+                        Task.Delay(200).Wait();
+                    else
                         throw new OperationCanceledException("Failed to get pool address: " + ex.Message, ex.InnerException);
                 }
 
@@ -165,7 +144,10 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
                 catch (Exception ex)
                 {
-                    if (retryCount >= 10)
+                    retryCount++;
+                    if (retryCount < 10)
+                        Task.Delay(200).Wait();
+                    else
                         throw new OperationCanceledException("Failed to get pool challenge: " + ex.Message, ex.InnerException);
                 }
 
@@ -177,7 +159,10 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
                 catch (Exception ex)
                 {
-                    if (retryCount >= 10)
+                    retryCount++;
+                    if (retryCount < 10)
+                        Task.Delay(200).Wait();
+                    else
                         throw new OperationCanceledException("Failed to get pool difficulty: " + ex.Message, ex.InnerException);
                 }
 
@@ -191,7 +176,10 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
                 catch (Exception ex)
                 {
-                    if (retryCount >= 10)
+                    retryCount++;
+                    if (retryCount < 10)
+                        Task.Delay(200).Wait();
+                    else
                         throw new OperationCanceledException("Failed to get pool target: " + ex.Message, ex.InnerException);
                 }
         }
