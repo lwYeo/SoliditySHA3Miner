@@ -258,7 +258,8 @@ namespace SoliditySHA3Miner.Miner
                             }
                 } while (device.IsMining);
 
-                PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Stop mining...");
+                if (processor.Affinity == device.Processor_Structs.First().Affinity)
+                    PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Stop mining...");
 
                 device.HashCount = 0;
                 device.IsInitialized = false;
@@ -267,7 +268,8 @@ namespace SoliditySHA3Miner.Miner
             {
                 PrintMessage(device.Type, device.Platform, -1, "Error", ex.Message);
             }
-            PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Mining stopped.");
+            if (processor.Affinity == device.Processor_Structs.First().Affinity)
+                PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Mining stopped.");
         }
     }
 }
