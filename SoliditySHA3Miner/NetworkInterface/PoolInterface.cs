@@ -412,7 +412,8 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             bool success = false, submitted = false;
             int retryCount = 0, maxRetries = 10;
-            var devFee = (ulong)Math.Round(100 / Math.Abs(DevFee.UserPercent));
+            var devFee = (long)Math.Round(100 / Math.Abs(DevFee.UserPercent));
+            const long devShareOffset = 10;
             do
             {
                 try
@@ -421,10 +422,12 @@ namespace SoliditySHA3Miner.NetworkInterface
                     {
                         if (SubmittedShares == ulong.MaxValue)
                         {
-                            SubmittedShares = 0ul;
-                            RejectedShares = 0ul;
+                            SubmittedShares = 0;
+                            RejectedShares = 0;
                         }
-                        var minerAddress = ((SubmittedShares - RejectedShares) % devFee) == 0 ? DevFee.Address : MinerAddress;
+                        var minerAddress = (((long)(SubmittedShares - RejectedShares) - devShareOffset) % devFee) == 0
+                                         ? DevFee.Address
+                                         : MinerAddress;
 
                         JObject submitShare = GetPoolParameter("submitShare",
                                                                Utils.Numerics.Byte32ArrayToHexString(nonce),

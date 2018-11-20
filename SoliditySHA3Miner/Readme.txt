@@ -74,8 +74,8 @@ Note that there is a configuration file "SoliditySHA3Miner.conf" that saves prev
 A sample CLI launch parameter can be found in the ".bat" file found together with this miner, please refer to it if you need help.
 You will have to supply your own Ethereum address (or Private key if you solo mine). It is your own responsibility to mine to the correct address/account.
 It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
-There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st if Pool mine, or starting from 50th if Solo mine).
-You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nonce mod devFee) = 0").
+There is a default of 2.0% dev fee (Once every 50th nonce: starting from 11th if Pool mine, or starting from 50th if Solo mine).
+You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nonce mod (100 / devFee)) = 0").
 Dev fee in solo mining is by sending the current reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.
 In the case if the compute load for your GPU is not >= 99%, you can adjust the intensity via (amdIntensity/cudaIntensity/intelIntensity).
 

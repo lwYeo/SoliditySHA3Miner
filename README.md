@@ -145,9 +145,9 @@ You will have to supply your own Ethereum address (or Private key if you solo mi
 
 It is recommended to use your own web3api (e.g. Geth / Parity) if you solo mine.
 
-There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st if Pool mine, or starting from 50th if Solo mine).
+There is a default of 2.0% dev fee (Once every 50th nonce: starting from 11th if Pool mine, or starting from 50th if Solo mine).
 
-You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nonce mod devFee) = 0").
+You can set to the lowest 1.5% with "devFee=1.5" (the formula is "(nonce mod (100 / devFee)) = 0").
 
 Dev fee in solo mining is by sending the current reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.
 
