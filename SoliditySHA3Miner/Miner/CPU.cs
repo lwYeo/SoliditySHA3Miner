@@ -25,8 +25,8 @@ namespace SoliditySHA3Miner.Miner
 {
     public class CPU : MinerBase
     {
-        public CPU(NetworkInterface.INetworkInterface networkInterface, DeviceCPU devices, bool isSubmitStale, int pauseOnFailedScans)
-            : base(networkInterface, new DeviceBase[] { devices }, isSubmitStale, pauseOnFailedScans)
+        public CPU(NetworkInterface.INetworkInterface networkInterface, Device.CPU devices, bool isSubmitStale, int pauseOnFailedScans)
+            : base(networkInterface, new Device.DeviceBase[] { devices }, isSubmitStale, pauseOnFailedScans)
         {
             try
             {
@@ -86,7 +86,7 @@ namespace SoliditySHA3Miner.Miner
 
             var isKingMaking = !string.IsNullOrWhiteSpace(Work.GetKingAddressString());
 
-            foreach (DeviceCPU device in Devices.Where(d => d.AllowDevice))
+            foreach (Device.CPU device in Devices.Where(d => d.AllowDevice))
             {
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Assigning device...");
 
@@ -123,7 +123,7 @@ namespace SoliditySHA3Miner.Miner
                 {
                     PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Initializing device...");
 
-                    device.DeviceCPU_Struct.MaxSolutionCount = DeviceBase.MAX_SOLUTION_COUNT;
+                    device.DeviceCPU_Struct.MaxSolutionCount = Device.DeviceBase.MAX_SOLUTION_COUNT;
                     device.DeviceCPU_Struct.ProcessorCount = device.Affinities.Length;
                     device.Processor_Structs = (Structs.Processor[])Array.CreateInstance(typeof(Structs.Processor), device.Affinities.Length);
 
@@ -142,7 +142,7 @@ namespace SoliditySHA3Miner.Miner
                     device.DeviceCPU_Struct.SolutionTemplate = solutionTemplateHandle.AddrOfPinnedObject();
                     device.AddHandle(solutionTemplateHandle);
 
-                    device.Solutions = (ulong[])Array.CreateInstance(typeof(ulong), DeviceBase.MAX_SOLUTION_COUNT);
+                    device.Solutions = (ulong[])Array.CreateInstance(typeof(ulong), Device.DeviceBase.MAX_SOLUTION_COUNT);
                     var solutionsHandle = GCHandle.Alloc(device.Solutions, GCHandleType.Pinned);
                     device.DeviceCPU_Struct.Solutions = solutionsHandle.AddrOfPinnedObject();
                     device.AddHandle(solutionsHandle);
@@ -157,29 +157,29 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        protected override void PushHigh64Target(DeviceBase device)
+        protected override void PushHigh64Target(Device.DeviceBase device)
         {
             // Do nothing
         }
 
-        protected override void PushTarget(DeviceBase device)
+        protected override void PushTarget(Device.DeviceBase device)
         {
             // Do nothing
         }
 
-        protected override void PushMidState(DeviceBase device)
+        protected override void PushMidState(Device.DeviceBase device)
         {
             // Do nothing
         }
 
-        protected override void PushMessage(DeviceBase device)
+        protected override void PushMessage(Device.DeviceBase device)
         {
             // Do nothing
         }
 
-        protected override void StartFinding(DeviceBase device, bool isKingMaking)
+        protected override void StartFinding(Device.DeviceBase device, bool isKingMaking)
         {
-            var deviceCPU = (DeviceCPU)device;
+            var deviceCPU = (Device.CPU)device;
 
             if (!deviceCPU.IsInitialized) return;
 
@@ -194,7 +194,7 @@ namespace SoliditySHA3Miner.Miner
 
         #endregion
 
-        private void StartThreadFinding(DeviceCPU device, Structs.Processor processor, bool isKingMaking)
+        private void StartThreadFinding(Device.CPU device, Structs.Processor processor, bool isKingMaking)
         {
             try
             {

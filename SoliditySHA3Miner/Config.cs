@@ -52,13 +52,13 @@ namespace SoliditySHA3Miner
         public float gasApiOffset { get; set; }
         public float gasApiMax { get; set; }
         public bool allowCPU { get; set; }
-        public Miner.DeviceCPU cpuDevice { get; set; }
+        public Miner.Device.CPU cpuDevice { get; set; }
         public bool allowIntel { get; set; }
-        public Miner.DeviceCL[] intelDevices { get; set; }
+        public Miner.Device.OpenCL[] intelDevices { get; set; }
         public bool allowAMD { get; set; }
-        public Miner.DeviceCL[] amdDevices { get; set; }
+        public Miner.Device.OpenCL[] amdDevices { get; set; }
         public bool allowCUDA { get; set; }
-        public Miner.DeviceCUDA[] cudaDevices { get; set; }
+        public Miner.Device.CUDA[] cudaDevices { get; set; }
 
         public Config() // set defaults
         {
@@ -84,13 +84,13 @@ namespace SoliditySHA3Miner
             gasLimit = Defaults.GasLimit;
             gasApiMax = Defaults.GasApiMax;
             allowCPU = false;
-            cpuDevice = new Miner.DeviceCPU();
+            cpuDevice = new Miner.Device.CPU();
             allowIntel = true;
-            intelDevices = new Miner.DeviceCL[] { };
+            intelDevices = new Miner.Device.OpenCL[] { };
             allowAMD = true;
-            amdDevices = new Miner.DeviceCL[] { };
+            amdDevices = new Miner.Device.OpenCL[] { };
             allowCUDA = true;
-            cudaDevices = new Miner.DeviceCUDA[] { };
+            cudaDevices = new Miner.Device.CUDA[] { };
         }
 
         private static void PrintHelp()
@@ -383,7 +383,7 @@ namespace SoliditySHA3Miner
                     else
                     {
                         if (deviceCount < 1)
-                            intelDevices = (Miner.DeviceCL[])Array.CreateInstance(typeof(Miner.DeviceCL), 0);
+                            intelDevices = (Miner.Device.OpenCL[])Array.CreateInstance(typeof(Miner.Device.OpenCL), 0);
                         else
                         {
                             var devices = (Structs.DeviceCL[])Array.CreateInstance(typeof(Structs.DeviceCL), deviceCount);
@@ -394,12 +394,12 @@ namespace SoliditySHA3Miner
                                     devices[i] = tempDevices[i];
                             }
 
-                            var tempAmdList = new List<Miner.DeviceCL>((int)deviceCount);
+                            var tempAmdList = new List<Miner.Device.OpenCL>((int)deviceCount);
                             for (int i = 0; i < deviceCount; i++)
                             {
                                 var userDevice = amdDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
 
-                                tempAmdList.Add(new Miner.DeviceCL
+                                tempAmdList.Add(new Miner.Device.OpenCL
                                 {
                                     AllowDevice = userDevice?.AllowDevice ?? true,
                                     DeviceCL_Struct = devices[i],
@@ -438,7 +438,7 @@ namespace SoliditySHA3Miner
                     else
                     {
                         if (deviceCount < 1)
-                            intelDevices = (Miner.DeviceCL[])Array.CreateInstance(typeof(Miner.DeviceCL), 0);
+                            intelDevices = (Miner.Device.OpenCL[])Array.CreateInstance(typeof(Miner.Device.OpenCL), 0);
                         else
                         {
                             var devices = (Structs.DeviceCL[])Array.CreateInstance(typeof(Structs.DeviceCL), deviceCount);
@@ -449,12 +449,12 @@ namespace SoliditySHA3Miner
                                     devices[i] = tempDevices[i];
                             }
 
-                            var tempIntelList = new List<Miner.DeviceCL>((int)deviceCount);
+                            var tempIntelList = new List<Miner.Device.OpenCL>((int)deviceCount);
                             for (int i = 0; i < deviceCount; i++)
                             {
                                 var userDevice = intelDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
 
-                                tempIntelList.Add(new Miner.DeviceCL
+                                tempIntelList.Add(new Miner.Device.OpenCL
                                 {
                                     AllowDevice = userDevice?.AllowDevice ?? true,
                                     DeviceCL_Struct = devices[i],
@@ -497,7 +497,7 @@ namespace SoliditySHA3Miner
 
             if (cudaDeviceCount > 0)
             {
-                var tempCudaList = new List<Miner.DeviceCUDA>();
+                var tempCudaList = new List<Miner.Device.CUDA>();
                 for (int i = 0; i < cudaDeviceCount; i++)
                 {
                     var userDevice = cudaDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
@@ -511,7 +511,7 @@ namespace SoliditySHA3Miner
 
                     if (errorMessage.Length > 0) Program.Print("CUDA [ERROR] " + errorMessage.ToString());
 
-                    tempCudaList.Add(new Miner.DeviceCUDA
+                    tempCudaList.Add(new Miner.Device.CUDA
                     {
                         AllowDevice = true && userAllowDevice,
                         Type = "CUDA",
@@ -526,7 +526,7 @@ namespace SoliditySHA3Miner
             else
             {
                 Program.Print("CUDA [WARN] Device not found.");
-                cudaDevices = (Miner.DeviceCUDA[])Array.CreateInstance(typeof(Miner.DeviceCUDA), 0);
+                cudaDevices = (Miner.Device.CUDA[])Array.CreateInstance(typeof(Miner.Device.CUDA), 0);
             }
         }
 

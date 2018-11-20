@@ -21,7 +21,7 @@ namespace SoliditySHA3Miner.Miner
     public interface IMiner : IDisposable
     {
         NetworkInterface.INetworkInterface NetworkInterface { get; }
-        DeviceBase[] Devices { get; }
+        Device.DeviceBase[] Devices { get; }
 
         bool HasAssignedDevices { get; }
         bool HasMonitoringAPI { get; }
@@ -35,6 +35,6 @@ namespace SoliditySHA3Miner.Miner
 
         ulong GetTotalHashrate();
 
-        ulong GetHashRateByDevice(DeviceBase device);
+        ulong GetHashRateByDevice(Device.DeviceBase device);
     }
 }

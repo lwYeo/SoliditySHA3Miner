@@ -81,9 +81,6 @@
       <Optimization>O2</Optimization>
       <PtxAsOptionV>true</PtxAsOptionV>
     </CudaCompile>
-    <PostBuildEvent>
-      <Command>copy /Y "$(OutDir)$(TargetFileName)" "$(SolutionDir)$(SolutionName)\bin\Debug\netcoreapp2.1\$(TargetFileName)"</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="cudaSolver.h" />

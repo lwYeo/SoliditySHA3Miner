@@ -27,7 +27,7 @@ namespace SoliditySHA3Miner.Miner
     {
         public bool UseLinuxQuery { get; private set; }
 
-        public OpenCL(NetworkInterface.INetworkInterface networkInterface, DeviceCL[] intelDevices, DeviceCL[] amdDevices, bool isSubmitStale, int pauseOnFailedScans)
+        public OpenCL(NetworkInterface.INetworkInterface networkInterface, Device.OpenCL[] intelDevices, Device.OpenCL[] amdDevices, bool isSubmitStale, int pauseOnFailedScans)
             : base(networkInterface, amdDevices.Union(intelDevices).ToArray(), isSubmitStale, pauseOnFailedScans)
         {
             try
@@ -110,7 +110,7 @@ namespace SoliditySHA3Miner.Miner
                         if (UseLinuxQuery)
                             coreClock = API.AmdLinuxQuery.GetDeviceCurrentCoreClock(device.PciBusID);
                         else
-                            Helper.OpenCL.Solver.GetDeviceCurrentCoreClock(((DeviceCL)device).DeviceCL_Struct, ref coreClock, errorMessage);
+                            Helper.OpenCL.Solver.GetDeviceCurrentCoreClock(((Device.OpenCL)device).DeviceCL_Struct, ref coreClock, errorMessage);
 
                         coreClockString.AppendFormat(" {0}MHz", coreClock);
                     }
@@ -125,7 +125,7 @@ namespace SoliditySHA3Miner.Miner
                         if (UseLinuxQuery)
                             temperature = API.AmdLinuxQuery.GetDeviceCurrentTemperature(device.PciBusID);
                         else
-                            Helper.OpenCL.Solver.GetDeviceCurrentTemperature(((DeviceCL)device).DeviceCL_Struct, ref temperature, errorMessage);
+                            Helper.OpenCL.Solver.GetDeviceCurrentTemperature(((Device.OpenCL)device).DeviceCL_Struct, ref temperature, errorMessage);
 
                         temperatureString.AppendFormat(" {0}C", temperature);
                     }
@@ -140,7 +140,7 @@ namespace SoliditySHA3Miner.Miner
                         if (UseLinuxQuery)
                             tachometerRPM = API.AmdLinuxQuery.GetDeviceCurrentFanTachometerRPM(device.PciBusID);
                         else
-                            Helper.OpenCL.Solver.GetDeviceCurrentFanTachometerRPM(((DeviceCL)device).DeviceCL_Struct, ref tachometerRPM, errorMessage);
+                            Helper.OpenCL.Solver.GetDeviceCurrentFanTachometerRPM(((Device.OpenCL)device).DeviceCL_Struct, ref tachometerRPM, errorMessage);
 
                         fanTachometerRpmString.AppendFormat(" {0}RPM", tachometerRPM);
                     }
@@ -166,20 +166,20 @@ namespace SoliditySHA3Miner.Miner
 
             if (Program.AllowIntel)
             {
-                foreach (DeviceCL device in intelDevices.Where(d => d.AllowDevice))
+                foreach (Device.OpenCL device in intelDevices.Where(d => d.AllowDevice))
                 {
                     PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Assigning device...");
                     errorMessage.Clear();
 
-                    device.DeviceCL_Struct.MaxSolutionCount = DeviceBase.MAX_SOLUTION_COUNT;
-                    device.DeviceCL_Struct.LocalWorkSize = DeviceCL.DEFAULT_LOCAL_WORK_SIZE_INTEL;
+                    device.DeviceCL_Struct.MaxSolutionCount = Device.DeviceBase.MAX_SOLUTION_COUNT;
+                    device.DeviceCL_Struct.LocalWorkSize = Device.OpenCL.DEFAULT_LOCAL_WORK_SIZE_INTEL;
                     device.DeviceCL_Struct.Intensity = device.Intensity >= 1.0f
                                                      ? device.Intensity
-                                                     : DeviceCL.DEFAULT_INTENSITY_INTEL;
+                                                     : Device.OpenCL.DEFAULT_INTENSITY_INTEL;
 
                     device.Intensity = device.DeviceCL_Struct.Intensity;
 
-                    device.Solutions = (ulong[])Array.CreateInstance(typeof(ulong), DeviceBase.MAX_SOLUTION_COUNT);
+                    device.Solutions = (ulong[])Array.CreateInstance(typeof(ulong), Device.DeviceBase.MAX_SOLUTION_COUNT);
                     var solutionsHandle = GCHandle.Alloc(device.Solutions, GCHandleType.Pinned);
                     device.DeviceCL_Struct.Solutions = solutionsHandle.AddrOfPinnedObject();
                     device.AddHandle(solutionsHandle);
@@ -210,23 +210,23 @@ namespace SoliditySHA3Miner.Miner
 
             if (Program.AllowAMD)
             {
-                foreach (DeviceCL device in amdDevices.Where(d => d.AllowDevice))
+                foreach (Device.OpenCL device in amdDevices.Where(d => d.AllowDevice))
                 {
                     PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Assigning device...");
                     errorMessage.Clear();
                     deviceName.Clear();
 
-                    device.DeviceCL_Struct.MaxSolutionCount = DeviceBase.MAX_SOLUTION_COUNT;
-                    device.DeviceCL_Struct.LocalWorkSize = DeviceCL.DEFAULT_LOCAL_WORK_SIZE;
+                    device.DeviceCL_Struct.MaxSolutionCount = Device.DeviceBase.MAX_SOLUTION_COUNT;
+                    device.DeviceCL_Struct.LocalWorkSize = Device.OpenCL.DEFAULT_LOCAL_WORK_SIZE;
                     device.DeviceCL_Struct.Intensity = device.Intensity >= 1.0f
                                                      ? device.Intensity
                                                      : isKingMaking
-                                                     ? DeviceCL.DEFAULT_INTENSITY_KING
-                                                     : DeviceCL.DEFAULT_INTENSITY;
+                                                     ? Device.OpenCL.DEFAULT_INTENSITY_KING
+                                                     : Device.OpenCL.DEFAULT_INTENSITY;
 
                     device.Intensity = device.DeviceCL_Struct.Intensity;
 
-                    device.Solutions = (ulong[])Array.CreateInstance(typeof(ulong), DeviceBase.MAX_SOLUTION_COUNT);
+                    device.Solutions = (ulong[])Array.CreateInstance(typeof(ulong), Device.DeviceBase.MAX_SOLUTION_COUNT);
                     var solutionsHandle = GCHandle.Alloc(device.Solutions, GCHandleType.Pinned);
                     device.DeviceCL_Struct.Solutions = solutionsHandle.AddrOfPinnedObject();
                     device.AddHandle(solutionsHandle);
@@ -259,45 +259,45 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        protected override void PushHigh64Target(DeviceBase device)
+        protected override void PushHigh64Target(Device.DeviceBase device)
         {
             var errorMessage = new StringBuilder(1024);
-            Helper.OpenCL.Solver.PushHigh64Target(UnmanagedInstance, ((DeviceCL)device).DeviceCL_Struct, device.CommonPointers.High64Target, errorMessage);
+            Helper.OpenCL.Solver.PushHigh64Target(UnmanagedInstance, ((Device.OpenCL)device).DeviceCL_Struct, device.CommonPointers.High64Target, errorMessage);
 
             if (errorMessage.Length > 0)
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Error", errorMessage.ToString());
         }
 
-        protected override void PushTarget(DeviceBase device)
+        protected override void PushTarget(Device.DeviceBase device)
         {
             var errorMessage = new StringBuilder(1024);
-            Helper.OpenCL.Solver.PushTarget(UnmanagedInstance, ((DeviceCL)device).DeviceCL_Struct, device.CommonPointers.Target, errorMessage);
+            Helper.OpenCL.Solver.PushTarget(UnmanagedInstance, ((Device.OpenCL)device).DeviceCL_Struct, device.CommonPointers.Target, errorMessage);
 
             if (errorMessage.Length > 0)
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Error", errorMessage.ToString());
         }
 
-        protected override void PushMidState(DeviceBase device)
+        protected override void PushMidState(Device.DeviceBase device)
         {
             var errorMessage = new StringBuilder(1024);
-            Helper.OpenCL.Solver.PushMidState(UnmanagedInstance, ((DeviceCL)device).DeviceCL_Struct, device.CommonPointers.MidState, errorMessage);
+            Helper.OpenCL.Solver.PushMidState(UnmanagedInstance, ((Device.OpenCL)device).DeviceCL_Struct, device.CommonPointers.MidState, errorMessage);
 
             if (errorMessage.Length > 0)
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Error", errorMessage.ToString());
         }
 
-        protected override void PushMessage(DeviceBase device)
+        protected override void PushMessage(Device.DeviceBase device)
         {
             var errorMessage = new StringBuilder(1024);
-            Helper.OpenCL.Solver.PushMessage(UnmanagedInstance, ((DeviceCL)device).DeviceCL_Struct, device.CommonPointers.Message, errorMessage);
+            Helper.OpenCL.Solver.PushMessage(UnmanagedInstance, ((Device.OpenCL)device).DeviceCL_Struct, device.CommonPointers.Message, errorMessage);
 
             if (errorMessage.Length > 0)
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Error", errorMessage.ToString());
         }
 
-        protected override void StartFinding(DeviceBase device, bool isKingMaking)
+        protected override void StartFinding(Device.DeviceBase device, bool isKingMaking)
         {
-            var deviceCL = ((DeviceCL)device).DeviceCL_Struct;
+            var deviceCL = ((Device.OpenCL)device).DeviceCL_Struct;
             try
             {
                 if (!device.IsInitialized) return;
@@ -348,7 +348,7 @@ namespace SoliditySHA3Miner.Miner
                         lock (this)
                             if (deviceCL.SolutionCount > 0)
                             {
-                                SubmitSolutions(((DeviceCL)device).Solutions.ToArray(), currentChallenge,
+                                SubmitSolutions(((Device.OpenCL)device).Solutions.ToArray(), currentChallenge,
                                             device.Type, device.Platform, device.DeviceID,
                                             deviceCL.SolutionCount, isKingMaking);
 

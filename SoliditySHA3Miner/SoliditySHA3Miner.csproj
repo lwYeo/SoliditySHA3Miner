@@ -63,55 +63,55 @@
     <None Update="0xbtc.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="0xbtcPool-allDevices.bat">
+    <None Update="Scripts\0xbtcPool-allDevices.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="0xbtcPool-ethOS-screen.sh">
+    <None Update="Scripts\0xbtcPool-ethOS-screen.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="0xbtcPool-ethOS.sh">
+    <None Update="Scripts\0xbtcPool-ethOS.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="0xbtcPool.bat">
+    <None Update="Scripts\0xbtcPool.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="0xbtcSolo.bat">
+    <None Update="Scripts\0xbtcSolo.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="0xbtcPool.sh">
+    <None Update="Scripts\0xbtcPool.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="0xbtcSolo.sh">
+    <None Update="Scripts\0xbtcSolo.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="CLM.abi">
+    <None Update="ABI\CLM.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="clmSolo.bat">
+    <None Update="Scripts\clmSolo.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="clmSolo.sh">
+    <None Update="Scripts\clmSolo.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="ERC-20.abi">
+    <None Update="ABI\ERC-20.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="ERC-541.abi">
+    <None Update="ABI\ERC-541.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="ERC-918.abi">
+    <None Update="ABI\ERC-918.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="GuideForEthOS.txt">
+    <None Update="MiningGuide\GuideForEthOS.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="GuideForHiveOS.txt">
+    <None Update="MiningGuide\GuideForHiveOS.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="install-deps.sh">
+    <None Update="Scripts\install-deps.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="install-deps-ethOS.sh">
+    <None Update="Scripts\install-deps-ethOS.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="0xCATE.abi">
@@ -126,10 +126,10 @@
     <None Update="ATA.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="GuideForPoolMining.txt">
+    <None Update="MiningGuide\GuideForPoolMining.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="GuideForSoloMining.txt">
+    <None Update="MiningGuide\GuideForSoloMining.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="kiwi.abi">
@@ -141,19 +141,19 @@
     <None Update="SKO.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="SoliditySHA3Miner.bat">
+    <None Update="Scripts\SoliditySHA3Miner.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="SoliditySHA3Miner.conf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="SoliditySHA3Miner.sh">
+    <None Update="Scripts\SoliditySHA3Miner.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(OS)' == 'Windows_NT' ">
-    <Exec Command="if not exist &quot;$(SolutionDir)Build\$(ConfigurationName)\&quot; mkdir &quot;$(SolutionDir)build\$(ConfigurationName)\&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.abi&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.bat&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.bat&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.conf&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.conf&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.sh&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.sh&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.dll&quot;" />
+    <Exec Command="copy /Y &quot;$(ProjectDir)$(OutDir)ABI\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)Scripts\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)MiningGuide\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)ABI&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)Scripts&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)MiningGuide&quot;&#xD;&#xA;&#xD;&#xA;if not exist &quot;$(SolutionDir)Build\$(ConfigurationName)\&quot; mkdir &quot;$(SolutionDir)build\$(ConfigurationName)\&quot;&#xD;&#xA;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.abi&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.bat&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.bat&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.conf&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.conf&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.sh&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.sh&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.dll&quot;" />
   </Target>
 
 </Project>

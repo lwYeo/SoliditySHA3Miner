@@ -57,7 +57,7 @@ namespace SoliditySHA3Miner.Miner
 
         public NetworkInterface.INetworkInterface NetworkInterface { get; protected set; }
 
-        public DeviceBase[] Devices { get; }
+        public Device.DeviceBase[] Devices { get; }
 
         public bool HasAssignedDevices => Devices?.Any(d => d.IsAssigned) ?? false;
 
@@ -107,7 +107,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        public ulong GetHashRateByDevice(DeviceBase device)
+        public ulong GetHashRateByDevice(Device.DeviceBase device)
         {
             var hashRate = 0ul;
 
@@ -174,13 +174,13 @@ namespace SoliditySHA3Miner.Miner
         
         protected abstract void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e);
         protected abstract void AssignDevices();
-        protected abstract void PushHigh64Target(DeviceBase device);
-        protected abstract void PushTarget(DeviceBase device);
-        protected abstract void PushMidState(DeviceBase device);
-        protected abstract void PushMessage(DeviceBase device);
-        protected abstract void StartFinding(DeviceBase device, bool isKingMaking);
+        protected abstract void PushHigh64Target(Device.DeviceBase device);
+        protected abstract void PushTarget(Device.DeviceBase device);
+        protected abstract void PushMidState(Device.DeviceBase device);
+        protected abstract void PushMessage(Device.DeviceBase device);
+        protected abstract void StartFinding(Device.DeviceBase device, bool isKingMaking);
 
-        public MinerBase(NetworkInterface.INetworkInterface networkInterface, DeviceBase[] devices, bool isSubmitStale, int pauseOnFailedScans)
+        public MinerBase(NetworkInterface.INetworkInterface networkInterface, Device.DeviceBase[] devices, bool isSubmitStale, int pauseOnFailedScans)
         {
             m_failedScanCount = 0;
             m_pauseOnFailedScan = pauseOnFailedScans;
@@ -361,7 +361,7 @@ namespace SoliditySHA3Miner.Miner
                 Task.Factory.StartNew(() => StartFinding(device, isKingMaking));
         }
 
-        protected void CheckInputs(DeviceBase device, bool isKingMaking, ref byte[] currentChallenge)
+        protected void CheckInputs(Device.DeviceBase device, bool isKingMaking, ref byte[] currentChallenge)
         {
             if (device.HasNewTarget || device.HasNewChallenge)
             {

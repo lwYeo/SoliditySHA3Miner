@@ -181,13 +181,13 @@ namespace SoliditySHA3Miner.API
                                 {
                                     case "CUDA":
                                         JsonAPI.CUDA_Miner cudaMiner = null;
-                                        PopulateCudaApiData((Miner.CUDA)miner, device, divisor, ref cudaMiner);
+                                        PopulateCudaApiData((Miner.CUDA)miner, (Miner.Device.CUDA)device, divisor, ref cudaMiner);
                                         if (cudaMiner != null) api.Miners.Add(cudaMiner);
                                         break;
 
                                     case "OpenCL":
                                         JsonAPI.AMD_Miner amdMiner = null;
-                                        PopulateAmdApiData((Miner.OpenCL)miner, device, divisor, ref amdMiner);
+                                        PopulateAmdApiData((Miner.OpenCL)miner, (Miner.Device.OpenCL)device, divisor, ref amdMiner);
                                         if (amdMiner != null) api.Miners.Add(amdMiner);
                                         break;
                                 }
@@ -198,13 +198,14 @@ namespace SoliditySHA3Miner.API
                                 {
                                     case "OpenCL":
                                         JsonAPI.OpenCLMiner openClMiner = null;
-                                        PopulateOpenCLApiData((Miner.OpenCL)miner, device, divisor, ref openClMiner);
+                                        PopulateOpenCLApiData((Miner.OpenCL)miner, (Miner.Device.OpenCL)device, divisor, ref openClMiner);
                                         if (openClMiner != null) api.Miners.Add(openClMiner);
                                         break;
 
+                                    case "CPU":
                                     default:
                                         JsonAPI.Miner cpuMiner = null;
-                                        PopulateCpuApiData((Miner.CPU)miner, device, divisor, ref cpuMiner);
+                                        PopulateCpuApiData((Miner.CPU)miner, (Miner.Device.CPU)device, divisor, ref cpuMiner);
                                         if (cpuMiner != null) api.Miners.Add(cpuMiner);
                                         break;
                                 }
@@ -294,7 +295,7 @@ namespace SoliditySHA3Miner.API
             {
                 var networkInterface = m_miners.Select(m => m.NetworkInterface).FirstOrDefault(m => m != null);
 
-                ulong totalHashRate = 0ul;
+                var totalHashRate = 0ul;
                 var hashRateUnit = string.Empty;
 
                 foreach (var miner in m_miners)
@@ -349,7 +350,7 @@ namespace SoliditySHA3Miner.API
             }
         }
 
-        private void PopulateCudaApiData(Miner.CUDA miner, Miner.DeviceBase device, double divisor, ref JsonAPI.CUDA_Miner cudaMiner)
+        private void PopulateCudaApiData(Miner.CUDA miner, Miner.Device.CUDA device, double divisor, ref JsonAPI.CUDA_Miner cudaMiner)
         {
             try
             {
@@ -396,7 +397,7 @@ namespace SoliditySHA3Miner.API
                 {
                     var tempValue = 0;
                     var tempStr = new StringBuilder(1024);
-                    var cudaDevice = ((Miner.DeviceCUDA)device).DeviceCUDA_Struct;
+                    var cudaDevice = device.DeviceCUDA_Struct;
 
                     CUDA.Solver.GetDeviceSettingMaxCoreClock(cudaDevice, ref tempValue);
                     cudaMiner.SettingMaxCoreClockMHz = tempValue;
@@ -450,7 +451,7 @@ namespace SoliditySHA3Miner.API
             }
         }
 
-        private void PopulateAmdApiData(Miner.OpenCL miner, Miner.DeviceBase device, double divisor, ref JsonAPI.AMD_Miner amdMiner)
+        private void PopulateAmdApiData(Miner.OpenCL miner, Miner.Device.OpenCL device, double divisor, ref JsonAPI.AMD_Miner amdMiner)
         {
             try
             {
@@ -494,7 +495,7 @@ namespace SoliditySHA3Miner.API
                 }
                 else
                 {
-                    var deviceCL = ((Miner.DeviceCL)device).DeviceCL_Struct;
+                    var deviceCL = device.DeviceCL_Struct;
 
                     OpenCL.Solver.GetDeviceSettingMaxCoreClock(deviceCL, ref tempValue, errorMessage);
                     amdMiner.SettingMaxCoreClockMHz = tempValue;
@@ -542,7 +543,7 @@ namespace SoliditySHA3Miner.API
             }
         }
 
-        private void PopulateOpenCLApiData(Miner.OpenCL miner, Miner.DeviceBase device, double divisor, ref JsonAPI.OpenCLMiner openCLMiner)
+        private void PopulateOpenCLApiData(Miner.OpenCL miner, Miner.Device.OpenCL device, double divisor, ref JsonAPI.OpenCLMiner openCLMiner)
         {
             try
             {
@@ -573,7 +574,7 @@ namespace SoliditySHA3Miner.API
             }
         }
 
-        private void PopulateCpuApiData(Miner.CPU miner, Miner.DeviceBase device, double divisor, ref JsonAPI.Miner cpuMiner)
+        private void PopulateCpuApiData(Miner.CPU miner, Miner.Device.CPU device, double divisor, ref JsonAPI.Miner cpuMiner)
         {
             try
             {

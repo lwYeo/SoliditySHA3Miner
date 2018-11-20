@@ -15,7 +15,6 @@
 */
 
 using Nethereum.Hex.HexConvertors.Extensions;
-using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -39,28 +38,6 @@ namespace SoliditySHA3Miner.Miner
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void GetKingAddress(byte* kingAddress)
-        {
-            if (KingAddress != null)
-            {
-                fixed (byte* tempKingAddress = KingAddress)
-                    Buffer.MemoryCopy(tempKingAddress, kingAddress, MinerBase.ADDRESS_LENGTH, MinerBase.ADDRESS_LENGTH);
-            }
-            else
-                for (int i = 0; i < MinerBase.ADDRESS_LENGTH; ++i)
-                    kingAddress[i] = 0;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void GetSolutionTemplate(byte* solutionTemplate)
-        {
-            if (SolutionTemplate == null) return;
-
-            fixed (byte* tempSolutionTemplate = SolutionTemplate)
-                Buffer.MemoryCopy(tempSolutionTemplate, solutionTemplate, MinerBase.UINT256_LENGTH, MinerBase.UINT256_LENGTH);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void GetPosition(ref ulong workPosition)
         {
             lock (m_positionLock) { workPosition = m_Position; }
@@ -72,7 +49,7 @@ namespace SoliditySHA3Miner.Miner
             lock (m_positionLock)
             {
                 lastPosition = m_Position;
-                m_Position = 0u;
+                m_Position = 0;
             }
         }
 

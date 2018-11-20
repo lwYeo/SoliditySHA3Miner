@@ -16,9 +16,9 @@
 
 using Newtonsoft.Json;
 
-namespace SoliditySHA3Miner.Miner
+namespace SoliditySHA3Miner.Miner.Device
 {
-    public class DeviceCPU : DeviceBase
+    public class CPU : DeviceBase
     {
         public int[] Affinities;
 

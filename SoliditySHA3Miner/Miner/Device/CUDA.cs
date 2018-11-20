@@ -18,9 +18,9 @@ using Newtonsoft.Json;
 using SoliditySHA3Miner.Structs;
 using System;
 
-namespace SoliditySHA3Miner.Miner
+namespace SoliditySHA3Miner.Miner.Device
 {
-    public class DeviceCUDA : DeviceBase
+    public class CUDA : DeviceBase
     {
         public const float DEFAULT_INTENSITY = 24.0f;
 
@@ -104,7 +104,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        public DeviceCUDA()
+        public CUDA()
         {
             m_lastBlock.X = 1;
             m_lastBlock.Y = 1;

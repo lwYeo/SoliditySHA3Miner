@@ -26,7 +26,7 @@ namespace SoliditySHA3Miner.Miner
     {
         public bool UseNvSMI { get; protected set; }
 
-        public CUDA(NetworkInterface.INetworkInterface networkInterface, DeviceCUDA[] cudaDevices, bool isSubmitStale, int pauseOnFailedScans)
+        public CUDA(NetworkInterface.INetworkInterface networkInterface, Device.CUDA[] cudaDevices, bool isSubmitStale, int pauseOnFailedScans)
             : base(networkInterface, cudaDevices, isSubmitStale, pauseOnFailedScans)
         {
             try
@@ -100,7 +100,7 @@ namespace SoliditySHA3Miner.Miner
                 var fanTachometerRpmString = new StringBuilder();
 
                 coreClockString.Append("Core clocks:");
-                foreach (DeviceCUDA device in Devices)
+                foreach (Device.CUDA device in Devices)
                     if (device.AllowDevice)
                     {
                         if (UseNvSMI)
@@ -112,7 +112,7 @@ namespace SoliditySHA3Miner.Miner
                 PrintMessage("CUDA", string.Empty, -1, "Info", coreClockString.ToString());
 
                 temperatureString.Append("Temperatures:");
-                foreach (DeviceCUDA device in Devices)
+                foreach (Device.CUDA device in Devices)
                     if (device.AllowDevice)
                     {
                         if (UseNvSMI)
@@ -126,7 +126,7 @@ namespace SoliditySHA3Miner.Miner
                 if (!UseNvSMI)
                 {
                     fanTachometerRpmString.Append("Fan tachometers:");
-                    foreach (DeviceCUDA device in Devices)
+                    foreach (Device.CUDA device in Devices)
                         if (device.AllowDevice)
                         {
                             Helper.CUDA.Solver.GetDeviceCurrentFanTachometerRPM(device.DeviceCUDA_Struct, ref tachometerRPM);
@@ -149,7 +149,7 @@ namespace SoliditySHA3Miner.Miner
 
             var isKingMaking = !string.IsNullOrWhiteSpace(Work.GetKingAddressString());
 
-            foreach (DeviceCUDA device in Devices.Where(d => d.AllowDevice))
+            foreach (Device.CUDA device in Devices.Where(d => d.AllowDevice))
             {
                 var errorMessage = new StringBuilder(1024);
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Assigning device...");
@@ -162,10 +162,10 @@ namespace SoliditySHA3Miner.Miner
                 }
 
                 if (device.DeviceCUDA_Struct.ComputeMajor < 5)
-                    device.Intensity = (device.Intensity < 1.000f) ? DeviceCUDA.DEFAULT_INTENSITY : device.Intensity; // For older GPUs
+                    device.Intensity = (device.Intensity < 1.000f) ? Device.CUDA.DEFAULT_INTENSITY : device.Intensity; // For older GPUs
                 else
                 {
-                    float defaultIntensity = DeviceCUDA.DEFAULT_INTENSITY;
+                    float defaultIntensity = Device.CUDA.DEFAULT_INTENSITY;
 
                     if (isKingMaking)
                     {
@@ -206,7 +206,7 @@ namespace SoliditySHA3Miner.Miner
 
                 device.PciBusID = (uint)device.DeviceCUDA_Struct.PciBusID;
                 device.ConputeVersion = (uint)((device.DeviceCUDA_Struct.ComputeMajor * 100) + (device.DeviceCUDA_Struct.ComputeMinor * 10));
-                device.DeviceCUDA_Struct.MaxSolutionCount = DeviceBase.MAX_SOLUTION_COUNT;
+                device.DeviceCUDA_Struct.MaxSolutionCount = Device.DeviceBase.MAX_SOLUTION_COUNT;
                 device.DeviceCUDA_Struct.Intensity = device.Intensity;
                 device.DeviceCUDA_Struct.Threads = device.Threads;
                 device.DeviceCUDA_Struct.Block = device.Block;
@@ -232,7 +232,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        protected override void PushHigh64Target(DeviceBase device)
+        protected override void PushHigh64Target(Device.DeviceBase device)
         {
             var errorMessage = new StringBuilder(1024);
             Helper.CUDA.Solver.PushHigh64Target(UnmanagedInstance, device.CommonPointers.High64Target, errorMessage);
@@ -241,7 +241,7 @@ namespace SoliditySHA3Miner.Miner
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Error", errorMessage.ToString());
         }
 
-        protected override void PushTarget(DeviceBase device)
+        protected override void PushTarget(Device.DeviceBase device)
         {
             var errorMessage = new StringBuilder(1024);
             Helper.CUDA.Solver.PushTarget(UnmanagedInstance, device.CommonPointers.Target, errorMessage);
@@ -250,7 +250,7 @@ namespace SoliditySHA3Miner.Miner
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Error", errorMessage.ToString());
         }
 
-        protected override void PushMidState(DeviceBase device)
+        protected override void PushMidState(Device.DeviceBase device)
         {
             var errorMessage = new StringBuilder(1024);
             Helper.CUDA.Solver.PushMidState(UnmanagedInstance, device.CommonPointers.MidState, errorMessage);
@@ -259,7 +259,7 @@ namespace SoliditySHA3Miner.Miner
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Error", errorMessage.ToString());
         }
 
-        protected override void PushMessage(DeviceBase device)
+        protected override void PushMessage(Device.DeviceBase device)
         {
             var errorMessage = new StringBuilder(1024);
             Helper.CUDA.Solver.PushMessage(UnmanagedInstance, device.CommonPointers.Message, errorMessage);
@@ -268,9 +268,9 @@ namespace SoliditySHA3Miner.Miner
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Error", errorMessage.ToString());
         }
 
-        protected override void StartFinding(DeviceBase device, bool isKingMaking)
+        protected override void StartFinding(Device.DeviceBase device, bool isKingMaking)
         {
-            var deviceCUDA = (DeviceCUDA)device;
+            var deviceCUDA = (Device.CUDA)device;
             try
             {
                 if (!deviceCUDA.IsInitialized) return;

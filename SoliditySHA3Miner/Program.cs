@@ -252,6 +252,9 @@ namespace SoliditySHA3Miner
 
             Print(GetHeader(), excludePrefix: true);
 
+            Config.allowCPU = true;
+            Config.allowCUDA = false;
+
             if (!Config.ParseArgumentsToConfig(args)) Environment.Exit(1);
 
             try

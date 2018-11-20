@@ -16,9 +16,9 @@
 
 using Newtonsoft.Json;
 
-namespace SoliditySHA3Miner.Miner
+namespace SoliditySHA3Miner.Miner.Device
 {
-    public class DeviceCL : DeviceBase
+    public class OpenCL : DeviceBase
     {
         public const float DEFAULT_INTENSITY = 24.056f;
         public const float DEFAULT_INTENSITY_KING = 24.12f;

@@ -20,7 +20,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
-namespace SoliditySHA3Miner.Miner
+namespace SoliditySHA3Miner.Miner.Device
 {
     public abstract class DeviceBase : IDisposable
     {
