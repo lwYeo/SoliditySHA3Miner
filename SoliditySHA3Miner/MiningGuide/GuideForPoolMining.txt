@@ -51,8 +51,8 @@
 
 To withdraw your tokens (after the Pool have paid you), you will need ETH to perform withdrawal/transaction from your account.
 
-There is a default of 2.0% dev fee (Once every 50th nounces: starting from 1st).
-* You can set to the lowest 1.5% with 'devFee=1.5' (the formula is '(nonce mod devFee) = 0').
+There is a default of 2.0% dev fee (Once every 50th nonce: starting from 11th).
+* You can set to the lowest 1.5% with 'devFee=1.5' (the formula is '(nonce mod (100 / devFee)) = 0').
 
 Please feedback your results and suggestions so that I can improve the miner. 
 You can either add an issue in the repository, or find me in discord (Amano7). 
