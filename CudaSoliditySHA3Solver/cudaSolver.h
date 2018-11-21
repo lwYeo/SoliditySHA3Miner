@@ -52,8 +52,6 @@ namespace CUDASolver
 
 		static void GetDeviceName(int deviceID, const char *deviceName, const char *errorMessage);
 
-		bool isSubmitStale;
-
 		CudaSolver() noexcept;
 		~CudaSolver() noexcept;
 

@@ -65,7 +65,7 @@ namespace CPUSolver
 
 	void CpuSolver::SetThreadAffinity(int affinityMask, const char *errorMessage)
 	{
-		if (!SetThreadAffinityMask(GetCurrentThread(), 1 << affinityMask))
+		if (!SetThreadAffinityMask(GetCurrentThread(), 1ull << affinityMask))
 		{
 			auto errMessage = "Failed to set processor affinity (" + std::to_string(affinityMask) + ")";
 			auto errMessageChar = errMessage.c_str();
