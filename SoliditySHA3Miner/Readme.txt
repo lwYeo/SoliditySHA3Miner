@@ -45,7 +45,7 @@ Options:
   maxScanRetry            Number of retries to scan for new work (default: 3)
   pauseOnFailedScans      Pauses mining after number of connection fails, including secondary and retries (default: 3)
   submitStale             Submit stale jobs, may create more rejected shares (default: false)
-  abiFile                 Token abi in a file (default: 'ERC-541.abi' in the same folder as this miner)
+  abiFile                 Token abi in a file (default: '0xBTC.abi' in the same folder as this miner)
   web3api                 User-defined web3 provider URL (default: Infura mainnet provider)
   contract                Token contract address (default: 0xbtc contract address)
   hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: 30000)

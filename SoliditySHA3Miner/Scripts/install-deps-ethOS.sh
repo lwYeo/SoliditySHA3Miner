@@ -10,5 +10,5 @@ sudo apt-get-ubuntu update
 
 rm -f packages-microsoft-prod.deb
 
-sudo apt-get-ubuntu install apt-transport-https
-sudo apt-get-ubuntu install dotnet-runtime-2.1
+sudo apt-get-ubuntu install apt-transport-https -y
+sudo apt-get-ubuntu install dotnet-runtime-2.1 -y

@@ -96,7 +96,7 @@
     <None Update="ABI\ERC-20.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="ABI\ERC-541.abi">
+    <None Update="ABI\0xBTC.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="ABI\ERC-918.abi">

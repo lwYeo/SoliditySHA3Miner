@@ -8,7 +8,8 @@
 3) Below are the following arguments that may/need to be changed :
 
 3a) abiFile=
-  * If omitted, the 'ERC-541.abi' file will be used by default
+  * If omitted, the '0xBTC.abi' file will be used by default
+  * Most tokens are compatible with '0xBTC.abi', most likely no need to change here
   * Replace the value to the available filename that ends with '.abi' in the folder for the token interface you are mining.
 
 3b) contract=

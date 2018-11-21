@@ -13,7 +13,7 @@ goto end
 DEL /F /Q SoliditySHA3Miner.conf
 dotnet SoliditySHA3Miner.dll ^
 web3api=https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE ^
-abiFile=ERC-541.abi ^
+abiFile=0xBTC.abi ^
 contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 ^
 gasToMine=3 ^
 gasApiMax=7 ^

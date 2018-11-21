@@ -150,6 +150,14 @@ namespace SoliditySHA3Miner.NetworkInterface
             m_web3 = new Web3(SubmitURL);
 
             var erc20AbiPath = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "ERC-20.abi");
+
+            if (!string.IsNullOrWhiteSpace(abiFileName))
+                Program.Print(string.Format("[INFO] ABI specified, using \"{0}\"", abiFileName));
+            else
+            {
+                Program.Print("[INFO] ABI not specified, default \"0xBTC.abi\"");
+                abiFileName = Config.Defaults.AbiFile0xBTC;
+            }
             var tokenAbiPath = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), abiFileName);
 
             var erc20Abi = JArray.Parse(File.ReadAllText(erc20AbiPath));

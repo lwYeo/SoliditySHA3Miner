@@ -118,7 +118,7 @@ namespace SoliditySHA3Miner
                 "  maxScanRetry            Number of retries to scan for new work (default: " + Defaults.MaxScanRetry + ")\n" +
                 "  pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)\n" +
                 "  submitStale             Submit stale jobs, may create more rejected shares (default: " + Defaults.SubmitStale.ToString().ToLower() + ")\n" +
-                "  abiFile                 Token abi in a file (default: 'ERC-541.abi' in the same folder as this miner)\n" +
+                "  abiFile                 Token abi in a file (default: '0xBTC.abi' in the same folder as this miner)\n" +
                 "  web3api                 User-defined web3 provider URL (default: Infura mainnet provider)\n" +
                 "  contract                Token contract address (default: 0xbtc contract address)\n" +
                 "  hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: " + Defaults.HashrateUpdateInterval + ")\n" +
@@ -798,7 +798,7 @@ namespace SoliditySHA3Miner
             public const string InfuraAPI_ropsten = "https://ropsten.infura.io/ANueYSYQTstCr2mFJjPE";
             public const string Contract0xBTC_mainnet = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
             public const string Contract0xBTC_ropsten = "0x9D2Cc383E677292ed87f63586086CfF62a009010";
-            public const string AbiFile0xBTC = "ERC-541.abi";
+            public const string AbiFile0xBTC = "0xBTC.abi";
 
             public const string PoolPrimary = "http://mike.rs:8080";
             public const string PoolSecondary = "http://mike.rs:8080";

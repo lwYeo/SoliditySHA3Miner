@@ -12,7 +12,8 @@
   * To avoid connection issues, do change to your own web3 API such as your account from 'https://infura.io/', or if you have your own Geth/Parity set up.
 
 4b) abiFile=
-  * If omitted, the 'ERC-541.abi' file will be used by default
+  * If omitted, the '0xBTC.abi' file will be used by default
+  * Most tokens are compatible with '0xBTC.abi', most likely no need to change here
   * Replace the value to the available filename that ends with '.abi' in the folder for the token interface you are mining.
 
 4c) contract=
