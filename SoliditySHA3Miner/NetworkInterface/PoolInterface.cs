@@ -116,21 +116,30 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             if (SecondaryPool != null) SecondaryPool.Dispose();
 
-            m_submitDateTimeList.Clear();
+            if (m_submitDateTimeList != null)
+                m_submitDateTimeList.Clear();
 
             if (m_updateMinerTimer != null)
             {
-                m_updateMinerTimer.Stop();
-                m_updateMinerTimer.Elapsed -= UpdateMinerTimer_Elapsed;
-                m_updateMinerTimer.Dispose();
+                try
+                {
+                    m_updateMinerTimer.Elapsed -= UpdateMinerTimer_Elapsed;
+                    m_updateMinerTimer.Stop();
+                    m_updateMinerTimer.Dispose();
+                }
+                catch { }
                 m_updateMinerTimer = null;
             }
 
             if (m_hashPrintTimer != null)
             {
-                m_hashPrintTimer.Stop();
-                m_hashPrintTimer.Elapsed -= HashPrintTimer_Elapsed;
-                m_hashPrintTimer.Dispose();
+                try
+                {
+                    m_hashPrintTimer.Elapsed -= HashPrintTimer_Elapsed;
+                    m_hashPrintTimer.Stop();
+                    m_hashPrintTimer.Dispose();
+                }
+                catch { }
                 m_hashPrintTimer = null;
             }
         }

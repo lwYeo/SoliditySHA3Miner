@@ -119,6 +119,13 @@ namespace SoliditySHA3Miner
 
         public static void Print(string message, bool excludePrefix = false)
         {
+#if DEBUG
+            if (message.IndexOf("Object reference not set to an instance of an object") > -1)
+            {
+                foreach (var stackFrame in new System.Diagnostics.StackTrace().GetFrames().Skip(1))
+                    Console.WriteLine("In " + stackFrame.GetMethod().DeclaringType.FullName + "." + stackFrame.GetMethod().Name);
+            }
+#endif
             new TaskFactory().StartNew(() =>
             {
                 message = message.Replace("Accelerated Parallel Processing", "APP").Replace("\n", Environment.NewLine);

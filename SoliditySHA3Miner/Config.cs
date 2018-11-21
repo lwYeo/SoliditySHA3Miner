@@ -310,16 +310,18 @@ namespace SoliditySHA3Miner
                 return;
 
             if (args.All(a => !a.StartsWith("cpuAffinity")))
-                Program.Print("CPU [INFO] Processor affinity not specified, default assign all processors except first.");
+                Program.Print("CPU [INFO] Processor affinity not specified, default assign all odd number logical processors.");
 
             if ((cpuDevice.Affinities == null || !cpuDevice.Affinities.Any()) && args.All(a => !a.StartsWith("cpuAffinity")))
             {
                 cpuDevice.Type = "CPU";
-                cpuDevice.Affinities = (int[])Array.CreateInstance(typeof(int), Environment.ProcessorCount - 1);
+                cpuDevice.Affinities = Environment.ProcessorCount > 1
+                                     ? (int[])Array.CreateInstance(typeof(int), Environment.ProcessorCount / 2)
+                                     : Enumerable.Empty<int>().ToArray();
                 cpuDevice.AllowDevice = cpuDevice.Affinities.Any();
 
-                for (int i = 1; i < Environment.ProcessorCount; i++)
-                    cpuDevice.Affinities[i - 1] = i;
+                for (int i = 0; i < cpuDevice.Affinities.Length; i++)
+                    cpuDevice.Affinities[i] = (i * 2) + 1;
             }
         }
 

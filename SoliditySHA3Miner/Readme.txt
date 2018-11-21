@@ -27,7 +27,7 @@ Usage: SoliditySHA3Miner [OPTIONS]
 Options:
   help                    Display this help text and exit
   allowCPU                Allow to use CPU, may slow down system (default: false)
-  cpuAffinity             Comma separated list of CPU affinity ID to use (default: all logical CPUs except first)
+  cpuAffinity             Comma separated list of CPU affinity ID to use (default: all odd number logical processors)
   allowIntel              Allow to use Intel GPU (OpenCL) (default: true)
   allowAMD                Allow to use AMD GPU (OpenCL) (default: true)
   allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)

@@ -64,17 +64,17 @@ namespace SoliditySHA3Miner.Miner
 
         public override void Dispose()
         {
-            var disposeTask = Task.Factory.StartNew(() => base.Dispose());
             try
             {
+                var disposeTask = Task.Factory.StartNew(() => base.Dispose());
+
                 if (UnmanagedInstance != IntPtr.Zero)
                     Helper.OpenCL.Solver.DisposeInstance(UnmanagedInstance);
+
+                if (!disposeTask.IsCompleted)
+                    disposeTask.Wait();
             }
-            catch (Exception ex)
-            {
-                PrintMessage("OpenCL", string.Empty, -1, "Error", ex.Message);
-            }
-            disposeTask.Wait();
+            catch { }
         }
 
         #endregion IMiner

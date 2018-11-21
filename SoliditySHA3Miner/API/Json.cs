@@ -321,7 +321,8 @@ namespace SoliditySHA3Miner.API
 
                 api.MiningURL = networkInterface.SubmitURL ?? string.Empty;
 
-                api.CurrentChallenge = Utils.Numerics.Byte32ArrayToHexString(networkInterface.CurrentChallenge);
+                if (networkInterface.CurrentChallenge != null)
+                    api.CurrentChallenge = Utils.Numerics.Byte32ArrayToHexString(networkInterface.CurrentChallenge);
 
                 api.CurrentDifficulty = networkInterface.Difficulty;
 
@@ -583,7 +584,7 @@ namespace SoliditySHA3Miner.API
                     Type = device.Type,
                     DeviceID = device.DeviceID,
                     ModelName = device.Name,
-                    HashRate = miner.GetHashRateByDevice(device),
+                    HashRate = (float)(miner.GetHashRateByDevice(device) / divisor),
                     HasMonitoringAPI = miner.HasMonitoringAPI
                 };
             }

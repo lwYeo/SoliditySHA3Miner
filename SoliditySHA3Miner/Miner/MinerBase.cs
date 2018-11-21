@@ -94,7 +94,8 @@ namespace SoliditySHA3Miner.Miner
         {
             try
             {
-                m_hashPrintTimer.Stop();
+                if (m_hashPrintTimer != null)
+                    m_hashPrintTimer.Stop();
 
                 NetworkInterface.ResetEffectiveHashrate();
 
@@ -147,27 +148,25 @@ namespace SoliditySHA3Miner.Miner
 
             if (m_hashPrintTimer != null)
             {
-                m_hashPrintTimer.Elapsed -= HashPrintTimer_Elapsed;
-                m_hashPrintTimer.Dispose();
+                try
+                {
+                    m_hashPrintTimer.Elapsed -= HashPrintTimer_Elapsed;
+                    m_hashPrintTimer.Dispose();
+                }
+                catch { }
+                m_hashPrintTimer = null;
             }
+
             try
             {
                 if (Devices != null)
                     Devices.AsParallel().
                             ForAll(d => d.Dispose());
             }
-            catch (Exception ex)
-            {
-                PrintMessage(string.Empty, string.Empty, -1, "Error", ex.Message);
-            }
-            try
-            {
-                NetworkInterface.Dispose();
-            }
-            catch (Exception ex)
-            {
-                PrintMessage(string.Empty, string.Empty, -1, "Error", ex.Message);
-            }
+            catch { }
+
+            try { NetworkInterface.Dispose(); }
+            catch { }
         }
 
         #endregion IMiner
