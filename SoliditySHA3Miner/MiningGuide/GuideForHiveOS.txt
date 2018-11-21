@@ -1,0 +1,33 @@
+### Before start mining on HiveOS
+
+1) For NVIDIA cards, ensure CUDA 9.2 (NVIDIA driver 396) is installed
+  * Selfupgrade HiveOS to latest version (0.5-76 onwards)
+
+2) Add new "Custom" miner to "Flight Sheet" (Coin: ETH, select your wallet but DO NOT select a pool yet)
+
+3) Enter Flight Sheet name of your choice
+
+4) Inside "Setup Miner Config": 
+
+4a) Enter the following in "Installation URL"
+  https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.1.0/SoliditySHA3Miner-2.1.0.tar.gz
+
+4b) "Miner name" will be auto populated, you may leave it as is
+
+4c) Leave "Hash algorithm" as blank
+
+4d) Enter the following in "Wallet and worker template"
+  %WAL%
+
+4e) Enter the pool of your choice in "Pool URL" (you may try http://mike.rs:8080)
+
+4f) Optionally, you may enter additional terminal arguments in "Extra config arguments" (Refer to Readme.txt for more information)
+
+4g) Apply the Flight Sheet to the worker rig.
+
+4h) NOTE: for the first run, it will first take up to about 5 minutes to install dependencies
+
+4i) For rigs with older version of SoliditySHA3Miner, run the following commands in shell/terminal to upgrade SoliditySHA3Miner
+  miner stop
+  custom-get https://github.com/lwYeo/SoliditySHA3Miner/releases/download/2.1.0/SoliditySHA3Miner-2.1.0.tar.gz -f
+  miner start

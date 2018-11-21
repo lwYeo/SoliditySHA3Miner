@@ -1,6 +1,21 @@
-﻿using Nethereum.ABI.Model;
+﻿/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+using Nethereum.ABI.Model;
 using Nethereum.Contracts;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
@@ -13,6 +28,7 @@ using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Numerics;
+using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -45,21 +61,22 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly int m_mintMethodInputParamCount;
 
         private readonly float m_gasToMine;
+        private readonly float m_gasApiMax;
         private readonly ulong m_gasLimit;
-        private readonly List<string> m_submittedChallengeList;
+        private readonly List<byte[]> m_submittedChallengeList;
         private readonly int m_updateInterval;
         private Timer m_updateMinerTimer;
         private Timer m_hashPrintTimer;
         private MiningParameters m_lastParameters;
         private System.Threading.ManualResetEvent m_newChallengeResetEvent;
 
-        private string m_gasApiURL;
-        private string m_gasApiPath;
-        private float m_gasApiOffset;
-        private float m_gasApiMultiplier;
+        private readonly string m_gasApiURL;
+        private readonly string m_gasApiPath;
+        private readonly float m_gasApiOffset;
+        private readonly float m_gasApiMultiplier;
 
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
-        public event NewMessagePrefixEvent OnNewMessagePrefix;
+        public event NewChallengeEvent OnNewChallenge;
         public event NewTargetEvent OnNewTarget;
         public event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
 
@@ -69,21 +86,20 @@ namespace SoliditySHA3Miner.NetworkInterface
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
         public ulong Difficulty { get; private set; }
-        public string DifficultyHex { get; private set; }
         public int LastSubmitLatency { get; private set; }
         public int Latency { get; private set; }
         public string MinerAddress { get; }
         public string SubmitURL { get; private set; }
-        public string CurrentChallenge { get; private set; }
+        public byte[] CurrentChallenge { get; private set; }
 
-        public bool IsChallengedSubmitted(string challenge) => m_submittedChallengeList.Contains(challenge);
+        public bool IsChallengedSubmitted(byte[] challenge) => m_submittedChallengeList.Any(s => challenge.SequenceEqual(s));
 
         public Web3Interface(string web3ApiPath, string contractAddress, string minerAddress, string privateKey,
                              float gasToMine, string abiFileName, int updateInterval, int hashratePrintInterval,
-                             ulong gasLimit, string gasApiURL, string gasApiPath, float gasApiMultiplier, float gasApiOffset)
+                             ulong gasLimit, string gasApiURL, string gasApiPath, float gasApiMultiplier, float gasApiOffset, float gasApiMax)
         {
             m_updateInterval = updateInterval;
-            m_submittedChallengeList = new List<string>();
+            m_submittedChallengeList = new List<byte[]>();
             m_submitDateTimeList = new List<DateTime>(MAX_SUBMIT_DTM_COUNT + 1);
             m_newChallengeResetEvent = new System.Threading.ManualResetEvent(false);
 
@@ -99,21 +115,23 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             var addressUtil = new AddressUtil();
             if (!addressUtil.IsValidAddressLength(contractAddress))
-            {
                 throw new Exception("Invalid contract address provided, ensure address is 42 characters long (including '0x').");
-            }
+
             else if (!addressUtil.IsChecksumAddress(contractAddress))
-            {
                 throw new Exception("Invalid contract address provided, ensure capitalization is correct.");
-            }
 
             Program.Print("[INFO] Contract address : " + contractAddress);
 
             if (!string.IsNullOrWhiteSpace(privateKey))
-            {
-                m_account = new Account(privateKey);
-                minerAddress = m_account.Address;
-            }
+                try
+                {
+                    m_account = new Account(privateKey);
+                    minerAddress = m_account.Address;
+                }
+                catch (Exception)
+                {
+                    throw new FormatException("Invalid private key: " + privateKey ?? string.Empty);
+                }
 
             if (!addressUtil.IsValidAddressLength(minerAddress))
             {
@@ -132,6 +150,14 @@ namespace SoliditySHA3Miner.NetworkInterface
             m_web3 = new Web3(SubmitURL);
 
             var erc20AbiPath = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), "ERC-20.abi");
+
+            if (!string.IsNullOrWhiteSpace(abiFileName))
+                Program.Print(string.Format("[INFO] ABI specified, using \"{0}\"", abiFileName));
+            else
+            {
+                Program.Print("[INFO] ABI not specified, default \"0xBTC.abi\"");
+                abiFileName = Config.Defaults.AbiFile0xBTC;
+            }
             var tokenAbiPath = Path.Combine(Path.GetDirectoryName(typeof(Program).Assembly.Location), abiFileName);
 
             var erc20Abi = JArray.Parse(File.ReadAllText(erc20AbiPath));
@@ -196,7 +222,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             else
             {
                 m_gasToMine = gasToMine;
-                Program.Print(string.Format("[INFO] Gas to mine: {0}", m_gasToMine));
+                Program.Print(string.Format("[INFO] Gas to mine: {0} GWei", m_gasToMine));
 
                 m_gasLimit = gasLimit;
                 Program.Print(string.Format("[INFO] Gas limit: {0}", m_gasLimit));
@@ -214,6 +240,9 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                     m_gasApiMultiplier = gasApiMultiplier;
                     Program.Print(string.Format("[INFO] Gas API multiplier: {0}", m_gasApiMultiplier));
+
+                    m_gasApiMax = gasApiMax;
+                    Program.Print(string.Format("[INFO] Gas API maximum: {0} GWei", m_gasApiMax));
                 }
 
                 #region ERC20 methods
@@ -392,15 +421,48 @@ namespace SoliditySHA3Miner.NetworkInterface
                 #endregion
 
                 m_hashPrintTimer = new Timer(hashratePrintInterval);
-                m_hashPrintTimer.Elapsed += m_hashPrintTimer_Elapsed;
+                m_hashPrintTimer.Elapsed += HashPrintTimer_Elapsed;
                 m_hashPrintTimer.Start();
             }
         }
 
         public void Dispose()
         {
-            m_submittedChallengeList.Clear();
-            m_submittedChallengeList.TrimExcess();
+            if (m_submitDateTimeList != null)
+                m_submitDateTimeList.Clear();
+
+            if (m_submittedChallengeList != null)
+                m_submittedChallengeList.Clear();
+
+            if (m_updateMinerTimer != null)
+            {
+                try
+                {
+                    m_updateMinerTimer.Elapsed -= UpdateMinerTimer_Elapsed;
+                    m_updateMinerTimer.Stop();
+                    m_updateMinerTimer.Dispose();
+                }
+                catch { }
+                m_updateMinerTimer = null;
+            }
+
+            if (m_hashPrintTimer != null)
+            {
+                try
+                {
+                    m_hashPrintTimer.Elapsed -= HashPrintTimer_Elapsed;
+                    m_hashPrintTimer.Stop();
+                    m_hashPrintTimer.Dispose();
+                }
+                catch { }
+                m_hashPrintTimer = null;
+            }
+
+            if (m_newChallengeResetEvent != null)
+            {
+                m_newChallengeResetEvent.Dispose();
+                m_newChallengeResetEvent = null;
+            }
         }
 
         public void OverrideMaxTarget(HexBigInteger maxTarget)
@@ -415,32 +477,36 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public HexBigInteger GetMaxTarget()
         {
-            if (m_maxTarget != null && m_maxTarget.Value > 0u)
+            if (m_maxTarget != null && m_maxTarget.Value > 0)
                 return m_maxTarget;
 
-            Program.Print("[INFO] Checking maximum difficulity from network...");
+            Program.Print("[INFO] Checking maximum target from network...");
             while (true)
             {
                 try
                 {
-                    if (m_MAXIMUM_TARGET != null)
-                        return new HexBigInteger(m_MAXIMUM_TARGET.CallAsync<BigInteger>().Result);
-                    else
+                    if (m_MAXIMUM_TARGET == null) // assume the same as 0xbtc if not available
                         return new HexBigInteger("0x40000000000000000000000000000000000000000000000000000000000");
+
+                    var maxTarget = new HexBigInteger(m_MAXIMUM_TARGET.CallAsync<BigInteger>().Result);
+
+                    if (maxTarget.Value > 0)
+                        return maxTarget;
+                    else
+                        throw new InvalidOperationException("Network returned maximum target of zero.");
                 }
-                catch (AggregateException ex)
+                catch (Exception ex)
                 {
-                    var errorMessage = ex.Message;
-                    var currentEx = ex.InnerExceptions[0] ?? ex.InnerException;
+                    var errorMessage = new StringBuilder("[ERROR] Failed to get maximum target: " + ex.Message);
 
-                    while (currentEx != null)
+                    var innerEx = ex.InnerException;
+                    while (innerEx != null)
                     {
-                        errorMessage += "\n " + currentEx.Message;
-                        currentEx = currentEx.InnerException;
+                        errorMessage.AppendFormat("\n {0}", innerEx.Message);
+                        innerEx = innerEx.InnerException;
                     }
-                    Program.Print("[ERROR] " + errorMessage);
-
-                    System.Threading.Thread.Sleep(1000);
+                    Program.Print(errorMessage.ToString());
+                    Task.Delay(m_updateInterval / 2).Wait();
                 }
             }
         }
@@ -448,7 +514,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public MiningParameters GetMiningParameters()
         {
             Program.Print("[INFO] Checking latest parameters from network...");
-            bool success = true;
+            var success = true;
             var startTime = DateTime.Now;
             try
             {
@@ -457,7 +523,17 @@ namespace SoliditySHA3Miner.NetworkInterface
             catch (Exception ex)
             {
                 success = false;
-                throw ex;
+                var errorMessage = new StringBuilder("[ERROR] " + ex.Message);
+
+                var innerEx = ex.InnerException;
+                while (innerEx != null)
+                {
+                    errorMessage.AppendFormat("\n {0}", innerEx.Message);
+                    innerEx = innerEx.InnerException;
+                }
+
+                Program.Print(errorMessage.ToString());
+                return null;
             }
             finally
             {
@@ -468,7 +544,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     {
                         using (var ping = new Ping())
                         {
-                            var submitUrl = SubmitURL.Contains("://") ? SubmitURL.Split("://")[1] : SubmitURL;
+                            var submitUrl = SubmitURL.Contains("://") ? SubmitURL.Split(new string[] { "://" }, StringSplitOptions.None)[1] : SubmitURL;
                             try
                             {
                                 var response = ping.Send(submitUrl);
@@ -504,7 +580,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
         }
 
-        private void m_hashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
+        private void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             var totalHashRate = 0ul;
             OnGetTotalHashrate(this, ref totalHashRate);
@@ -531,34 +607,34 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
         }
 
-        private void m_updateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
+        private void UpdateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             try
             {
                 var miningParameters = GetMiningParameters();
                 if (miningParameters == null)
                 {
-                    OnGetMiningParameterStatus(this, false, null);
+                    OnGetMiningParameterStatus(this, false);
                     return;
                 }
+                
+                CurrentChallenge = miningParameters.ChallengeByte32;
 
-                var address = miningParameters.EthAddress;
-                var target = miningParameters.MiningTargetByte32String;
-                CurrentChallenge = miningParameters.ChallengeNumberByte32String;
-                DifficultyHex = miningParameters.MiningDifficulty.HexValue;
-
-                if (m_lastParameters == null || miningParameters.ChallengeNumber.Value != m_lastParameters.ChallengeNumber.Value)
+                if (m_lastParameters == null || miningParameters.Challenge.Value != m_lastParameters.Challenge.Value)
                 {
-                    Program.Print(string.Format("[INFO] New challenge detected {0}...", CurrentChallenge));
-                    OnNewMessagePrefix(this, CurrentChallenge + address.Replace("0x", string.Empty));
-                    if (m_challengeReceiveDateTime == DateTime.MinValue) m_challengeReceiveDateTime = DateTime.Now;
+                    Program.Print(string.Format("[INFO] New challenge detected {0}...", miningParameters.ChallengeByte32String));
+                    OnNewChallenge(this, miningParameters.ChallengeByte32, miningParameters.EthAddress);
+
+                    if (m_challengeReceiveDateTime == DateTime.MinValue)
+                        m_challengeReceiveDateTime = DateTime.Now;
+
                     m_newChallengeResetEvent.Set();
                 }
 
                 if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
                 {
-                    Program.Print(string.Format("[INFO] New target detected {0}...", target));
-                    OnNewTarget(this, target);
+                    Program.Print(string.Format("[INFO] New target detected {0}...", miningParameters.MiningTargetByte32String));
+                    OnNewTarget(this, miningParameters.MiningTarget);
                 }
 
                 if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
@@ -572,18 +648,16 @@ namespace SoliditySHA3Miner.NetworkInterface
                     if ((ulong)calculatedDifficulty != Difficulty) // Only replace if the integer portion is different
                     {
                         Difficulty = (ulong)calculatedDifficulty;
-
-                        var expValue = BitConverter.GetBytes(decimal.GetBits((decimal)calculatedDifficulty)[3])[2];
-
+                        var expValue = Math.Log10(calculatedDifficulty);
                         var calculatedTarget = m_maxTarget.Value * (ulong)Math.Pow(10, expValue) / (ulong)(calculatedDifficulty * Math.Pow(10, expValue));
 
-                        Program.Print(string.Format("[INFO] Update target {0}...", Utils.Numerics.BigIntegerToByte32HexString(calculatedTarget)));
-                        OnNewTarget(this, Utils.Numerics.BigIntegerToByte32HexString(calculatedTarget));
+                        Program.Print(string.Format("[INFO] Update target 0x{0}...", calculatedTarget.ToString("x64")));
+                        OnNewTarget(this, new HexBigInteger(calculatedTarget));
                     }
                 }
 
                 m_lastParameters = miningParameters;
-                OnGetMiningParameterStatus(this, true, miningParameters);
+                OnGetMiningParameterStatus(this, true);
             }
             catch (Exception ex)
             {
@@ -641,23 +715,22 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public void UpdateMiningParameters()
         {
-            m_updateMinerTimer_Elapsed(this, null);
+            UpdateMinerTimer_Elapsed(this, null);
 
             if (m_updateMinerTimer == null && m_updateInterval > 0)
             {
                 m_updateMinerTimer = new Timer(m_updateInterval);
-                m_updateMinerTimer.Elapsed += m_updateMinerTimer_Elapsed;
+                m_updateMinerTimer.Elapsed += UpdateMinerTimer_Elapsed;
                 m_updateMinerTimer.Start();
             }
         }
 
-        public bool SubmitSolution(string digest, string fromAddress, string challenge, string difficulty, string target, string solution, Miner.IMiner sender)
+        public bool SubmitSolution(string address, byte[] digest, byte[] challenge, ulong difficulty, byte[] nonce, Miner.IMiner sender)
         {
             lock (this)
             {
                 if (IsChallengedSubmitted(challenge))
                 {
-                    OnStopSolvingCurrentChallenge(this, challenge);
                     Program.Print(string.Format("[INFO] Submission cancelled, nonce has been submitted for the current challenge."));
                     return false;
                 }
@@ -682,6 +755,12 @@ namespace SoliditySHA3Miner.NetworkInterface
                                 Program.Print(string.Format("[INFO] Using 'gasToMine' price of {0} GWei, due to lower gas price from API: {1}",
                                                             m_gasToMine, m_gasApiURL));
                             }
+                            else if (apiGasPrice > m_gasApiMax)
+                            {
+                                userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasApiMax), UnitConversion.EthUnit.Gwei));
+                                Program.Print(string.Format("[INFO] Using 'gasApiMax' price of {0} GWei, due to higher gas price from API: {1}",
+                                                            m_gasApiMax, m_gasApiURL));
+                            }
                             else
                             {
                                 userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(apiGasPrice), UnitConversion.EthUnit.Gwei));
@@ -702,36 +781,29 @@ namespace SoliditySHA3Miner.NetworkInterface
                     }
                 }
 
-                var oSolution = new BigInteger(Utils.Numerics.HexStringToByte32Array(solution).ToArray());
-                // Note: do not directly use -> new HexBigInteger(solution).Value
-                //Because two's complement representation always interprets the highest-order bit of the last byte in the array
-                //(the byte at position Array.Length - 1) as the sign bit,
-                //the method returns a byte array with an extra element whose value is zero
-                //to disambiguate positive values that could otherwise be interpreted as having their sign bits set.
-
                 object[] dataInput = null;
 
                 if (m_mintMethodInputParamCount > 1) // 0xBitcoin compatibility
-                    dataInput = new object[] { oSolution, HexByteConvertorExtensions.HexToByteArray(digest) };
+                    dataInput = new object[] { new BigInteger(nonce.Reverse().ToArray()), digest };
 
                 else // Draft EIP-918 compatibility [2018-03-07]
-                    dataInput = new object[] { oSolution };
+                    dataInput = new object[] { new BigInteger(nonce.Reverse().ToArray()) };
 
-                var retryCount = 0u;
+                var retryCount = 0;
                 var startSubmitDateTime = DateTime.Now;
                 while (string.IsNullOrWhiteSpace(transactionID))
                 {
                     try
                     {
-                        var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
+                        var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(address).Result;
 
                         // Commented as gas limit is dynamic in between submissions and confirmations
-                        //var estimatedGasLimit = m_mintMethod.EstimateGasAsync(from: fromAddress,
+                        //var estimatedGasLimit = m_mintMethod.EstimateGasAsync(from: address,
                         //                                                      gas: gasLimit,
                         //                                                      value: new HexBigInteger(0),
                         //                                                      functionInput: dataInput).Result;
 
-                        var transaction = m_mintMethod.CreateTransactionInput(from: fromAddress,
+                        var transaction = m_mintMethod.CreateTransactionInput(from: address,
                                                                               gas: gasLimit /*estimatedGasLimit*/,
                                                                               gasPrice: userGas,
                                                                               value: new HexBigInteger(0),
@@ -754,13 +826,18 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                         if (!string.IsNullOrWhiteSpace(transactionID))
                         {
+                            Program.Print("[INFO] Nonce submitted with transaction ID: " + transactionID);
+
                             if (!IsChallengedSubmitted(challenge))
                             {
-                                m_submittedChallengeList.Insert(0, challenge);
+                                m_submittedChallengeList.Insert(0, challenge.ToArray());
                                 if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
                             }
 
-                            Task.Factory.StartNew(() => GetTransactionReciept(transactionID, fromAddress, gasLimit, userGas, LastSubmitLatency, DateTime.Now));
+                            Task.Factory.StartNew(() => GetTransactionReciept(transactionID, address, gasLimit, userGas, LastSubmitLatency, DateTime.Now));
+
+                            if (challenge.SequenceEqual(CurrentChallenge))
+                                OnStopSolvingCurrentChallenge(this);
                         }
                     }
                     catch (AggregateException ex)
@@ -781,11 +858,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                             errorMessage += "\n " + ex.InnerException.Message;
 
                         Program.Print(errorMessage);
-                        if (IsChallengedSubmitted(challenge) || ex.Message == "Failed to verify transaction.") return false;
-                    }
 
-                    System.Threading.Thread.Sleep(1000);
-                    if (string.IsNullOrWhiteSpace(transactionID)) retryCount++;
+                        if (IsChallengedSubmitted(challenge) || ex.Message == "Failed to verify transaction.")
+                            return false;
+                    }
+                    Task.Delay(m_updateInterval / 2).Wait();
+
+                    if (string.IsNullOrWhiteSpace(transactionID))
+                        retryCount++;
 
                     if (retryCount > 10)
                     {
@@ -797,7 +877,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
         }
 
-        private void GetTransactionReciept(string transactionID, string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas,
+        private void GetTransactionReciept(string transactionID, string address, HexBigInteger gasLimit, HexBigInteger userGas,
                                            int responseTime, DateTime submitDateTime)
         {
             try
@@ -836,7 +916,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         else
                         {
                             m_newChallengeResetEvent.Reset();
-                            m_newChallengeResetEvent.WaitOne();
+                            m_newChallengeResetEvent.WaitOne(m_updateInterval * 2);
                             hasWaited = true;
                         }
                     }
@@ -853,8 +933,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
                 else SubmittedShares++;
 
-                Program.Print(string.Format("[INFO] Miner share [{0}] submitted: {1} ({2}ms), block: {3}," +
-                                            "\n transaction ID: {4}",
+                Program.Print(string.Format("[INFO] Miner share [{0}] submitted: {1} ({2}ms), block: {3}, transaction ID: {4}",
                                             SubmittedShares,
                                             success ? "success" : "failed",
                                             responseTime,
@@ -863,14 +942,18 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 if (success)
                 {
-                    if (m_submitDateTimeList.Count >= MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
+                    if (m_submitDateTimeList.Count >= MAX_SUBMIT_DTM_COUNT)
+                        m_submitDateTimeList.RemoveAt(0);
+
                     m_submitDateTimeList.Add(submitDateTime);
 
                     var devFee = (ulong)Math.Round(100 / Math.Abs(DevFee.UserPercent));
 
                     if (((SubmittedShares - RejectedShares) % devFee) == 0)
-                        SubmitDevFee(fromAddress, gasLimit, userGas, SubmittedShares);
+                        SubmitDevFee(address, gasLimit, userGas, SubmittedShares);
                 }
+
+                UpdateMinerTimer_Elapsed(this, null);
             }
             catch (AggregateException ex)
             {
@@ -910,7 +993,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             throw new Exception("Failed checking mining reward amount.");
         }
 
-        private void SubmitDevFee(string fromAddress, HexBigInteger gasLimit, HexBigInteger userGas, ulong shareNo)
+        private void SubmitDevFee(string address, HexBigInteger gasLimit, HexBigInteger userGas, ulong shareNo)
         {
             var success = false;
             var devTransactionID = string.Empty;
@@ -923,15 +1006,15 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 var txInput = new object[] { DevFee.Address, miningReward };
 
-                var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(fromAddress).Result;
+                var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(address).Result;
 
                 // Commented as gas limit is dynamic in between submissions and confirmations
-                //var estimatedGasLimit = m_transferMethod.EstimateGasAsync(from: fromAddress,
+                //var estimatedGasLimit = m_transferMethod.EstimateGasAsync(from: address,
                 //                                                          gas: gasLimit,
                 //                                                          value: new HexBigInteger(0),
                 //                                                          functionInput: txInput).Result;
 
-                var transaction = m_transferMethod.CreateTransactionInput(from: fromAddress,
+                var transaction = m_transferMethod.CreateTransactionInput(from: address,
                                                                           gas: gasLimit /*estimatedGasLimit*/,
                                                                           gasPrice: userGas,
                                                                           value: new HexBigInteger(0),
@@ -956,7 +1039,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     try
                     {
-                        System.Threading.Thread.Sleep(3000);
+                        Task.Delay(m_updateInterval / 2).Wait();
                         devReciept = m_web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(devTransactionID).Result;
                     }
                     catch (AggregateException ex)

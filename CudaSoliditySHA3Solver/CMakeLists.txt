@@ -13,7 +13,7 @@ set(OUTPUT_REL bin/Release/)
 #        The main options of project        #
 #############################################
 
-project(${PROJECT_NAME} CXX)
+project(${PROJECT_NAME})
 find_package(CUDA 9.2 REQUIRED)
 
 # Define Release by default.
@@ -64,21 +64,15 @@ endif(NOT MSVC)
 #   --   Add files to project.   --   #
 #######################################
 
-set(CPP_DIR_1 ./)
-set(CPP_DIR_2 device)
-set(CPP_DIR_3 uint256)
-set(HEADER_DIR_1 )
-set(HEADER_DIR_2 device)
-set(HEADER_DIR_3 uint256)
+set(DIR_1 ./)
+set(DIR_2 ./device)
 
 file(GLOB SRC_FILES
-  ${CPP_DIR_1}/*.cu
-  ${CPP_DIR_1}/*.cpp
-  ${CPP_DIR_2}/*.cpp
-  ${CPP_DIR_3}/*.cpp
-  ${HEADER_DIR_1}/*.h
-  ${HEADER_DIR_2}/*.h
-  ${HEADER_DIR_3}/*.h
+  ${DIR_1}/*.cu
+  ${DIR_1}/*.cpp
+  ${DIR_2}/*.cpp
+  ${DIR_1}/*.h
+  ${DIR_2}/*.h
 )
 
 cuda_add_library(${PROJECT_NAME} SHARED ${SRC_FILES})

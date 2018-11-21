@@ -1,124 +1,56 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #include "solver.h"
 
 namespace CPUSolver
 {
-	void GetLogicalProcessorsCount(uint32_t *processorCount)
+	void SHA3(byte32_t *message, byte32_t *digest)
 	{
-		*processorCount = cpuSolver::getLogicalProcessorsCount();
+		CpuSolver::SHA3(message, digest);
 	}
 
-	void GetNewSolutionTemplate(const char *kingAddress, const char *solutionTemplate)
+	void GetCpuName(const char *cpuName)
 	{
-		auto newTemplate = cpuSolver::getNewSolutionTemplate(kingAddress);
-		auto newTemplateStr = newTemplate.c_str();
-		std::memcpy((void *)solutionTemplate, newTemplateStr, UINT256_LENGTH * 2 + 2);
+		CpuSolver::GetCpuName(cpuName);
 	}
 
-	GetKingAddressCallback SetOnGetKingAddressHandler(cpuSolver *instance, GetKingAddressCallback getKingAddressCallback)
+	CpuSolver *GetInstance() noexcept
 	{
-		instance->m_getKingAddressCallback = getKingAddressCallback;
-		return getKingAddressCallback;
+		return new CpuSolver();
 	}
 
-	GetSolutionTemplateCallback SetOnGetSolutionTemplateHandler(cpuSolver *instance, GetSolutionTemplateCallback getSolutionTemplateCallback)
+	void DisposeInstance(CpuSolver *instance) noexcept
 	{
-		instance->m_getSolutionTemplateCallback = getSolutionTemplateCallback;
-		return getSolutionTemplateCallback;
+		instance->~CpuSolver();
+		free(instance);
 	}
 
-	GetWorkPositionCallback SetOnGetWorkPositionHandler(cpuSolver *instance, GetWorkPositionCallback getWorkPositionCallback)
+	void SetThreadAffinity(CpuSolver *instance, int affinityMask, const char *errorMessage)
 	{
-		instance->m_getWorkPositionCallback = getWorkPositionCallback;
-		return getWorkPositionCallback;
+		instance->SetThreadAffinity(affinityMask, errorMessage);
 	}
 
-	ResetWorkPositionCallback SetOnResetWorkPositionHandler(cpuSolver *instance, ResetWorkPositionCallback resetWorkPositionCallback)
+	void HashMessage(CpuSolver *instance, Instance *deviceInstance, Processor *processor)
 	{
-		instance->m_resetWorkPositionCallback = resetWorkPositionCallback;
-		return resetWorkPositionCallback;
+		instance->HashMessage(deviceInstance, processor);
 	}
 
-	IncrementWorkPositionCallback SetOnIncrementWorkPositionHandler(cpuSolver *instance, IncrementWorkPositionCallback incrementWorkPositionCallback)
+	void HashMidState(CpuSolver *instance, Instance *deviceInstance, Processor *processor)
 	{
-		instance->m_incrementWorkPositionCallback = incrementWorkPositionCallback;
-		return incrementWorkPositionCallback;
-	}
-
-	MessageCallback SetOnMessageHandler(cpuSolver *instance, MessageCallback messageCallback)
-	{
-		instance->m_messageCallback = messageCallback;
-		return messageCallback;
-	}
-
-	SolutionCallback SetOnSolutionHandler(cpuSolver *instance, SolutionCallback solutionCallback)
-	{
-		instance->m_solutionCallback = solutionCallback;
-		return solutionCallback;
-	}
-
-	cpuSolver *GetInstance(const char *threads) noexcept
-	{
-		try { return new cpuSolver(threads); }
-		catch (...) { return nullptr; }
-	}
-
-	void DisposeInstance(cpuSolver *instance) noexcept
-	{
-		try
-		{
-			instance->~cpuSolver();
-			free(instance);
-		}
-		catch (...) {}
-	}
-
-	void SetSubmitStale(cpuSolver *instance, const bool submitStale)
-	{
-		instance->m_SubmitStale = submitStale;
-	}
-
-	void IsMining(cpuSolver *instance, bool *isMining)
-	{
-		*isMining = instance->isMining();
-	}
-
-	void IsPaused(cpuSolver *instance, bool *isPaused)
-	{
-		*isPaused = instance->isPaused();
-	}
-
-	void GetHashRateByThreadID(cpuSolver *instance, const uint32_t threadID, uint64_t *hashRate)
-	{
-		*hashRate = instance->getHashRateByThreadID(threadID);
-	}
-
-	void GetTotalHashRate(cpuSolver *instance, uint64_t *totalHashRate)
-	{
-		*totalHashRate = instance->getTotalHashRate();
-	}
-
-	void UpdatePrefix(cpuSolver *instance, const char *prefix)
-	{
-		instance->updatePrefix(prefix);
-	}
-
-	void UpdateTarget(cpuSolver *instance, const char *target)
-	{
-		instance->updateTarget(target);
-	}
-
-	void PauseFinding(cpuSolver *instance, const bool pause)
-	{
-		instance->pauseFinding(pause);
-	}
-
-	void StartFinding(cpuSolver *instance)
-	{
-		instance->startFinding();
-	}
-
-	void StopFinding(cpuSolver *instance)
-	{
-		instance->stopFinding();
+		instance->HashMidState(deviceInstance, processor);
 	}
 }

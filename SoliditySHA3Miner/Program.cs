@@ -1,4 +1,20 @@
-﻿using System;
+﻿/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -12,8 +28,8 @@ namespace SoliditySHA3Miner
     public class DevFee
     {
         public const string Address = "0x9172ff7884CEFED19327aDaCe9C470eF1796105c";
-        public const float Percent = 2.0F;
-        public const float MinimumPercent = 1.5F;
+        public const float Percent = 2.0f;
+        public const float MinimumPercent = 1.5f;
 
         public static float UserPercent
         {
@@ -51,15 +67,18 @@ namespace SoliditySHA3Miner
 
             lock (m_handler)
             {
-                if (m_allMiners != null)
-                    m_allMiners.AsParallel()
-                                .ForAll(miner =>
-                                {
-                                    try { if (miner != null) miner.Dispose(); }
-                                    catch (Exception ex) { Print(ex.Message); }
-                                });
+                try
+                {
+                    if (m_allMiners != null)
+                    {
+                        Task.WaitAll(m_allMiners.Select(m => Task.Factory.StartNew(() => m.StopMining())).ToArray());
+                        Task.WaitAll(m_allMiners.Select(m => Task.Factory.StartNew(() => m.Dispose())).ToArray());
+                    }
 
-                if (m_waitCheckTimer != null) m_waitCheckTimer.Stop();
+                    if (m_waitCheckTimer != null) m_waitCheckTimer.Stop();
+                }
+                catch { }
+
                 if (m_manualResetEvent != null) m_manualResetEvent.Set();
 
                 return true;
@@ -94,10 +113,19 @@ namespace SoliditySHA3Miner
 
         public static bool AllowCUDA { get; set; }
 
+        public static bool AllowCPU { get; set; }
+
         public static string GetCurrentTimestamp() => string.Format("{0:s}", DateTime.Now);
 
         public static void Print(string message, bool excludePrefix = false)
         {
+#if DEBUG
+            if (message.IndexOf("Object reference not set to an instance of an object") > -1)
+            {
+                foreach (var stackFrame in new System.Diagnostics.StackTrace().GetFrames().Skip(1))
+                    Console.WriteLine("In " + stackFrame.GetMethod().DeclaringType.FullName + "." + stackFrame.GetMethod().Name);
+            }
+#endif
             new TaskFactory().StartNew(() =>
             {
                 message = message.Replace("Accelerated Parallel Processing", "APP").Replace("\n", Environment.NewLine);
@@ -128,7 +156,7 @@ namespace SoliditySHA3Miner
 
                 Console.WriteLine(message);
 
-                if (message.Contains("Kernel launch failed") || message.Contains("Stop mining"))
+                if (message.Contains("Kernel launch failed"))
                 {
                     Task.Delay(5000);
                     Environment.Exit(22);
@@ -148,7 +176,7 @@ namespace SoliditySHA3Miner
         {
             return "\n" +
                 "*** " + GetApplicationName() + " " + GetApplicationVersion() + " by " + GetCompanyName() + " (" + GetApplicationYear() + ") ***\n" +
-                "*** Built with .NET Core 2.1 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
+                "*** Built with .NET Core 2.1.5 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
                 "\n" +
                 "Donation addresses:\n" +
                 "ETH (or any ERC 20/918 tokens)	: 0x9172ff7884CEFED19327aDaCe9C470eF1796105c\n" +
@@ -210,7 +238,7 @@ namespace SoliditySHA3Miner
                         Environment.Exit(1);
                 }
             }
-            
+
             foreach (var arg in args)
             {
                 try
@@ -238,12 +266,11 @@ namespace SoliditySHA3Miner
                 Config.networkUpdateInterval = Config.networkUpdateInterval < 1000 ? Config.Defaults.NetworkUpdateInterval : Config.networkUpdateInterval;
                 Config.hashrateUpdateInterval = Config.hashrateUpdateInterval < 1000 ? Config.Defaults.HashrateUpdateInterval : Config.hashrateUpdateInterval;
 
-                Miner.Work.SetKingAddress(Config.kingAddress);
-                Miner.Work.SetSolutionTemplate(Miner.CPU.GetNewSolutionTemplate(Miner.Work.GetKingAddressString()));
+                Miner.Work.SolutionTemplate = Miner.Helper.CPU.GetSolutionTemplate(kingAddress: Config.kingAddress);
 
                 var web3Interface = new NetworkInterface.Web3Interface(Config.web3api, Config.contractAddress, Config.minerAddress, Config.privateKey, Config.gasToMine,
                                                                        Config.abiFile, Config.networkUpdateInterval, Config.hashrateUpdateInterval,
-                                                                       Config.gasLimit, Config.gasApiURL, Config.gasApiPath, Config.gasApiMultiplier, Config.gasApiOffset);
+                                                                       Config.gasLimit, Config.gasApiURL, Config.gasApiPath, Config.gasApiMultiplier, Config.gasApiOffset, Config.gasApiMax);
 
                 web3Interface.OverrideMaxTarget(Config.overrideMaxTarget);
 
@@ -267,19 +294,15 @@ namespace SoliditySHA3Miner
                     mainNetworkInterface = primaryPoolInterface;
                 }
 
-                if (Config.cpuMode)
-                {
-                    if (Config.cpuDevices.Any())
-                        m_cpuMiner = new Miner.CPU(mainNetworkInterface, Config.cpuDevices, Config.submitStale, Config.pauseOnFailedScans);
-                }
-                else
-                {
-                    if (AllowCUDA && Config.cudaDevices.Any(d => d.AllowDevice))
-                        m_cudaMiner = new Miner.CUDA(mainNetworkInterface, Config.cudaDevices, Config.submitStale, Config.pauseOnFailedScans);
-                    
-                    if ((AllowAMD || AllowIntel) && Config.intelDevices.Union(Config.amdDevices).Any(d => d.AllowDevice))
-                        m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, Config.intelDevices, Config.amdDevices, Config.submitStale, Config.pauseOnFailedScans);
-                }
+                if (AllowCUDA && Config.cudaDevices.Any(d => d.AllowDevice))
+                    m_cudaMiner = new Miner.CUDA(mainNetworkInterface, Config.cudaDevices, Config.submitStale, Config.pauseOnFailedScans);
+
+                if ((AllowAMD || AllowIntel) && Config.intelDevices.Union(Config.amdDevices).Any(d => d.AllowDevice))
+                    m_openCLMiner = new Miner.OpenCL(mainNetworkInterface, Config.intelDevices, Config.amdDevices, Config.submitStale, Config.pauseOnFailedScans);
+
+                if (AllowCPU && Config.cpuDevice.AllowDevice)
+                    m_cpuMiner = new Miner.CPU(mainNetworkInterface, Config.cpuDevice, Config.submitStale, Config.pauseOnFailedScans);
+
                 m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner }.Where(m => m != null).ToArray();
 
                 if (!m_allMiners.Any() || m_allMiners.All(m => !m.HasAssignedDevices))
@@ -296,25 +319,20 @@ namespace SoliditySHA3Miner
 
                 API.Ccminer.StartListening(Config.minerCcminerAPI, m_allMiners);
 
-                if (Config.cpuMode)
-                {
-                    if (m_cpuMiner.HasAssignedDevices)
-                        m_cpuMiner.StartMining(Config.networkUpdateInterval, Config.hashrateUpdateInterval);
-                }
-                else
-                {
-                    if (m_openCLMiner != null && m_openCLMiner.HasAssignedDevices)
-                        m_openCLMiner.StartMining(Config.networkUpdateInterval, Config.hashrateUpdateInterval);
+                if (m_cudaMiner != null && m_cudaMiner.HasAssignedDevices)
+                    m_cudaMiner.StartMining(Config.networkUpdateInterval, Config.hashrateUpdateInterval);
 
-                    if (m_cudaMiner != null && m_cudaMiner.HasAssignedDevices)
-                        m_cudaMiner.StartMining(Config.networkUpdateInterval, Config.hashrateUpdateInterval);
-                }
+                if (m_openCLMiner != null && m_openCLMiner.HasAssignedDevices)
+                    m_openCLMiner.StartMining(Config.networkUpdateInterval, Config.hashrateUpdateInterval);
+
+                if (m_cpuMiner != null && m_cpuMiner.HasAssignedDevices)
+                    m_cpuMiner.StartMining(Config.networkUpdateInterval, Config.hashrateUpdateInterval);
 
                 m_waitCheckTimer = new System.Timers.Timer(1000);
                 m_waitCheckTimer.Elapsed +=
                     delegate
                     {
-                        if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPaused))) WaitSeconds++;
+                        if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPause))) WaitSeconds++;
                     };
                 m_waitCheckTimer.Start();
                 WaitSeconds = (ulong)(LaunchTime - DateTime.Now).TotalSeconds;
@@ -329,12 +347,13 @@ namespace SoliditySHA3Miner
             }
 
             m_manualResetEvent.WaitOne();
-            Console.WriteLine("[INFO] Exiting application...");
 
-            API.Ccminer.StopListening();
             m_waitCheckTimer.Stop();
+            m_apiJson.Stop();
+            m_apiJson.Dispose();
+            API.Ccminer.StopListening();
 
-            Environment.Exit(0);
+            Console.WriteLine("[INFO] Exiting application...");
         }
     }
 }

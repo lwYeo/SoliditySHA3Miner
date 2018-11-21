@@ -2,66 +2,28 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="cudaSolver.cpp" />
-    <ClCompile Include="uint256\arith_uint256.cpp">
-      <Filter>uint256</Filter>
-    </ClCompile>
-    <ClCompile Include="uint256\uint256.cpp">
-      <Filter>uint256</Filter>
-    </ClCompile>
-    <ClCompile Include="uint256\utilstrencodings.cpp">
-      <Filter>uint256</Filter>
-    </ClCompile>
     <ClCompile Include="cudaErrorCheck.cu" />
-    <ClCompile Include="device\device.cpp">
-      <Filter>device</Filter>
-    </ClCompile>
     <ClCompile Include="device\nv_api.cpp">
       <Filter>device</Filter>
     </ClCompile>
-    <ClCompile Include="sha3.cpp" />
     <ClCompile Include="solver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cudaSolver.h" />
-    <ClInclude Include="types.h" />
-    <ClInclude Include="uint256\arith_uint256.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\compat_byteswap.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\compat_endian.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\crypto_common.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\tinyformat.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\uint256.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
-    <ClInclude Include="uint256\utilstrencodings.h">
-      <Filter>uint256</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h" />
-    <ClInclude Include="device\device.h">
-      <Filter>device</Filter>
-    </ClInclude>
     <ClInclude Include="device\nv_api.h">
       <Filter>device</Filter>
     </ClInclude>
     <ClInclude Include="device\nv_apiEnum.h">
       <Filter>device</Filter>
     </ClInclude>
-    <ClInclude Include="sha3.h" />
     <ClInclude Include="solver.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="device\instance.h">
+      <Filter>device</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="uint256">
-      <UniqueIdentifier>{cdfe2092-30be-4c15-aebf-8c6f025f7a28}</UniqueIdentifier>
-    </Filter>
     <Filter Include="device">
       <UniqueIdentifier>{96171b9a-3e05-4dcb-8583-ab73ddcc0e8d}</UniqueIdentifier>
     </Filter>

@@ -1,5 +1,22 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #include <iostream>
 #include <stdexcept>
+#include <cstring>
 #include <string>
 #include "nv_apiEnum.h"
 #include "../types.h"
@@ -279,13 +296,15 @@ private:
 	NvPhysicalGpuHandle deviceHandle;
 
 public:
-	static bool foundNvAPI64();
+	static bool FoundNvAPI64();
 
 	static void initialize();
 	static void unload();
 
-	NvU32 deviceBusID;
-	void assignPciBusID(uint32_t pciBusID);
+	const int deviceID;
+	NvU32 pciBusID;
+
+	NV_API(const int deviceID, NvU32 pciBusID);
 
 	NvAPI_Status getErrorMessage(NvAPI_Status status, std::string *message);
 
@@ -301,5 +320,5 @@ public:
 	NvAPI_Status getCurrentMemoryClock(int *memoryClock);
 	NvAPI_Status getCurrentUtilizationPercent(int *utilization);
 	NvAPI_Status getCurrentPstate(int *pstate);
-	NvAPI_Status getCurrentThrottleReasons(std::string *reasons);
+	NvAPI_Status getCurrentThrottleReasons(const char *reasons);
 };

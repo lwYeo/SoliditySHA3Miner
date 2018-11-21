@@ -1,8 +1,26 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 using Nethereum.Hex.HexTypes;
+using SoliditySHA3Miner.Miner.Helper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 
 namespace SoliditySHA3Miner
 {
@@ -32,21 +50,22 @@ namespace SoliditySHA3Miner
         public string gasApiPath { get; set; }
         public float gasApiMultiplier { get; set; }
         public float gasApiOffset { get; set; }
-        public bool cpuMode { get; set; }
-        public Miner.Device[] cpuDevices { get; set; }
+        public float gasApiMax { get; set; }
+        public bool allowCPU { get; set; }
+        public Miner.Device.CPU cpuDevice { get; set; }
         public bool allowIntel { get; set; }
-        public Miner.Device[] intelDevices { get; set; }
+        public Miner.Device.OpenCL[] intelDevices { get; set; }
         public bool allowAMD { get; set; }
-        public Miner.Device[] amdDevices { get; set; }
+        public Miner.Device.OpenCL[] amdDevices { get; set; }
         public bool allowCUDA { get; set; }
-        public Miner.Device[] cudaDevices { get; set; }
+        public Miner.Device.CUDA[] cudaDevices { get; set; }
 
         public Config() // set defaults
         {
             isLogFile = false;
             minerJsonAPI = Defaults.JsonAPIPath;
             minerCcminerAPI = Defaults.CcminerAPIPath;
-            web3api= Defaults.InfuraAPI_mainnet;
+            web3api = Defaults.InfuraAPI_mainnet;
             contractAddress = Defaults.Contract0xBTC_mainnet;
             abiFile = Defaults.AbiFile0xBTC;
             overrideMaxTarget = new HexBigInteger(BigInteger.Zero);
@@ -63,14 +82,15 @@ namespace SoliditySHA3Miner
             privateKey = string.Empty;
             gasToMine = Defaults.GasToMine;
             gasLimit = Defaults.GasLimit;
-            cpuMode = false;
-            cpuDevices = new Miner.Device[] { };
+            gasApiMax = Defaults.GasApiMax;
+            allowCPU = false;
+            cpuDevice = new Miner.Device.CPU();
             allowIntel = true;
-            intelDevices = new Miner.Device[] { };
+            intelDevices = new Miner.Device.OpenCL[] { };
             allowAMD = true;
-            amdDevices = new Miner.Device[] { };
+            amdDevices = new Miner.Device.OpenCL[] { };
             allowCUDA = true;
-            cudaDevices = new Miner.Device[] { };
+            cudaDevices = new Miner.Device.CUDA[] { };
         }
 
         private static void PrintHelp()
@@ -79,15 +99,15 @@ namespace SoliditySHA3Miner
                 "Usage: SoliditySHA3Miner [OPTIONS]\n" +
                 "Options:\n" +
                 "  help                    Display this help text and exit\n" +
-                "  cpuMode                 Set this miner to run in CPU mode only, disables GPU (default: false)\n" +
-                "  cpuID                   Comma separated list of CPU thread ID to use (default: all logical CPUs except first)\n" +
+                "  allowCPU                Allow to use CPU, may slow down system (default: false)\n" +
+                "  cpuAffinity             Comma separated list of CPU affinity ID to use (default: all odd number logical processors)\n" +
                 "  allowIntel              Allow to use Intel GPU (OpenCL) (default: true)\n" +
                 "  allowAMD                Allow to use AMD GPU (OpenCL) (default: true)\n" +
                 "  allowCUDA               Allow to use Nvidia GPU (CUDA) (default: true)\n" +
-                "  intelIntensity          GPU (Intel OpenCL) intensity (default: 21, decimals allowed)\n" +
+                "  intelIntensity          GPU (Intel OpenCL) intensity (default: 17, decimals allowed)\n" +
                 "  listAmdDevices          List of all AMD (OpenCL) devices in this system and exit (device ID: GPU name)\n" +
                 "  amdDevice               Comma separated list of AMD (OpenCL) devices to use (default: all devices)\n" +
-                "  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.223, decimals allowed)\n" +
+                "  amdIntensity            GPU (AMD OpenCL) intensity (default: 24.056, decimals allowed)\n" +
                 "  listCudaDevices         List of all CUDA devices in this system and exit (device ID: GPU name)\n" +
                 "  cudaDevice              Comma separated list of CUDA devices to use (default: all devices)\n" +
                 "  cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)\n" +
@@ -98,7 +118,7 @@ namespace SoliditySHA3Miner
                 "  maxScanRetry            Number of retries to scan for new work (default: " + Defaults.MaxScanRetry + ")\n" +
                 "  pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)\n" +
                 "  submitStale             Submit stale jobs, may create more rejected shares (default: " + Defaults.SubmitStale.ToString().ToLower() + ")\n" +
-                "  abiFile                 Token abi in a file (default: 'ERC-541.abi' in the same folder as this miner)\n" +
+                "  abiFile                 Token abi in a file (default: '0xBTC.abi' in the same folder as this miner)\n" +
                 "  web3api                 User-defined web3 provider URL (default: Infura mainnet provider)\n" +
                 "  contract                Token contract address (default: 0xbtc contract address)\n" +
                 "  hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: " + Defaults.HashrateUpdateInterval + ")\n" +
@@ -106,12 +126,13 @@ namespace SoliditySHA3Miner
                 "  kingAddress             Add MiningKing address to nonce, only CPU mining supported (default: none)\n" +
                 "  address                 (Pool only) Miner's ethereum address (default: developer's address)\n" +
                 "  privateKey              (Solo only) Miner's private key\n" +
-                "  gasToMine               (Solo only) Gas price to mine in GWei (default: " + Defaults.GasToMine + "; note: will override lower dynamic gas price)\n" +
+                "  gasToMine               (Solo only) Gas price to mine in GWei (default: " + Defaults.GasToMine + ", decimals allowed; note: will override lower dynamic gas price)\n" +
                 "  gasLimit                (Solo only) Gas limit to submit proof of work (default: " + Defaults.GasLimit + ")\n" +
                 "  gasApiURL               (Solo only) Get dynamic gas price to mine from this JSON API URL (note: leave empty to disable)\n" +
                 "  gasApiPath              (Solo only) JSON path expression to retrieve dynamic gas price value from 'gasApiURL'\n" +
                 "  gasApiMultiplier        (Solo only) Multiplier to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (note: use 0.1 for EthGasStation API)\n" +
                 "  gasApiOffset            (Solo only) Offset to dynamic gas price value from 'gasApiURL' => 'gasApiPath' (after 'gasApiMultiplier', decimals allowed)\n" +
+                "  gasApiMax               (Solo only) Maximum gas price to mine in GWei from API (default: " + Defaults.GasApiMax + ", decimals allowed)" +
                 "  pool                    (Pool only) URL of pool mining server (default: " + Defaults.PoolPrimary + ")\n" +
                 "  secondaryPool           (Optional) URL of failover pool mining server\n" +
                 "  logFile                 Enables logging of console output to '{appPath}\\Log\\{yyyy-MM-dd}.log' (default: false)\n" +
@@ -121,44 +142,120 @@ namespace SoliditySHA3Miner
 
         private static void PrintAmdDevices()
         {
-            Miner.OpenCL.PreInitialize(true, out string initErrorMessage);
-            if (!string.IsNullOrWhiteSpace(initErrorMessage)) Console.WriteLine(initErrorMessage);
+            var maxPlatformCount = 5u;
+            var maxDeviceCount = 64u;
 
-            var amdDevices = Miner.OpenCL.GetDevices("AMD Accelerated Parallel Processing", out string getDevicesErrorMessage);
-            if (!string.IsNullOrWhiteSpace(getDevicesErrorMessage)) Console.WriteLine(getDevicesErrorMessage);
+            var platformCount = 0u;
+            var platformPointer = IntPtr.Zero;
+            var amdDevices = new StringBuilder();
+            var errorMessage = new StringBuilder(1024);
 
-            Console.WriteLine(amdDevices);
+            OpenCL.Solver.PreInitialize(null, null, 0, 0);
+            OpenCL.Solver.GetPlatforms(ref platformPointer, maxPlatformCount, ref platformCount, errorMessage);
+            if (errorMessage.Length > 0)
+            {
+                Program.Print("OpenCL [ERROR] " + errorMessage.ToString());
+                return;
+            }
+
+            var platforms = (Structs.DeviceCL.Platform[])Array.CreateInstance(typeof(Structs.DeviceCL.Platform), platformCount);
+            unsafe
+            {
+                Structs.DeviceCL.Platform* tempPlatforms = (Structs.DeviceCL.Platform*)platformPointer.ToPointer();
+                for (var i = 0; i < platformCount; i++)
+                    platforms[i] = tempPlatforms[i];
+            }
+
+            var amdPlatform = platforms.FirstOrDefault(p => string.Concat(p.NameToString()).IndexOf("AMD Accelerated Parallel Processing", StringComparison.OrdinalIgnoreCase) > -1);
+            if (amdPlatform.ID != IntPtr.Zero)
+            {
+                var deviceCount = 0u;
+                var devicesPointer = IntPtr.Zero;
+
+                OpenCL.Solver.GetDevicesByPlatform(amdPlatform, maxDeviceCount, ref deviceCount, ref devicesPointer, errorMessage);
+                if (errorMessage.Length > 0)
+                {
+                    var errMessage = errorMessage.ToString();
+
+                    if (errMessage.IndexOf("CL_DEVICE_NOT_FOUND") > -1)
+                        Program.Print("No AMD device(s) found.");
+                    else
+                        Program.Print("OpenCL [ERROR] " + errMessage);
+
+                    return;
+                }
+
+                var devices = (Structs.DeviceCL[])Array.CreateInstance(typeof(Structs.DeviceCL), deviceCount);
+                unsafe
+                {
+                    Structs.DeviceCL* tempDevices = (Structs.DeviceCL*)platformPointer.ToPointer();
+                    for (var i = 0; i < deviceCount; i++)
+                        devices[i] = tempDevices[i];
+                }
+
+                for (var i = 0; i < deviceCount; i++)
+                    amdDevices.AppendLine(string.Format("{0}: {1}", i, devices[i].NameToString()));
+            }
+
+            if (amdDevices.Length > 0)
+                Console.WriteLine(amdDevices.ToString());
+            else
+                Console.WriteLine("No AMD device(s) found.");
         }
 
         private static void PrintCudaDevices()
         {
-            var cudaDevices = Miner.CUDA.GetDevices(out string errorMessage);
-            Console.WriteLine(string.IsNullOrWhiteSpace(errorMessage) ? cudaDevices : errorMessage);
-        }
+            var cudaDevices = GetCudaDeviceList(out string errorMessage);
 
-        private void PrepareCpuDeviceList()
-        {
-            var cpuDeviceCount = Miner.CPU.GetLogicalProcessorCount();
-            cpuDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cpuDeviceCount);
-
-            for (int i = 0; i < cpuDevices.Length; i++)
+            if (string.IsNullOrWhiteSpace(errorMessage))
             {
-                cpuDevices[i] = new Miner.Device
+                var outputString = string.Empty;
+
+                foreach (var device in cudaDevices)
                 {
-                    Type = "CPU",
-                    DeviceID = i
-                };
+                    if (!string.IsNullOrWhiteSpace(outputString)) outputString += Environment.NewLine;
+                    outputString += string.Format("{0}: {1}", device.Item1, device.Item2);
+                }
+                Console.WriteLine(outputString);
             }
+            else { Console.WriteLine(errorMessage); }
         }
 
-        private void SetCpuDevices(uint[] iCpuIDs)
+        private static List<Tuple<int, string>> GetCudaDeviceList(out string errorMessage)
         {
-            PrepareCpuDeviceList();
+            errorMessage = string.Empty;
+            var deviceList = new List<Tuple<int, string>>();
 
-            for (int i = 0; i < cpuDevices.Length; i++)
-                cpuDevices[i].AllowDevice = iCpuIDs.Any(id => id == i);
+            var errMsg = new StringBuilder(1024);
+            var deviceName = new StringBuilder(256);
+
+            var cudaCount = 0;
+            CUDA.Solver.GetDeviceCount(ref cudaCount, errMsg);
+            errorMessage = errMsg.ToString();
+
+            if (!string.IsNullOrEmpty(errorMessage)) return deviceList;
+
+            for (int i = 0; i < cudaCount; i++)
+            {
+                errMsg.Clear();
+                deviceName.Clear();
+
+                CUDA.Solver.GetDeviceName(i, deviceName, errMsg);
+                errorMessage = errMsg.ToString();
+
+                if (!string.IsNullOrEmpty(errorMessage)) return deviceList;
+
+                deviceList.Add(new Tuple<int, string>(i, deviceName.ToString()));
+            }
+            return deviceList;
         }
-        
+
+        private void SetCpuAffinity(int[] iCpuAffinity)
+        {
+            cpuDevice.Affinities = iCpuAffinity.Distinct().Where(i => i > -1).OrderBy(i => i).ToArray();
+            cpuDevice.AllowDevice = cpuDevice.Affinities.Any();
+        }
+
         private void SetAmdDevices(uint[] iAmdDevices)
         {
             for (uint i = 0; i < amdDevices.Length; i++)
@@ -188,7 +285,7 @@ namespace SoliditySHA3Miner
                 for (int i = 0; i < sIntelIntensities.Length; i++)
                     intelDevices[i].Intensity = float.Parse(sIntelIntensities[0]);
         }
-        
+
         private void SetCudaDevices(uint[] iCudaDevices)
         {
             for (uint i = 0; i < cudaDevices.Length; i++)
@@ -209,172 +306,229 @@ namespace SoliditySHA3Miner
 
         private void CheckCPUConfig(string[] args)
         {
-            if ((cpuDevices == null || !cpuDevices.Any()) && args.All(a => !a.StartsWith("cpuID")))
-            {
-                Program.Print("CPU [INFO] IDs not specified, default assign all logical CPUs except first.");
-                var cpuCount = Miner.CPU.GetLogicalProcessorCount();
-                if (cpuCount <= 0) cpuCount = 1;
-                cpuDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), cpuCount);
+            if (!Program.AllowCPU)
+                return;
 
-                for (int i = 0; i < cpuCount; i++)
-                {
-                    cpuDevices[i] = new Miner.Device
-                    {
-                        Type = "CPU",
-                        DeviceID = i,
-                        AllowDevice = (i > 0 || cpuCount.Equals(1))
-                    };
-                }
+            if (args.All(a => !a.StartsWith("cpuAffinity")))
+                Program.Print("CPU [INFO] Processor affinity not specified, default assign all odd number logical processors.");
+
+            if ((cpuDevice.Affinities == null || !cpuDevice.Affinities.Any()) && args.All(a => !a.StartsWith("cpuAffinity")))
+            {
+                cpuDevice.Type = "CPU";
+                cpuDevice.Affinities = Environment.ProcessorCount > 1
+                                     ? (int[])Array.CreateInstance(typeof(int), Environment.ProcessorCount / 2)
+                                     : Enumerable.Empty<int>().ToArray();
+                cpuDevice.AllowDevice = cpuDevice.Affinities.Any();
+
+                for (int i = 0; i < cpuDevice.Affinities.Length; i++)
+                    cpuDevice.Affinities[i] = (i * 2) + 1;
             }
         }
 
         private void CheckOpenCLConfig(string[] args)
         {
-            if (Program.AllowAMD || Program.AllowIntel)
-            {
-                try
-                {
-                    Miner.OpenCL.PreInitialize(allowIntel, out var openCLInitErrorMessage);
-                    
-                    if (!string.IsNullOrWhiteSpace(openCLInitErrorMessage))
-                    {
-                        if (openCLInitErrorMessage.Contains("Unable to load shared library"))
-                            Program.Print("OpenCL [WARN] OpenCL not installed.");
-                        else
-                            Program.Print("OpenCL [ERROR] " + openCLInitErrorMessage);
+            if (!Program.AllowAMD && !Program.AllowIntel)
+                return;
 
-                        Program.AllowIntel = false;
-                        Program.AllowAMD = false;
+            if (args.All(a => !a.StartsWith("amdDevice")))
+                Program.Print("OpenCL [INFO] AMD APP device not specified, default assign all AMD APP devices.");
+
+            try
+            {
+                var maxPlatformCount = 5u;
+                var maxDeviceCount = 64u;
+
+                var sha3Kernel = new StringBuilder(Properties.Resources.ResourceManager.GetString("sha3Kernel"));
+                var sha3KingKernel = new StringBuilder(Properties.Resources.ResourceManager.GetString("sha3KingKernel"));
+                OpenCL.Solver.PreInitialize(sha3Kernel, sha3KingKernel, (ulong)sha3Kernel.Length, (ulong)sha3KingKernel.Length);
+
+                var platformCount = 0u;
+                var platformPointer = IntPtr.Zero;
+                var errorMessage = new StringBuilder(1024);
+
+                OpenCL.Solver.GetPlatforms(ref platformPointer, maxPlatformCount, ref platformCount, errorMessage);
+                if (errorMessage.Length > 0)
+                {
+                    Program.Print("OpenCL [ERROR] " + errorMessage.ToString());
+                    return;
+                }
+
+                var platforms = (Structs.DeviceCL.Platform[])Array.CreateInstance(typeof(Structs.DeviceCL.Platform), platformCount);
+                unsafe
+                {
+                    Structs.DeviceCL.Platform* tempPlatforms = (Structs.DeviceCL.Platform*)platformPointer.ToPointer();
+                    for (var i = 0; i < platformCount; i++)
+                        platforms[i] = tempPlatforms[i];
+                }
+
+                var amdPlatform = platforms.FirstOrDefault(p => string.Concat(p.NameToString()).IndexOf("AMD Accelerated Parallel Processing", StringComparison.OrdinalIgnoreCase) > -1);
+                var intelPlatform = platforms.FirstOrDefault(p => string.Concat(p.NameToString()).IndexOf("Intel(R) OpenCL", StringComparison.OrdinalIgnoreCase) > -1);
+                var cudaPlatform = platforms.FirstOrDefault(p => string.Concat(p.NameToString()).IndexOf("NVIDIA CUDA", StringComparison.OrdinalIgnoreCase) > -1);
+
+                if (Program.AllowAMD && amdPlatform.ID != IntPtr.Zero)
+                {
+                    var deviceCount = 0u;
+                    var devicesPointer = IntPtr.Zero;
+                    OpenCL.Solver.GetDevicesByPlatform(amdPlatform, maxDeviceCount, ref deviceCount, ref devicesPointer, errorMessage);
+
+                    if (errorMessage.Length > 0)
+                    {
+                        var errMessage = errorMessage.ToString();
+
+                        if (errMessage.IndexOf("CL_DEVICE_NOT_FOUND") > -1)
+                            Program.Print("OpenCL [WARN] " + errMessage);
+                        else
+                            Program.Print("OpenCL [ERROR] " + errMessage);
+
+                        errorMessage.Clear();
                     }
                     else
                     {
-                        if (Program.AllowIntel)
+                        if (deviceCount < 1)
+                            intelDevices = (Miner.Device.OpenCL[])Array.CreateInstance(typeof(Miner.Device.OpenCL), 0);
+                        else
                         {
-                            Program.Print("OpenCL [INFO] Assign all Intel(R) OpenCL devices.");
-                            var deviceCount = Miner.OpenCL.GetDeviceCount("Intel(R) OpenCL", out var openCLerrorMessage);
-
-                            if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Program.Print("OpenCL [WARN] " + openCLerrorMessage);
-
-                            if (deviceCount < 1)
+                            var devices = (Structs.DeviceCL[])Array.CreateInstance(typeof(Structs.DeviceCL), deviceCount);
+                            unsafe
                             {
-                                intelDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), 0);
+                                Structs.DeviceCL* tempDevices = (Structs.DeviceCL*)devicesPointer.ToPointer();
+                                for (var i = 0; i < deviceCount; i++)
+                                    devices[i] = tempDevices[i];
                             }
-                            else
+
+                            var tempAmdList = new List<Miner.Device.OpenCL>((int)deviceCount);
+                            for (int i = 0; i < deviceCount; i++)
                             {
-                                var tempIntelList = new List<Miner.Device>();
-                                for (int i = 0; i < deviceCount; i++)
+                                var userDevice = amdDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
+
+                                tempAmdList.Add(new Miner.Device.OpenCL
                                 {
-                                    var tempName = Miner.OpenCL.GetDeviceName("Intel(R) OpenCL", i, out var openCLdeviceErrorMessage);
-
-                                    if (!string.IsNullOrWhiteSpace(openCLdeviceErrorMessage))
-                                        Program.Print("OpenCL [WARN] " + openCLdeviceErrorMessage);
-
-                                    var userDevice = intelDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
-                                    var userIntensity = userDevice?.Intensity ?? 0;
-                                    var userAllowDevice = userDevice?.AllowDevice ?? true;
-
-                                    tempIntelList.Add(new Miner.Device
-                                    {
-                                        AllowDevice = string.IsNullOrWhiteSpace(openCLdeviceErrorMessage) && userAllowDevice,
-                                        Type = "OpenCL",
-                                        Platform = "Intel(R) OpenCL",
-                                        DeviceID = i,
-                                        Name = tempName,
-                                        Intensity = userIntensity
-                                    });
-                                }
-                                intelDevices = tempIntelList.ToArray();
+                                    AllowDevice = userDevice?.AllowDevice ?? true,
+                                    DeviceCL_Struct = devices[i],
+                                    Type = "OpenCL",
+                                    Platform = "AMD Accelerated Parallel Processing",
+                                    DeviceID = i,
+                                    PciBusID = userDevice?.PciBusID ?? 0,
+                                    Name = devices[i].NameToString(),
+                                    Intensity = userDevice?.Intensity ?? 0
+                                });
                             }
-                        }
-
-                        if (Program.AllowAMD)
-                        {
-                            var deviceCount = Miner.OpenCL.GetDeviceCount("AMD Accelerated Parallel Processing", out var openCLerrorMessage);
-
-                            if (!string.IsNullOrWhiteSpace(openCLerrorMessage)) Program.Print("OpenCL [WARN] " + openCLerrorMessage);
-
-                            if (deviceCount < 1)
-                            {
-                                amdDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), 0);
-                            }
-                            else
-                            {
-                                var tempAmdList = new List<Miner.Device>();
-                                for (int i = 0; i < deviceCount; i++)
-                                {
-                                    var tempName = Miner.OpenCL.GetDeviceName("AMD Accelerated Parallel Processing", i, out var openCLdeviceErrorMessage);
-
-                                    if (!string.IsNullOrWhiteSpace(openCLdeviceErrorMessage))
-                                        Program.Print("OpenCL [WARN] " + openCLdeviceErrorMessage);
-
-                                    var userDevice = amdDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
-                                    var userIntensity = userDevice?.Intensity ?? 0;
-                                    var userAllowDevice = userDevice?.AllowDevice ?? true;
-                                    var userPciBusID = userDevice?.PciBusID ?? 0;
-                                    var userDeviceName = userDevice?.Name ?? string.Empty;
-
-                                    tempAmdList.Add(new Miner.Device
-                                    {
-                                        AllowDevice = string.IsNullOrWhiteSpace(openCLdeviceErrorMessage) && userAllowDevice,
-                                        Type = "OpenCL",
-                                        Platform = "AMD Accelerated Parallel Processing",
-                                        DeviceID = i,
-                                        PciBusID = userPciBusID,
-                                        Name = string.IsNullOrWhiteSpace(userDeviceName) ? tempName : userDeviceName,
-                                        Intensity = userIntensity
-                                    });
-                                }
-                                amdDevices = tempAmdList.ToArray();
-                            }
+                            amdDevices = tempAmdList.ToArray();
                         }
                     }
                 }
-                catch (DllNotFoundException)
+
+                if (Program.AllowIntel && intelPlatform.ID != IntPtr.Zero)
                 {
-                    Program.Print("OpenCL [WARN] OpenCL not found.");
+                    Program.Print("OpenCL [INFO] Assign all Intel(R) OpenCL devices.");
+
+                    var deviceCount = 0u;
+                    var devicesPointer = IntPtr.Zero;
+                    OpenCL.Solver.GetDevicesByPlatform(intelPlatform, maxDeviceCount, ref deviceCount, ref devicesPointer, errorMessage);
+
+                    if (errorMessage.Length > 0)
+                    {
+                        var errMessage = errorMessage.ToString();
+
+                        if (errMessage.IndexOf("CL_DEVICE_NOT_FOUND") > -1)
+                            Program.Print("OpenCL [WARN] " + errMessage);
+                        else
+                            Program.Print("OpenCL [ERROR] " + errMessage);
+
+                        errorMessage.Clear();
+                    }
+                    else
+                    {
+                        if (deviceCount < 1)
+                            intelDevices = (Miner.Device.OpenCL[])Array.CreateInstance(typeof(Miner.Device.OpenCL), 0);
+                        else
+                        {
+                            var devices = (Structs.DeviceCL[])Array.CreateInstance(typeof(Structs.DeviceCL), deviceCount);
+                            unsafe
+                            {
+                                Structs.DeviceCL* tempDevices = (Structs.DeviceCL*)devicesPointer.ToPointer();
+                                for (var i = 0; i < deviceCount; i++)
+                                    devices[i] = tempDevices[i];
+                            }
+
+                            var tempIntelList = new List<Miner.Device.OpenCL>((int)deviceCount);
+                            for (int i = 0; i < deviceCount; i++)
+                            {
+                                var userDevice = intelDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
+
+                                tempIntelList.Add(new Miner.Device.OpenCL
+                                {
+                                    AllowDevice = userDevice?.AllowDevice ?? true,
+                                    DeviceCL_Struct = devices[i],
+                                    Type = "OpenCL",
+                                    Platform = "Intel(R) OpenCL",
+                                    DeviceID = i,
+                                    Name = devices[i].NameToString(),
+                                    Intensity = userDevice?.Intensity ?? 0
+                                });
+                            }
+                            intelDevices = tempIntelList.ToArray();
+                        }
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Program.Print(ex.ToString());
-                }
+            }
+            catch (DllNotFoundException)
+            {
+                Program.Print("OpenCL [WARN] OpenCL not found.");
+            }
+            catch (Exception ex)
+            {
+                Program.Print(ex.ToString());
             }
         }
 
         private void CheckCUDAConfig(string[] args)
         {
-            if (Program.AllowCUDA)
+            if (!Program.AllowCUDA)
+                return;
+
+            if (args.All(a => !a.StartsWith("cudaDevice")))
+                Program.Print("CUDA [INFO] Device not specified, default assign all CUDA devices.");
+
+            var errorMessage = new StringBuilder(1024);
+
+            var cudaDeviceCount = 0;
+            CUDA.Solver.GetDeviceCount(ref cudaDeviceCount, errorMessage);
+
+            if (errorMessage.Length > 0) Program.Print("CUDA [ERROR] " + errorMessage.ToString());
+
+            if (cudaDeviceCount > 0)
             {
-                var cudaDeviceCount = Miner.CUDA.GetDeviceCount(out string cudaCountErrorMessage);
-
-                if (!string.IsNullOrWhiteSpace(cudaCountErrorMessage)) Program.Print("CUDA [ERROR] " + cudaCountErrorMessage);
-
-                if (cudaDeviceCount > 0)
+                var tempCudaList = new List<Miner.Device.CUDA>();
+                for (int i = 0; i < cudaDeviceCount; i++)
                 {
-                    var tempCudaList = new List<Miner.Device>();
-                    for (int i = 0; i < cudaDeviceCount; i++)
+                    var userDevice = cudaDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
+                    var userIntensity = userDevice?.Intensity ?? 0;
+                    var userAllowDevice = userDevice?.AllowDevice ?? true;
+                    var userPciBusID = userDevice?.PciBusID ?? 0;
+
+                    errorMessage.Clear();
+                    var deviceName = new StringBuilder(256);
+                    CUDA.Solver.GetDeviceName(i, deviceName, errorMessage);
+
+                    if (errorMessage.Length > 0) Program.Print("CUDA [ERROR] " + errorMessage.ToString());
+
+                    tempCudaList.Add(new Miner.Device.CUDA
                     {
-                        var userDevice = cudaDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
-                        var userIntensity = userDevice?.Intensity ?? 0;
-                        var userAllowDevice = userDevice?.AllowDevice ?? true;
-                        var userPciBusID = userDevice?.PciBusID ?? 0;
-
-                        tempCudaList.Add(new Miner.Device
-                        {
-                            AllowDevice = true && userAllowDevice,
-                            Type = "CUDA",
-                            DeviceID = i,
-                            PciBusID = userPciBusID,
-                            Name = Miner.CUDA.GetDeviceName(i, out string errorMessage),
-                            Intensity = userIntensity
-                        });
-                    }
-                    cudaDevices = tempCudaList.ToArray();
+                        AllowDevice = true && userAllowDevice,
+                        Type = "CUDA",
+                        DeviceID = i,
+                        PciBusID = userPciBusID,
+                        Name = deviceName.ToString(),
+                        Intensity = userIntensity
+                    });
                 }
-                else
-                {
-                    Program.Print("CUDA [WARN] Device not found.");
-                    cudaDevices = (Miner.Device[])Array.CreateInstance(typeof(Miner.Device), 0);
-                }
+                cudaDevices = tempCudaList.ToArray();
+            }
+            else
+            {
+                Program.Print("CUDA [WARN] Device not found.");
+                cudaDevices = (Miner.Device.CUDA[])Array.CreateInstance(typeof(Miner.Device.CUDA), 0);
             }
         }
 
@@ -382,9 +536,14 @@ namespace SoliditySHA3Miner
         {
             try
             {
+                Program.AllowCPU = allowCPU;
+                Program.AllowIntel = allowIntel;
+                Program.AllowAMD = allowAMD;
+                Program.AllowCUDA = allowCUDA;
+
                 if (networkUpdateInterval < 1000) networkUpdateInterval = 1000;
                 if (hashrateUpdateInterval < 1000) hashrateUpdateInterval = 1000;
-                
+
                 if (string.IsNullOrEmpty(kingAddress))
                     Program.Print("[INFO] King making disabled.");
                 else
@@ -413,72 +572,62 @@ namespace SoliditySHA3Miner
                         Program.Print("[INFO] Secondary pool specified, using " + secondaryPool);
                 }
 
-                if (cpuMode) { CheckCPUConfig(args); }
-                else
+                CheckCUDAConfig(args);
+                CheckOpenCLConfig(args);
+                CheckCPUConfig(args);
+
+                foreach (var arg in args)
                 {
-                    Program.AllowIntel = allowIntel;
-                    Program.AllowAMD = allowAMD;
-                    Program.AllowCUDA = allowCUDA;
-
-                    if (Program.AllowCUDA && args.All(a => !a.StartsWith("cudaDevice")))
-                        Program.Print("CUDA [INFO] Device not specified, default assign all CUDA devices.");
-
-                    CheckCUDAConfig(args);
-
-                    if (Program.AllowAMD && args.All(a => !a.StartsWith("amdDevice")))
-                        Program.Print("OpenCL [INFO] AMD APP device not specified, default assign all AMD APP devices.");
-
-                    CheckOpenCLConfig(args);
-
-                    foreach (var arg in args)
+                    try
                     {
-                        try
+                        switch (arg.Split('=')[0])
                         {
-                            switch (arg.Split('=')[0])
-                            {
-                                case "amdDevice":
-                                    SetAmdDevices(arg.Split('=')[1].Split(',').Select(s => uint.Parse(s)).ToArray());
-                                    break;
+                            case "cpuAffinity":
+                                SetCpuAffinity(arg.Split('=')[1].Split(',').Select(s => int.Parse(s)).ToArray());
+                                break;
 
-                                case "cudaDevice":
-                                    SetCudaDevices(arg.Split('=')[1].Split(',').Select(s => uint.Parse(s)).ToArray());
-                                    break;
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            Program.Print("[ERROR] Failed parsing argument: " + arg);
-                            return false;
+                            case "amdDevice":
+                                SetAmdDevices(arg.Split('=')[1].Split(',').Select(s => uint.Parse(s)).ToArray());
+                                break;
+
+                            case "cudaDevice":
+                                SetCudaDevices(arg.Split('=')[1].Split(',').Select(s => uint.Parse(s)).ToArray());
+                                break;
                         }
                     }
-
-                    foreach (var arg in args)
+                    catch (Exception)
                     {
-                        try
-                        {
-                            switch (arg.Split('=')[0])
-                            {
-                                case "intelIntensity":
-                                    if (!Program.AllowIntel || arg.EndsWith('=')) break;
-                                    SetIntelIntensities(arg.Split('=')[1].Split(','));
-                                    break;
+                        Program.Print("[ERROR] Failed parsing argument: " + arg);
+                        return false;
+                    }
+                }
 
-                                case "amdIntensity":
-                                    if (!Program.AllowAMD || arg.EndsWith('=')) break;
-                                    SetAmdIntensities(arg.Split('=')[1].Split(','));
-                                    break;
-
-                                case "cudaIntensity":
-                                    if (!Program.AllowCUDA || arg.EndsWith('=')) break;
-                                    SetCudaIntensities(arg.Split('=')[1].Split(','));
-                                    break;
-                            }
-                        }
-                        catch (Exception)
+                foreach (var arg in args)
+                {
+                    try
+                    {
+                        switch (arg.Split('=')[0])
                         {
-                            Program.Print("[ERROR] Failed parsing argument: " + arg);
-                            return false;
+                            case "intelIntensity":
+                                if (!Program.AllowIntel || arg.EndsWith("=")) break;
+                                SetIntelIntensities(arg.Split('=')[1].Split(','));
+                                break;
+
+                            case "amdIntensity":
+                                if (!Program.AllowAMD || arg.EndsWith("=")) break;
+                                SetAmdIntensities(arg.Split('=')[1].Split(','));
+                                break;
+
+                            case "cudaIntensity":
+                                if (!Program.AllowCUDA || arg.EndsWith("=")) break;
+                                SetCudaIntensities(arg.Split('=')[1].Split(','));
+                                break;
                         }
+                    }
+                    catch (Exception)
+                    {
+                        Program.Print("[ERROR] Failed parsing argument: " + arg);
+                        return false;
                     }
                 }
                 return true;
@@ -503,12 +652,8 @@ namespace SoliditySHA3Miner
                             Environment.Exit(0);
                             break;
 
-                        case "cpuMode":
-                            cpuMode = bool.Parse(arg.Split('=')[1]);
-                            break;
-
-                        case "cpuID":
-                            SetCpuDevices(arg.Split('=')[1].Split(',').Select(s => uint.Parse(s)).ToArray());
+                        case "allowCPU":
+                            allowCPU = bool.Parse(arg.Split('=')[1]);
                             break;
 
                         case "allowIntel":
@@ -620,6 +765,10 @@ namespace SoliditySHA3Miner
                             gasApiOffset = float.Parse(arg.Split('=')[1]);
                             break;
 
+                        case "gasApiMax":
+                            gasApiMax = float.Parse(arg.Split('=')[1]);
+                            break;
+
                         case "pool":
                             primaryPool = arg.Split('=')[1];
                             break;
@@ -649,7 +798,7 @@ namespace SoliditySHA3Miner
             public const string InfuraAPI_ropsten = "https://ropsten.infura.io/ANueYSYQTstCr2mFJjPE";
             public const string Contract0xBTC_mainnet = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
             public const string Contract0xBTC_ropsten = "0x9D2Cc383E677292ed87f63586086CfF62a009010";
-            public const string AbiFile0xBTC = "ERC-541.abi";
+            public const string AbiFile0xBTC = "0xBTC.abi";
 
             public const string PoolPrimary = "http://mike.rs:8080";
             public const string PoolSecondary = "http://mike.rs:8080";
@@ -657,8 +806,9 @@ namespace SoliditySHA3Miner
             public const string CcminerAPIPath = "127.0.0.1:4068";
 
             public const bool SubmitStale = false;
-            public const float GasToMine = 5.0f;
+            public const float GasToMine = 3.0f;
             public const ulong GasLimit = 1704624ul;
+            public const float GasApiMax = 7.0f;
             public const int MaxScanRetry = 3;
             public const int PauseOnFailedScan = 3;
             public const int NetworkUpdateInterval = 15000;

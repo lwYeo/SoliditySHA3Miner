@@ -1,0 +1,13 @@
+### Before start mining on ethOS
+
+1) Ensure CUDA 9.2 (Nvidia driver 396) is installed
+
+1a) Run the following commands (root/sudo required)
+ sudo install-nv-beta
+ 
+1b) This process will take about 5-10 minutes before rebooting itself.
+
+2) Go to the extracted miner folder and run the following command to install miner dependancy
+ sudo ./install-deps-ethOS.sh
+
+3) Follow 'GuideForPoolMining.txt' or 'GuideForSoloMining.txt' for essential miner setup

@@ -1,10 +1,20 @@
-#include "cudaErrorCheck.cu"
-#include "cudaSolver.h"
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
 
 /*
-* Author: Mikers, Azlehria, lwYeo
-* Date: March 4 - September 2018 for 0xbitcoin dev
-*
 * based off of https://github.com/Dunhili/SHA3-gpu-brute-force-cracker/blob/master/sha3.cu
 *
 * Author: Brian Bowden
@@ -13,18 +23,15 @@
 * This is the parallel version of SHA-3.
 */
 
+#include "cudaErrorCheck.cu"
+#include "cudaSolver.h"
+
 typedef union
 {
 	uint2		uint2;
 	uint64_t	uint64;
 	uint8_t		uint8[UINT64_LENGTH];
 } nonce_t;
-
-__constant__ int const mod5[8] =
-{
-	0, 1, 2, 3, 4,
-	0, 1, 2
-};
 
 __constant__ uint64_t d_midstate[25];
 __constant__ uint64_t d_target[1];
@@ -124,7 +131,7 @@ __device__ __forceinline__ nonce_t rotr(nonce_t input, uint32_t const offset)
 	return input;
 }
 
-__global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restrict__ solutionCount, uint64_t startPosition)
+__global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restrict__ solutionCount, uint32_t maxSolutionCount, uint64_t startPosition)
 {
 	nonce_t nonce, state[25], C[5], D[5], n[11];
 	nonce.uint64 = blockDim.x * blockIdx.x + threadIdx.x + startPosition;
@@ -208,26 +215,51 @@ __global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restr
 		C[0] = xor5(state[4], state[9], state[14], state[19], state[24]);
 
 #if __CUDA_ARCH__ >= 350
-#	pragma unroll
-#endif
+		D[0] = rotl(C[2], 1);
+		state[0] = xor3(state[0], D[0], C[0]);
+		state[5] = xor3(state[5], D[0], C[0]);
+		state[10] = xor3(state[10], D[0], C[0]);
+		state[15] = xor3(state[15], D[0], C[0]);
+		state[20] = xor3(state[20], D[0], C[0]);
+
+		D[1] = rotl(C[3], 1);
+		state[1] = xor3(state[1], D[1], C[1]);
+		state[6] = xor3(state[6], D[1], C[1]);
+		state[11] = xor3(state[11], D[1], C[1]);
+		state[16] = xor3(state[16], D[1], C[1]);
+		state[21] = xor3(state[21], D[1], C[1]);
+
+		D[2] = rotl(C[4], 1);
+		state[2] = xor3(state[2], D[2], C[2]);
+		state[7] = xor3(state[7], D[2], C[2]);
+		state[12] = xor3(state[12], D[2], C[2]);
+		state[17] = xor3(state[17], D[2], C[2]);
+		state[22] = xor3(state[22], D[2], C[2]);
+
+		D[3] = rotl(C[0], 1);
+		state[3] = xor3(state[3], D[3], C[3]);
+		state[8] = xor3(state[8], D[3], C[3]);
+		state[13] = xor3(state[13], D[3], C[3]);
+		state[18] = xor3(state[18], D[3], C[3]);
+		state[23] = xor3(state[23], D[3], C[3]);
+
+		D[4] = rotl(C[1], 1);
+		state[4] = xor3(state[4], D[4], C[4]);
+		state[9] = xor3(state[9], D[4], C[4]);
+		state[14] = xor3(state[14], D[4], C[4]);
+		state[19] = xor3(state[19], D[4], C[4]);
+		state[24] = xor3(state[24], D[4], C[4]);
+#else
 		for (int x{ 0 }; x < 5; ++x)
 		{
-#if __CUDA_ARCH__ >= 350
-			D[x] = rotl(C[mod5[x + 2]], 1);
-			state[x] = xor3(state[x], D[x], C[x]);
-			state[x + 5] = xor3(state[x + 5], D[x], C[x]);
-			state[x + 10] = xor3(state[x + 10], D[x], C[x]);
-			state[x + 15] = xor3(state[x + 15], D[x], C[x]);
-			state[x + 20] = xor3(state[x + 20], D[x], C[x]);
-#else
-			D[x].uint64 = rotl(C[mod5[x + 2]], 1).uint64 ^ C[x].uint64;
+			D[x].uint64 = rotl(C[(x + 2) % 5], 1).uint64 ^ C[x].uint64;
 			state[x].uint64 = state[x].uint64 ^ D[x].uint64;
 			state[x + 5].uint64 = state[x + 5].uint64 ^ D[x].uint64;
 			state[x + 10].uint64 = state[x + 10].uint64 ^ D[x].uint64;
 			state[x + 15].uint64 = state[x + 15].uint64 ^ D[x].uint64;
 			state[x + 20].uint64 = state[x + 20].uint64 ^ D[x].uint64;
-#endif
 		}
+#endif
 
 		C[0] = state[1];
 		state[1] = rotr(state[6], 20);
@@ -295,111 +327,33 @@ __global__ void hashMidstate(uint64_t *__restrict__ solutions, uint32_t *__restr
 
 	if (bswap_64(state[0]).uint64 <= d_target[0]) // LTE is allowed because d_target is high 64 bits of uint256 (let CPU do the verification)
 	{
-		(*solutionCount)++;
-		if ((*solutionCount) < MAX_SOLUTION_COUNT_DEVICE) solutions[(*solutionCount) - 1] = nonce.uint64;
+		if (*solutionCount < maxSolutionCount)
+		{
+			solutions[*solutionCount] = nonce.uint64;
+			(*solutionCount)++;
+		}
 	}
 }
 
 // --------------------------------------------------------------------
 // CudaSolver
 // --------------------------------------------------------------------
+
 namespace CUDASolver
 {
-	void CudaSolver::pushMessage(std::unique_ptr<Device> &device)
+	void CudaSolver::PushHigh64Target(uint64_t *high64Target, const char *errorMessage)
 	{
-		cudaMemcpyToSymbol(d_midstate, &device->currentMidstate, SPONGE_LENGTH, 0, cudaMemcpyHostToDevice);
-
-		device->isNewMessage = false;
+		CudaCheckError(cudaMemcpyToSymbol(d_target, high64Target, UINT64_LENGTH, 0, cudaMemcpyHostToDevice), errorMessage);
 	}
 
-	void CudaSolver::pushTarget(std::unique_ptr<Device> &device)
+	void CudaSolver::PushMidState(sponge_ut *midState, const char *errorMessage)
 	{
-		cudaMemcpyToSymbol(d_target, &device->currentHigh64Target, UINT64_LENGTH, 0, cudaMemcpyHostToDevice);
-
-		device->isNewTarget = false;
+		CudaCheckError(cudaMemcpyToSymbol(d_midstate, midState, SPONGE_LENGTH, 0, cudaMemcpyHostToDevice), errorMessage);
 	}
 
-	void CudaSolver::findSolution(int const deviceID)
+	void CudaSolver::HashMidState(DeviceCUDA *device, const char *errorMessage)
 	{
-		std::string errorMessage;
-		auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device) { return device->deviceID == deviceID; });
-
-		if (!device->initialized) return;
-
-		while (!(device->isNewTarget || device->isNewMessage)) { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
-
-		errorMessage = CudaSafeCall(cudaSetDevice(device->deviceID));
-		if (!errorMessage.empty())
-			onMessage(device->deviceID, "Error", errorMessage);
-
-		char *c_currentChallenge = (char *)malloc(s_challenge.size());
-		#ifdef __linux__
-		strcpy(c_currentChallenge, s_challenge.c_str());
-		#else
-		strcpy_s(c_currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
-		#endif
-
-		onMessage(device->deviceID, "Info", "Start mining...");
-		onMessage(device->deviceID, "Debug", "Threads: " + std::to_string(device->threads()) + " Grid size: " + std::to_string(device->grid().x) + " Block size:" + std::to_string(device->block().x));
-
-		device->mining = true;
-		device->hashCount.store(0ull);
-		device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(1000); // reduce excessive high hashrate reporting at start
-		do
-		{
-			while (m_pause)
-			{
-				device->hashCount.store(0ull);
-				device->hashStartTime = std::chrono::steady_clock::now();
-
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));
-			}
-
-			checkInputs(device, c_currentChallenge);
-
-			hashMidstate<<<device->grid(), device->block()>>>(device->d_Solutions, device->d_SolutionCount, getNextWorkPosition(device));
-
-			errorMessage = CudaSyncAndCheckError();
-			if (!errorMessage.empty())
-			{
-				onMessage(device->deviceID, "Error", "Kernel launch failed: " + errorMessage);
-				device->mining = false;
-				break;
-			}
-
-			if (*device->h_SolutionCount > 0u)
-			{
-				std::set<uint64_t> uniqueSolutions;
-
-				for (uint32_t i{ 0u }; i < MAX_SOLUTION_COUNT_DEVICE && i < *device->h_SolutionCount; ++i)
-				{
-					uint64_t const tempSolution{ device->h_Solutions[i] };
-
-					if (tempSolution != 0u && uniqueSolutions.find(tempSolution) == uniqueSolutions.end())
-						uniqueSolutions.emplace(tempSolution);
-				}
-
-				std::thread t{ &CudaSolver::submitSolutions, this, uniqueSolutions, std::string{ c_currentChallenge }, device->deviceID };
-				t.detach();
-
-				std::memset(device->h_SolutionCount, 0u, UINT32_LENGTH);
-			}
-		} while (device->mining);
-
-		onMessage(device->deviceID, "Info", "Stop mining...");
-		device->hashCount.store(0ull);
-
-		errorMessage = CudaSafeCall(cudaFreeHost(device->h_SolutionCount));
-		if (!errorMessage.empty())
-			onMessage(device->deviceID, "Error", errorMessage);
-		errorMessage = CudaSafeCall(cudaFreeHost(device->h_Solutions));
-		if (!errorMessage.empty())
-			onMessage(device->deviceID, "Error", errorMessage);
-		errorMessage = CudaSafeCall(cudaDeviceReset());
-		if (!errorMessage.empty())
-			onMessage(device->deviceID, "Error", errorMessage);
-
-		device->initialized = false;
-		onMessage(device->deviceID, "Info", "Mining stopped.");
+		hashMidstate<<<device->Grid, device->Block>>>(device->SolutionsDevice, device->SolutionCountDevice, device->MaxSolutionCount, device->WorkPosition);
+		CudaSyncAndCheckError(errorMessage);
 	}
 }

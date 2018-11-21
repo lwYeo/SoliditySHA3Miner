@@ -1,913 +1,454 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #include "openCLSolver.h"
-#include <iostream>
 
 namespace OpenCLSolver
 {
-#define ROTL64(x, y) (((x) << (y)) ^ ((x) >> (64u - (y))))
-#define ROTR64(x, y) (((x) >> (y)) ^ ((x) << (64u - (y))))
-
 	// --------------------------------------------------------------------
 	// Static
 	// --------------------------------------------------------------------
 
-	std::vector<Platform> openCLSolver::platforms;
-	bool openCLSolver::m_pause{ false };
-	bool openCLSolver::m_isSubmitting{ false };
-	bool openCLSolver::m_isKingMaking{ false };
+	const char *OpenCLSolver::kernelSource;
+	const char *OpenCLSolver::kernelKingSource;
+	size_t OpenCLSolver::kernelSourceSize;
+	size_t OpenCLSolver::kernelKingSourceSize;
 
-	bool openCLSolver::foundAdlApi()
+	bool OpenCLSolver::FoundAdlApi()
 	{
-		return ADL_API::foundAdlApi();
+		return ADL_API::FoundAdlApi();
 	}
 
-	void openCLSolver::preInitialize(bool allowIntel, std::string sha3Kernel, std::string sha3KingKernel, std::string &errorMessage)
+	void OpenCLSolver::PreInitialize(const char *sha3Kernel, const char *sha3KingKernel, size_t kernelSize, size_t kingKernelSize)
+	{
+		if (kernelSize > 0)
+		{
+			kernelSource = new char[kernelSize];
+			std::memcpy((void *)kernelSource, sha3Kernel, kernelSize);
+			std::memset((void *)&kernelSource[kernelSize], 0, 1);
+		}
+
+		if (kingKernelSize > 0)
+		{
+			kernelKingSource = new char[kingKernelSize];
+			std::memcpy((void *)kernelKingSource, sha3KingKernel, kingKernelSize);
+			std::memset((void *)&kernelKingSource[kingKernelSize], 0, 1);
+		}
+
+		kernelSourceSize = kernelSize;
+		kernelKingSourceSize = kingKernelSize;
+
+		if (ADL_API::FoundAdlApi())
+			ADL_API::initialize();
+	}
+
+	void OpenCLSolver::GetPlatforms(Platform_t **platforms, cl_uint maxPlatforms, cl_uint *platformCount, const char *errorMessage)
 	{
 		cl_int status{ CL_SUCCESS };
-		cl_uint numPlatforms{ 0 };
-		status = clGetPlatformIDs(0, NULL, &numPlatforms);
 
+		status = clGetPlatformIDs(0, NULL, platformCount);
 		if (status != CL_SUCCESS)
 		{
-			errorMessage = "No OpenCL platforms available.";
+			auto msg = "No OpenCL platforms available.";
+			std::string msgString{ msg };
+			std::memcpy((void *)errorMessage, msg, msgString.length());
+			std::memset((void *)&errorMessage[msgString.length()], 0, 1);
 			return;
 		}
 
-		cl_platform_id* tempPlatforms = (cl_platform_id *)malloc(numPlatforms * sizeof(cl_platform_id));
-		status = clGetPlatformIDs(numPlatforms, tempPlatforms, NULL);
+		if (*platformCount > maxPlatforms)
+			*platformCount = maxPlatforms;
 
+		cl_platform_id *tempPlatforms = (cl_platform_id *)malloc(*platformCount * sizeof(cl_platform_id));
+		status = clGetPlatformIDs(*platformCount, tempPlatforms, 0);
 		if (status != CL_SUCCESS)
 		{
-			errorMessage = "Failed to get OpenCL platforms.";
+			auto msg = "Failed to get OpenCL platforms.";
+			std::string msgString{ msg };
+			std::memcpy((void *)errorMessage, msg, msgString.length());
+			std::memset((void *)&errorMessage[msgString.length()], 0, 1);
 			return;
 		}
 
-		for (unsigned int i{ 0 }; i < numPlatforms; ++i)
+		*platforms = new Platform_t[*platformCount];
+
+		for (int i{ 0 }; i < *platformCount; ++i)
 		{
 			char platformNameBuf[256];
-			status = clGetPlatformInfo(tempPlatforms[i], CL_PLATFORM_NAME, sizeof(platformNameBuf), platformNameBuf, NULL);
+			status = clGetPlatformInfo(tempPlatforms[i], CL_PLATFORM_NAME, sizeof(platformNameBuf), platformNameBuf, 0);
 			std::string platformName{ (std::string{ platformNameBuf } == "") ? "Unknown" : platformNameBuf };
+			auto platformNameChar = platformName.c_str();
 
-			std::string tempPlatform{ platformName };
-			std::transform(tempPlatform.begin(), tempPlatform.end(), tempPlatform.begin(), ::toupper);
+			(*platforms)[i].ID = tempPlatforms[i];
 
-			if (tempPlatform.find("ACCELERATED PARALLEL PROCESSING") != std::string::npos
-				|| (allowIntel && tempPlatform.find("INTEL") != std::string::npos))
-			{
-				platforms.emplace_back(Platform{ tempPlatforms[i], platformName });
-			}
+			(*platforms)[i].Name = new char[256];
+			std::memcpy((void *)(*platforms)[i].Name, platformNameChar, platformName.length());
+			std::memset((void *)&(*platforms)[i].Name[platformName.length()], 0, 1);
 		}
-
-		Device::preInitialize(sha3Kernel, sha3KingKernel);
 	}
 
-	std::string openCLSolver::getPlatformNames()
+	void OpenCLSolver::GetDevicesByPlatform(Platform_t platform, cl_uint maxDeviceCount, cl_uint *deviceCount, DeviceCL **devices, const char *errorMessage)
 	{
-		std::string platformNames{ "" };
-		for (auto& platform : platforms)
-		{
-			if (!platformNames.empty()) platformNames += "\n";
-			platformNames += platform.name;
-		}
-		return platformNames;
-	}
+		if (!CL_Error::CheckError(
+			clGetDeviceIDs(platform.ID, CL_DEVICE_TYPE_GPU, 0, NULL, deviceCount)
+			, errorMessage
+			, (std::string{ "Unable to get device count for " } + platform.Name).c_str()))
+			return;
 
-	int openCLSolver::getDeviceCount(std::string platformName, std::string &errorMessage)
-	{
-		errorMessage = "";
-		cl_int status{ CL_SUCCESS };
-		std::vector<cl::Device> devices;
+		if (*deviceCount > maxDeviceCount)
+			*deviceCount = maxDeviceCount;
 
-		for (auto& platform : platforms)
+		cl_device_id* deviceIDs = new cl_device_id[*deviceCount];
+
+		if (!CL_Error::CheckError(
+			clGetDeviceIDs(platform.ID, CL_DEVICE_TYPE_GPU, *deviceCount, deviceIDs, 0)
+			, errorMessage
+			, (std::string{ "Unable to get device ID for " } + platform.Name).c_str()))
+			return;
+
+		*devices = new DeviceCL[*deviceCount];
+
+		for (int i{ 0 }; i < *deviceCount; ++i)
 		{
-			if (platform.name == platformName)
+			(*devices)[i].Enum = i;
+			(*devices)[i].PciBusID = -1;
+			(*devices)[i].CL_ID = deviceIDs[i];
+			(*devices)[i].Platform = platform;
+			(*devices)[i].Type = CL_DEVICE_TYPE_GPU;
+
+			(*devices)[i].Name = new char[256];
+			std::memset((void *)(*devices)[i].Name, 0, 256);
+
+			if (!CL_Error::CheckError(
+				clGetDeviceInfo((*devices)[i].CL_ID, CL_DEVICE_NAME, 256, (void *)(*devices)[i].Name, 0)
+				, errorMessage
+				, (std::string{ "Failed to get " } + platform.Name + " CL_DEVICE_NAME").c_str()))
+				return;
+
+			if (!CL_Error::CheckError(
+				clGetDeviceInfo((*devices)[i].CL_ID, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof((*devices)[i].MaxWorkGroupSize), &(*devices)[i].MaxWorkGroupSize, 0)
+				, errorMessage
+				, (std::string{ "Failed to get " } + platform.Name + " CL_DEVICE_MAX_WORK_GROUP_SIZE").c_str()))
+				return;
+
+			std::string platformName{ (*devices)[i].Platform.Name };
+			std::transform(platformName.begin(), platformName.end(), platformName.begin(), ::toupper);
+			(*devices)[i].IsAMD = platformName.find("ACCELERATED PARALLEL PROCESSING") != std::string::npos;
+
+			if ((*devices)[i].IsAMD)
 			{
-				cl_uint deviceCount;
-				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
+				cl_device_topology_amd topology;
 
-				if (status != CL_SUCCESS)
-				{
-					errorMessage = "Unable to get device count for " + platformName;
-					continue;
-				}
+				if (!CL_Error::CheckError(clGetDeviceInfo((*devices)[i].CL_ID, CL_DEVICE_TOPOLOGY_AMD, sizeof(cl_device_topology_amd), &topology, 0), errorMessage))
+					return;
+				else
+					if (topology.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD)
+					{
+						(*devices)[i].PciBusID = topology.pcie.bus;
 
-				return deviceCount;
+						if (ADL_API::FoundAdlApi())
+						{
+							std::memset((void *)(*devices)[i].Name, 0, 256);
+							ADL_API::GetAdapterName((*devices)[i].PciBusID, (char *)(*devices)[i].Name);
+						}
+					}
 			}
 		}
-		return 0;
-	}
-
-	std::string openCLSolver::getDeviceName(std::string platformName, int deviceEnum, std::string &errorMessage)
-	{
-		errorMessage = "";
-		cl_int status{ CL_SUCCESS };
-		std::string deviceName = "";
-
-		for (auto& platform : platforms)
-		{
-			if (platform.name == platformName)
-			{
-				cl_uint deviceCount;
-				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
-
-				if (status != CL_SUCCESS)
-				{
-					errorMessage = "Failed to get device count for " + platformName;
-					continue;
-				}
-
-				cl_device_id* deviceIDs = new cl_device_id[deviceCount];
-				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, deviceCount, deviceIDs, NULL);
-
-				if (status != CL_SUCCESS)
-				{
-					errorMessage = "Failed to get device IDs for " + platformName;
-					continue;
-				}
-
-				char tempDeviceName[256];
-				status = clGetDeviceInfo(deviceIDs[deviceEnum], CL_DEVICE_NAME, sizeof(tempDeviceName), tempDeviceName, NULL);
-
-				std::string deviceName{ tempDeviceName };
-
-				return deviceName.empty() ? "Unknown" : deviceName;
-			}
-		}
-		return "Unknown";
 	}
 
 	// --------------------------------------------------------------------
 	// Public
 	// --------------------------------------------------------------------
 
-	openCLSolver::openCLSolver() noexcept :
-		s_address{ "" },
-		s_challenge{ "" },
-		s_target{ "" },
-		m_address{ 0 },
-		m_kingAddress{ 0 },
-		m_miningMessage{ 0 },
-		m_target{ 0 }
+	OpenCLSolver::OpenCLSolver() noexcept
+	{ }
+
+	OpenCLSolver::~OpenCLSolver() noexcept
 	{
-		try { if (ADL_API::foundAdlApi()) ADL_API::initialize(); }
-		catch (std::exception ex) { onMessage("", -1, "Error", ex.what()); }
+		ADL_API::unload();
 	}
 
-	openCLSolver::~openCLSolver() noexcept
+	void OpenCLSolver::InitializeDevice(DeviceCL *device, bool isKingMaking, const char *errorMessage)
 	{
-		stopFinding();
-	}
-
-	void openCLSolver::setGetKingAddressCallback(GetKingAddressCallback kingAddressCallback)
-	{
-		m_getKingAddressCallback = kingAddressCallback;
-	}
-
-	void openCLSolver::setGetSolutionTemplateCallback(GetSolutionTemplateCallback solutionTemplateCallback)
-	{
-		m_getSolutionTemplateCallback = solutionTemplateCallback;
-	}
-
-	void openCLSolver::setGetWorkPositionCallback(GetWorkPositionCallback workPositionCallback)
-	{
-		m_getWorkPositionCallback = workPositionCallback;
-	}
-
-	void openCLSolver::setResetWorkPositionCallback(ResetWorkPositionCallback resetWorkPositionCallback)
-	{
-		m_resetWorkPositionCallback = resetWorkPositionCallback;
-	}
-
-	void openCLSolver::setIncrementWorkPositionCallback(IncrementWorkPositionCallback incrementWorkPositionCallback)
-	{
-		m_incrementWorkPositionCallback = incrementWorkPositionCallback;
-	}
-
-	void openCLSolver::setMessageCallback(MessageCallback messageCallback)
-	{
-		m_messageCallback = messageCallback;
-	}
-
-	void openCLSolver::setSolutionCallback(SolutionCallback solutionCallback)
-	{
-		m_solutionCallback = solutionCallback;
-	}
-
-	bool openCLSolver::isAssigned()
-	{
-		for (auto& device : m_devices)
-			if (device->deviceEnum > -1)
-				return true;
-
-		return false;
-	}
-
-	bool openCLSolver::isAnyInitialised()
-	{
-		for (auto& device : m_devices)
-			if (device->deviceEnum > -1 && device->initialized)
-				return true;
-
-		return false;
-	}
-
-	bool openCLSolver::isMining()
-	{
-		for (auto& device : m_devices)
-			if (device->mining)
-				return true;
-
-		return false;
-	}
-
-	bool openCLSolver::isPaused()
-	{
-		return m_pause;
-	}
-
-	bool openCLSolver::assignDevice(std::string platformName, int deviceEnum, float &intensity, unsigned int &pciBusID, const char *deviceName, uint64_t *nameSize)
-	{
-		getKingAddress(&m_kingAddress);
-		m_isKingMaking = (!isAddressEmpty(m_kingAddress));
-
 		cl_int status{ CL_SUCCESS };
 
-		for (auto& platform : platforms)
-		{
-			if (platform.name == platformName)
-			{
-				cl_uint deviceCount;
-				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, 0, NULL, &deviceCount);
+		device->Instance = new Device::Instance();
 
-				if (status != CL_SUCCESS)
-				{
-					onMessage(platformName.c_str(), -1, "Error", "Failed to get device count.");
-					continue;
-				}
+		if (device->IsAMD)
+			if (ADL_API::FoundAdlApi())
+				device->Instance->API.AssignPciBusID(device->PciBusID);
 
-				cl_device_id* deviceIDs = new cl_device_id[deviceCount];
-				status = clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, deviceCount, deviceIDs, NULL);
+		device->Instance->KernelWaitSleepDuration = 1000u;
 
-				if (status != CL_SUCCESS)
-				{
-					onMessage(platformName.c_str(), -1, "Error", "Failed to get device IDs");
-					continue;
-				}
+		auto userTotalWorkSize = (size_t)std::pow(2, device->Intensity);
+		device->GlobalWorkSize = (size_t)(userTotalWorkSize / device->LocalWorkSize) * (device->LocalWorkSize); // in multiples of localWorkSize
 
-				onMessage(platformName.c_str(), deviceEnum, "Info", "Assigning OpenCL device...");
-				try
-				{
-					m_devices.emplace_back(new Device(deviceEnum, deviceIDs[deviceEnum], CL_DEVICE_TYPE_GPU, platform.id, m_isKingMaking, intensity, 0));
+		cl_context_properties contextProp[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)device->Platform.ID, 0 };
 
-					auto &assignDevice = m_devices.back();
-					intensity = assignDevice->userDefinedIntensity;
-					pciBusID = assignDevice->pciBusID;
+		device->Instance->Context = clCreateContext(contextProp, 1, &device->CL_ID, NULL, NULL, &status);
 
-					#ifdef __linux__
-					strcpy((char *)deviceName, assignDevice->name.c_str());
-					#else
-					strcpy_s((char *)deviceName, assignDevice->name.size() + 1, assignDevice->name.c_str());
-					#endif
-
-					onMessage(platformName.c_str(), deviceEnum, "Info", "Assigned OpenCL device (" + assignDevice->name + ")...");
-					onMessage(platformName.c_str(), deviceEnum, "Info", "Intensity: " + std::to_string(assignDevice->userDefinedIntensity));
-
-					if (assignDevice->isAPP() && foundAdlApi())
-					{
-						std::string errorMessage;
-						int maxCoreClock, maxMemoryClock, powerLimit, thermalLimit, fanLevel;
-
-						if (assignDevice->getSettingMaxCoreClock(&maxCoreClock, &errorMessage))
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Max core clock setting: " + std::to_string(maxCoreClock) + "MHz.");
-						else
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get max core clock setting: " + errorMessage);
-
-						if (assignDevice->getSettingMaxMemoryClock(&maxMemoryClock, &errorMessage))
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Max memory clock setting: " + std::to_string(maxMemoryClock) + "MHz.");
-						else
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get max memory clock setting: " + errorMessage);
-
-						if (assignDevice->getSettingPowerLimit(&powerLimit, &errorMessage))
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Power limit setting: " + std::to_string(powerLimit) + "%.");
-						else
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get power limit setting: " + errorMessage);
-
-						if (assignDevice->getSettingThermalLimit(&thermalLimit, &errorMessage))
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Thermal limit setting: " + std::to_string(thermalLimit) + "C.");
-						else
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get thermal limit setting: " + errorMessage);
-
-						if (assignDevice->getSettingFanLevelPercent(&fanLevel, &errorMessage))
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Info", "Fan level setting: " + std::to_string(fanLevel) + "%.");
-						else
-							onMessage(platformName.c_str(), assignDevice->deviceEnum, "Error", "Failed to get fan level setting: " + errorMessage);
-					}
-
-					return true;
-				}
-				catch (std::exception ex)
-				{
-					onMessage(platformName.c_str(), deviceEnum, "Error", ex.what());
-				}
-			}
-		}
-		onMessage(platformName.c_str(), -1, "Error", "Failed to get device " + std::to_string(deviceEnum));
-
-		return false;
-	}
-
-	void openCLSolver::updatePrefix(std::string const prefix)
-	{
-		assert(prefix.length() == ((UINT256_LENGTH + ADDRESS_LENGTH) * 2 + 2));
-
-		s_challenge = prefix.substr(0, 2 + UINT256_LENGTH * 2);
-		s_address = "0x" + prefix.substr(2 + UINT256_LENGTH * 2, ADDRESS_LENGTH * 2);
-
-		getSolutionTemplate(&m_solutionTemplate);
-
-		hexStringToBytes(s_challenge, m_miningMessage.structure.challenge);
-		hexStringToBytes(s_address, m_miningMessage.structure.address);
-		m_miningMessage.structure.solution = m_solutionTemplate;
-
-		sponge_ut midState = getMidState(m_miningMessage);
-
-		for (auto& device : m_devices)
-		{
-			if (device->deviceEnum < 0) continue;
-
-			device->currentMessage = m_miningMessage;
-			device->currentMidstate = midState;
-			device->isNewMessage = true;
-		}
-	}
-
-	void openCLSolver::updateTarget(std::string const target)
-	{
-		arith_uint256 tempTarget = arith_uint256(target);
-		if (tempTarget == m_target) return;
-
-		s_target = (target.substr(0, 2) == "0x") ? target : "0x" + target;
-		m_target = tempTarget;
-
-		byte32_t bTarget;
-		hexStringToBytes(s_target, bTarget);
-
-		uint64_t tempHigh64Target{ std::stoull(s_target.substr(2).substr(0, UINT64_LENGTH * 2), nullptr, 16) };
-
-		for (auto& device : m_devices)
-		{
-			if (device->deviceEnum < 0) continue;
-
-			device->currentTarget = bTarget;
-			device->currentHigh64Target[0] = tempHigh64Target;
-			device->isNewTarget = true;
-		}
-	}
-
-	uint64_t openCLSolver::getTotalHashRate()
-	{
-		uint64_t totalHashRate{ 0ull };
-		for (auto& device : m_devices)
-			totalHashRate += device->hashRate();
-
-		return totalHashRate;
-	}
-
-	uint64_t openCLSolver::getHashRateByDevice(std::string platformName, int const deviceEnum)
-	{
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				return device->hashRate();
-
-		return 0ull;
-	}
-
-	int openCLSolver::getDeviceSettingMaxCoreClock(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int settingMaxCoreClock{ -1 };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getSettingMaxCoreClock(&settingMaxCoreClock, &errorMessage);
-
-		return settingMaxCoreClock;
-	}
-
-	int openCLSolver::getDeviceSettingMaxMemoryClock(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int settingMaxMemoryClock{ -1 };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getSettingMaxMemoryClock(&settingMaxMemoryClock, &errorMessage);
-
-		return settingMaxMemoryClock;
-	}
-
-	int openCLSolver::getDeviceSettingPowerLimit(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int settingPowerLimit{ INT32_MIN };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getSettingPowerLimit(&settingPowerLimit, &errorMessage);
-
-		return settingPowerLimit;
-	}
-
-	int openCLSolver::getDeviceSettingThermalLimit(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int settingThermalLimit{ INT32_MIN };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getSettingThermalLimit(&settingThermalLimit, &errorMessage);
-
-		return settingThermalLimit;
-	}
-
-	int openCLSolver::getDeviceSettingFanLevelPercent(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int fanLevelPercent{ -1 };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getSettingFanLevelPercent(&fanLevelPercent, &errorMessage);
-
-		return fanLevelPercent;
-	}
-
-	int openCLSolver::getDeviceCurrentFanTachometerRPM(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int fanTachometerRPM{ -1 };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getCurrentFanTachometerRPM(&fanTachometerRPM, &errorMessage);
-
-		return fanTachometerRPM;
-	}
-
-	int openCLSolver::getDeviceCurrentTemperature(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int temperature{ -1 };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getCurrentTemperature(&temperature, &errorMessage);
-
-		return temperature;
-	}
-
-	int openCLSolver::getDeviceCurrentCoreClock(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int coreClock{ -1 };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getCurrentCoreClock(&coreClock, &errorMessage);
-
-		return coreClock;
-	}
-
-	int openCLSolver::getDeviceCurrentMemoryClock(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int memoryClock{ -1 };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getCurrentMemoryClock(&memoryClock, &errorMessage);
-
-		return memoryClock;
-	}
-
-	int openCLSolver::getDeviceCurrentUtilizationPercent(std::string platformName, int deviceEnum)
-	{
-		std::string errorMessage;
-		int utilizationPercent{ -1 };
-
-		for (auto& device : m_devices)
-			if (device->platformName == platformName && device->deviceEnum == deviceEnum)
-				device->getCurrentUtilizationPercent(&utilizationPercent, &errorMessage);
-
-		return utilizationPercent;
-	}
-
-	void openCLSolver::startFinding()
-	{
-		for (auto& device : m_devices)
-		{
-			onMessage(device->platformName, device->deviceEnum, "Info", "Initializing device...");
-
-			std::string errorMessage;
-			device->initialize(errorMessage, m_isKingMaking);
-			if (!device->initialized)
-			{
-				if (errorMessage != "") onMessage(device->platformName, device->deviceEnum, "Error", errorMessage);
-				else onMessage(device->platformName, device->deviceEnum, "Error", "Failed to initialize device.");
-			}
-		}
-
-		for (auto& device : m_devices)
-		{
-			device->miningThread = std::thread(&openCLSolver::findSolution, this, device->platformName, device->deviceEnum);
-			device->miningThread.detach();
-		}
-	}
-
-	void openCLSolver::stopFinding()
-	{
-		for (auto& device : m_devices) device->mining = false;
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-	}
-
-	void openCLSolver::pauseFinding(bool pauseFinding)
-	{
-		m_pause = pauseFinding;
-	}
-
-	// --------------------------------------------------------------------
-	// Private
-	// --------------------------------------------------------------------
-
-	bool openCLSolver::isAddressEmpty(address_t &address)
-	{
-		for (uint32_t i{ 0 }; i < ADDRESS_LENGTH; ++i)
-			if (address[i] > 0u) return false;
-
-		return true;
-	}
-
-	void openCLSolver::getKingAddress(address_t *kingAddress)
-	{
-		m_getKingAddressCallback(kingAddress->data());
-	}
-
-	void openCLSolver::getSolutionTemplate(byte32_t *solutionTemplate)
-	{
-		m_getSolutionTemplateCallback(solutionTemplate->data());
-	}
-
-	void openCLSolver::getWorkPosition(uint64_t &workPosition)
-	{
-		m_getWorkPositionCallback(workPosition);
-	}
-
-	void openCLSolver::resetWorkPosition(uint64_t &lastPosition)
-	{
-		m_resetWorkPositionCallback(lastPosition);
-	}
-
-	void openCLSolver::incrementWorkPosition(uint64_t &lastPosition, uint64_t increment)
-	{
-		m_incrementWorkPositionCallback(lastPosition, increment);
-	}
-
-	void openCLSolver::onMessage(std::string platformName, int deviceEnum, std::string type, std::string message)
-	{
-		m_messageCallback(platformName.empty() ? "OpenCL" : (platformName + " (OpenCL)").c_str(), deviceEnum, type.c_str(), message.c_str());
-	}
-
-	void openCLSolver::onSolution(byte32_t const solution, std::string challenge, std::unique_ptr<Device> &device)
-	{
-		if (!isSubmitStale && challenge != s_challenge)
+		if (!CL_Error::CheckError(status, errorMessage, "Failed to create context"))
 			return;
-		else if (isSubmitStale && challenge != s_challenge)
-			onMessage(device->platformName, device->deviceEnum, "Warn", "GPU found stale solution, verifying...");
-		else
-			onMessage(device->platformName, device->deviceEnum, "Info", "GPU found solution, verifying...");
 
-		byte32_t emptySolution;
-		std::memset(&emptySolution, 0u, UINT256_LENGTH);
-		if (solution == emptySolution)
-		{
-			onMessage(device->platformName, device->deviceEnum, "Error", "CPU verification failed: empty solution"
-				+ std::string("\nChallenge: ") + challenge
-				+ "\nAddress: " + s_address
-				+ "\nTarget: " + s_target);
+		device->Instance->Queue = clCreateCommandQueueWithProperties(device->Instance->Context, device->CL_ID, 0, &status);
+
+		if (!CL_Error::CheckError(status, errorMessage, "Failed to create command queue"))
 			return;
-		}
 
-		message_ut newMessage = m_miningMessage;
-		newMessage.structure.solution = solution;
+		device->Instance->Solutions = (cl_ulong *)malloc(UINT64_LENGTH * device->MaxSolutionCount);
+		std::memset(device->Instance->Solutions, 0, UINT64_LENGTH * device->MaxSolutionCount);
 
-		std::string newMessageStr{ bytesToHexString(newMessage.byteArray) };
-		std::string solutionStr{ bytesToHexString(solution) };
+		device->Instance->SolutionsBuffer =
+			clCreateBuffer(device->Instance->Context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, UINT64_LENGTH * device->MaxSolutionCount, device->Instance->Solutions, &status);
 
-		byte32_t bDigest;
-		keccak_256(&bDigest[0], UINT256_LENGTH, &newMessage.byteArray[0], MESSAGE_LENGTH);
+		if (!CL_Error::CheckError(status, errorMessage, "Failed to create solutions buffer"))
+			return;
 
-		std::string digestStr = bytesToHexString(bDigest);
-		arith_uint256 digest = arith_uint256(digestStr);
+		device->Instance->SolutionCount = (cl_uint *)malloc(UINT32_LENGTH);
+		std::memset(device->Instance->SolutionCount, 0, UINT32_LENGTH);
 
-		onMessage(device->platformName, device->deviceEnum, "Debug", "Digest: 0x" + digestStr);
+		device->Instance->SolutionCountBuffer = clCreateBuffer(device->Instance->Context, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, UINT32_LENGTH, device->Instance->SolutionCount, &status);
 
-		if (digest >= m_target)
+		if (!CL_Error::CheckError(status, errorMessage, "Failed to create solution count buffer"))
+			return;
+
+		std::string newSource;
+		char *kernelEntryName;
+
+		if (isKingMaking)
 		{
-			std::string s_hi64Target{ s_target.substr(2).substr(0, UINT64_LENGTH * 2) };
-			for (uint32_t i{ 0 }; i < (UINT256_LENGTH - UINT64_LENGTH); ++i) s_hi64Target += "00";
-			arith_uint256 high64Target{ s_hi64Target };
+			newSource = kernelKingSource;
+			kernelEntryName = (char *)"hashMessage";
 
-			if (digest <= high64Target) // on rare ocassion where it falls in between m_target and high64Target
-				onMessage(device->platformName, device->deviceEnum, "Warn", "CPU verification failed: invalid solution");
-			else
-			{
-				onMessage(device->platformName, device->deviceEnum, "Error", "CPU verification failed: invalid solution"
-					+ std::string("\nChallenge: ") + challenge
-					+ "\nAddress: " + s_address
-					+ "\nSolution: 0x" + solutionStr
-					+ "\nDigest: 0x" + digestStr
-					+ "\nTarget: " + s_target);
-			}
+			device->Instance->MessageBuffer = clCreateBuffer(device->Instance->Context, CL_MEM_READ_ONLY, MESSAGE_LENGTH, NULL, &status);
+			if (!CL_Error::CheckError(status, errorMessage, "Failed to allocate message buffer"))
+				return;
+
+			device->Instance->TargetBuffer = clCreateBuffer(device->Instance->Context, CL_MEM_READ_ONLY, UINT256_LENGTH, NULL, &status);
+			if (!CL_Error::CheckError(status, errorMessage, "Failed to allocate target buffer"))
+				return;
 		}
 		else
 		{
-			onMessage(device->platformName, device->deviceEnum, "Info", "Solution verified by CPU, submitting nonce 0x" + solutionStr + "...");
-			onMessage(device->platformName, device->deviceEnum, "Debug", std::string{ "Solution details..." }
-				+"\nChallenge: " + challenge
-				+ "\nAddress: " + s_address
-				+ "\nSolution: 0x" + solutionStr
-				+ "\nDigest: 0x" + digestStr
-				+ "\nTarget: " + s_target);
-			m_solutionCallback(("0x" + digestStr).c_str(), s_address.c_str(), challenge.c_str(), s_target.c_str(), ("0x" + solutionStr).c_str());
+			newSource = kernelSource;
+			kernelEntryName = (char *)"hashMidstate";
+
+			device->Instance->MidStateBuffer = clCreateBuffer(device->Instance->Context, CL_MEM_READ_ONLY, SPONGE_LENGTH, NULL, &status);
+			if (!CL_Error::CheckError(status, errorMessage, "Failed to allocate midstate buffer"))
+				return;
+
+			device->Instance->TargetBuffer = clCreateBuffer(device->Instance->Context, CL_MEM_READ_ONLY, UINT64_LENGTH, NULL, &status);
+			if (!CL_Error::CheckError(status, errorMessage, "Failed to allocate target buffer"))
+				return;
 		}
-	}
 
-	void openCLSolver::submitSolutions(std::set<uint64_t> solutions, std::string challenge, std::string platformName, int const deviceEnum)
-	{
-		auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device)
+		if (device->IsAMD)
+			newSource.insert(0, "#define PLATFORM 2\n");
+
+		const char *tempSouce = newSource.c_str();
+		size_t tempSize = newSource.size();
+
+		device->Instance->Program = clCreateProgramWithSource(device->Instance->Context, 1, &tempSouce, (size_t *)&tempSize, &status);
+		if (!CL_Error::CheckError(status, errorMessage, "Failed to create program"))
+			return;
+
+		status = clBuildProgram(device->Instance->Program, 1, &device->CL_ID, NULL, NULL, NULL);
+		if (status != CL_SUCCESS)
 		{
-			return device->platformName == platformName && device->deviceEnum == deviceEnum;
-		});
+			size_t logSize;
+			clGetProgramBuildInfo(device->Instance->Program, device->CL_ID, CL_PROGRAM_BUILD_LOG, 0, NULL, &logSize);
 
-		while (m_isSubmitting)
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			char *log = (char *)malloc(logSize);
+			clGetProgramBuildInfo(device->Instance->Program, device->CL_ID, CL_PROGRAM_BUILD_LOG, logSize, log, NULL);
 
-		m_isSubmitting = true;
-
-		getSolutionTemplate(&m_solutionTemplate);
-
-		for (uint64_t midStateSolution : solutions)
-		{
-			byte32_t solution{ 0 };
-			std::memcpy(&solution, &m_solutionTemplate, UINT256_LENGTH);
-
-			if (m_isKingMaking)
-				std::memcpy(&solution[ADDRESS_LENGTH], &midStateSolution, UINT64_LENGTH); // Shifted for King address
-			else
-				std::memcpy(&solution[12], &midStateSolution, UINT64_LENGTH); // keep first and last 12 bytes, fill middle 8 bytes for mid state
-
-			onSolution(solution, challenge, device);
+			CL_Error::CheckError(status, errorMessage, "Failed to build program", log);
+			return;
 		}
-		m_isSubmitting = false;
+
+		device->Instance->Kernel = clCreateKernel(device->Instance->Program, kernelEntryName, &status);
+		if (!CL_Error::CheckError(status, errorMessage, "Failed to create kernel from program"))
+			return;
+
+		SetKernelArgs(device, isKingMaking, errorMessage);
 	}
 
-	sponge_ut const openCLSolver::getMidState(message_ut &newMessage)
+	void OpenCLSolver::PushHigh64Target(DeviceCL device, cl_ulong *high64Target, const char *errorMessage)
 	{
-		sponge_ut midstate;
-		uint64_t C[5], D[5];
-		uint64_t message[11]{ 0 };
-
-		std::memcpy(&message, &newMessage, MESSAGE_LENGTH);
-
-		C[0] = message[0] ^ message[5] ^ message[10] ^ 0x100000000ull;
-		C[1] = message[1] ^ message[6] ^ 0x8000000000000000ull;
-		C[2] = message[2] ^ message[7];
-		C[3] = message[3] ^ message[8];
-		C[4] = message[4] ^ message[9];
-
-		D[0] = ROTL64(C[1], 1) ^ C[4];
-		D[1] = ROTL64(C[2], 1) ^ C[0];
-		D[2] = ROTL64(C[3], 1) ^ C[1];
-		D[3] = ROTL64(C[4], 1) ^ C[2];
-		D[4] = ROTL64(C[0], 1) ^ C[3];
-
-		midstate.uint64Array[0] = message[0] ^ D[0];
-		midstate.uint64Array[1] = ROTL64(message[6] ^ D[1], 44);
-		midstate.uint64Array[2] = ROTL64(D[2], 43);
-		midstate.uint64Array[3] = ROTL64(D[3], 21);
-		midstate.uint64Array[4] = ROTL64(D[4], 14);
-		midstate.uint64Array[5] = ROTL64(message[3] ^ D[3], 28);
-		midstate.uint64Array[6] = ROTL64(message[9] ^ D[4], 20);
-		midstate.uint64Array[7] = ROTL64(message[10] ^ D[0] ^ 0x100000000ull, 3);
-		midstate.uint64Array[8] = ROTL64(0x8000000000000000ull ^ D[1], 45);
-		midstate.uint64Array[9] = ROTL64(D[2], 61);
-		midstate.uint64Array[10] = ROTL64(message[1] ^ D[1], 1);
-		midstate.uint64Array[11] = ROTL64(message[7] ^ D[2], 6);
-		midstate.uint64Array[12] = ROTL64(D[3], 25);
-		midstate.uint64Array[13] = ROTL64(D[4], 8);
-		midstate.uint64Array[14] = ROTL64(D[0], 18);
-		midstate.uint64Array[15] = ROTL64(message[4] ^ D[4], 27);
-		midstate.uint64Array[16] = ROTL64(message[5] ^ D[0], 36);
-		midstate.uint64Array[17] = ROTL64(D[1], 10);
-		midstate.uint64Array[18] = ROTL64(D[2], 15);
-		midstate.uint64Array[19] = ROTL64(D[3], 56);
-		midstate.uint64Array[20] = ROTL64(message[2] ^ D[2], 62);
-		midstate.uint64Array[21] = ROTL64(message[8] ^ D[3], 55);
-		midstate.uint64Array[22] = ROTL64(D[4], 39);
-		midstate.uint64Array[23] = ROTL64(D[0], 41);
-		midstate.uint64Array[24] = ROTL64(D[1], 2);
-
-		return midstate;
+		CL_Error::CheckError(
+			clEnqueueWriteBuffer(device.Instance->Queue, device.Instance->TargetBuffer, CL_TRUE, 0, UINT64_LENGTH, high64Target, 0, NULL, NULL)
+			, errorMessage
+			, "Error writing to target buffer: ");
 	}
 
-	uint64_t const openCLSolver::getNextWorkPosition(std::unique_ptr<Device> &device)
+	void OpenCLSolver::PushTarget(DeviceCL device, byte32_t *target, const char *errorMessage)
 	{
-		uint64_t lastPosition;
-		incrementWorkPosition(lastPosition, device->globalWorkSize);
-		device->hashCount += device->globalWorkSize;
-
-		return lastPosition;
+		CL_Error::CheckError(
+			clEnqueueWriteBuffer(device.Instance->Queue, device.Instance->TargetBuffer, CL_TRUE, 0, UINT256_LENGTH, target, 0, NULL, NULL)
+			, errorMessage
+			, "Error writing to target buffer: ");
 	}
 
-	void openCLSolver::pushTarget(std::unique_ptr<Device> &device)
+	void OpenCLSolver::PushMidState(DeviceCL device, sponge_ut *midState, const char *errorMessage)
 	{
-		device->status = clEnqueueWriteBuffer(device->queue, device->targetBuffer, CL_TRUE, 0u, UINT64_LENGTH, device->currentHigh64Target, 0, NULL, NULL);
-		if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error setting target buffer to kernel (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-
-		device->isNewTarget = false;
+		CL_Error::CheckError(
+			clEnqueueWriteBuffer(device.Instance->Queue, device.Instance->MidStateBuffer, CL_TRUE, 0, SPONGE_LENGTH, midState, 0, NULL, NULL)
+			, errorMessage
+			, "Error writing to midstate buffer: ");
 	}
 
-	void openCLSolver::pushTargetKing(std::unique_ptr<Device> &device)
+	void OpenCLSolver::PushMessage(DeviceCL device, message_ut *message, const char *errorMessage)
 	{
-		device->status = clEnqueueWriteBuffer(device->queue, device->targetBuffer, CL_TRUE, 0u, UINT256_LENGTH, &device->currentTarget, 0, NULL, NULL);
-		if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error setting target buffer to kernel (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-
-		device->isNewTarget = false;
+		CL_Error::CheckError(
+			clEnqueueWriteBuffer(device.Instance->Queue, device.Instance->MessageBuffer, CL_TRUE, 0, MESSAGE_LENGTH, message, 0, NULL, NULL)
+			, errorMessage
+			, "Error writing to message buffer: ");
 	}
 
-	void openCLSolver::pushMessage(std::unique_ptr<Device> &device)
+	void OpenCLSolver::Hash(DeviceCL *device, const char *errorMessage)
 	{
-		device->status = clEnqueueWriteBuffer(device->queue, device->midstateBuffer, CL_TRUE, 0u, SPONGE_LENGTH, &device->currentMidstate, 0, NULL, NULL);
-		if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error writing to midstate buffer (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
+		cl_int status{ CL_SUCCESS };
 
-		device->isNewMessage = false;
-	}
+		if (!CL_Error::CheckError(
+			clSetKernelArg(device->Instance->Kernel, 2, UINT64_LENGTH, &device->WorkPosition)
+			, "Error setting work positon buffer to kernel"))
+			return;
 
-	void openCLSolver::pushMessageKing(std::unique_ptr<Device> &device)
-	{
-		device->status = clEnqueueWriteBuffer(device->queue, device->messageBuffer, CL_TRUE, 0u, MESSAGE_LENGTH, &device->currentMessage, 0, NULL, NULL);
-		if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error writing to message buffer (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
+		if (!CL_Error::CheckError(
+				clEnqueueNDRangeKernel(
+					device->Instance->Queue, device->Instance->Kernel, 1, NULL, &device->GlobalWorkSize, &device->LocalWorkSize, 0, NULL, &device->Instance->KernelWaitEvent)
+				, "Error starting kernel"))
+			return;
 
-		device->isNewMessage = false;
-	}
-
-	void openCLSolver::checkInputs(std::unique_ptr<Device> &device, char *currentChallenge)
-	{
-		uint64_t lastPosition;
-		getWorkPosition(lastPosition);
-
-		if (device->isNewMessage || device->isNewTarget)
+		if (!device->IsAMD) // Intel 100% CPU workaround
 		{
-			device->hashCount.store(0ull);
-			device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(500); // reduce hashrate spike on new challenge
-
-			if (device->isNewTarget)
+			cl_uint waitStatus{ CL_QUEUED }, waitKernelCount{ 0 };
+			while (waitStatus != CL_COMPLETE)
 			{
-				if (m_isKingMaking)
-					pushTargetKing(device);
-				else
-					pushTarget(device);
+				std::this_thread::sleep_for(std::chrono::microseconds(device->Instance->KernelWaitSleepDuration));
+				waitKernelCount++;
+
+				if (!CL_Error::CheckError(
+						clGetEventInfo(device->Instance->KernelWaitEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, UINT32_LENGTH, &waitStatus, 0)
+						, "Error getting event info"))
+					return;
 			}
 
-			if (device->isNewMessage)
-			{
-				if (m_isKingMaking)
-					pushMessageKing(device);
-				else
-					pushMessage(device);
-
-				#ifdef __linux__
-				strcpy(currentChallenge, s_challenge.c_str());
-				#else
-				strcpy_s(currentChallenge, s_challenge.size() + 1, s_challenge.c_str());
-				#endif
-			}
+			// hysteresis required to avoid constant changing of kernelWaitSleepDuration that will waste CPU cycles/hashrates
+			if (waitKernelCount > 15) device->Instance->KernelWaitSleepDuration++;
+			else if (waitKernelCount < 5 && device->Instance->KernelWaitSleepDuration > 0) device->Instance->KernelWaitSleepDuration--;
 		}
+
+		device->Instance->SolutionCount =
+			(cl_uint *)clEnqueueMapBuffer(device->Instance->Queue, device->Instance->SolutionCountBuffer, CL_TRUE, CL_MAP_READ, 0, UINT32_LENGTH, 0, NULL, NULL, &status);
+		if (!CL_Error::CheckError(status, "Error getting solution count from device"))
+			return;
+
+		if (*device->Instance->SolutionCount > 0)
+		{
+			device->SolutionCount = *device->Instance->SolutionCount;
+
+			device->Instance->Solutions =
+				(cl_ulong *)clEnqueueMapBuffer(
+					device->Instance->Queue, device->Instance->SolutionsBuffer, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, UINT64_LENGTH * device->MaxSolutionCount, 0, NULL, NULL, &status);
+			if (!CL_Error::CheckError(status, "Error getting solutions from device"))
+				return;
+
+			for (int i = 0; i < device->SolutionCount; ++i)
+				device->Solutions[i] = device->Instance->Solutions[i];
+
+			if (!CL_Error::CheckError(
+				clEnqueueUnmapMemObject(device->Instance->Queue, device->Instance->SolutionsBuffer, device->Instance->Solutions, 0, NULL, NULL)
+				, "Error unmapping solutions from host"))
+				return;
+
+			if (!CL_Error::CheckError(
+				clEnqueueUnmapMemObject(device->Instance->Queue, device->Instance->SolutionCountBuffer, device->Instance->SolutionCount, 0, NULL, NULL)
+				, "Error unmapping solution count from host"))
+				return;
+
+			device->Instance->SolutionCount =
+				(cl_uint *)clEnqueueMapBuffer(device->Instance->Queue, device->Instance->SolutionCountBuffer, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, UINT32_LENGTH, 0, NULL, NULL, &status);
+			if (!CL_Error::CheckError(status, "Error getting solution count from device"))
+				return;
+
+			*device->Instance->SolutionCount = 0;
+		}
+
+		if (!CL_Error::CheckError(
+			clEnqueueUnmapMemObject(device->Instance->Queue, device->Instance->SolutionCountBuffer, device->Instance->SolutionCount, 0, NULL, NULL)
+			, "Error unmapping solution count from host"))
+			return;
 	}
 
-	void openCLSolver::findSolution(std::string platformName, int const deviceEnum)
+	void OpenCLSolver::ReleaseDeviceObjects(DeviceCL *device, const char *errorMessage)
 	{
-		auto& device = *std::find_if(m_devices.begin(), m_devices.end(), [&](std::unique_ptr<Device>& device)
+		if (!CL_Error::CheckError(clReleaseKernel(device->Instance->Kernel), errorMessage))
+			return;
+
+		if (!CL_Error::CheckError(clReleaseProgram(device->Instance->Program), errorMessage))
+			return;
+
+		if (!CL_Error::CheckError(clReleaseMemObject(device->Instance->SolutionsBuffer), errorMessage))
+			return;
+
+		if (!CL_Error::CheckError(clReleaseMemObject(device->Instance->MidStateBuffer), errorMessage))
+			return;
+
+		if (!CL_Error::CheckError(clReleaseCommandQueue(device->Instance->Queue), errorMessage))
+			return;
+
+		if (!CL_Error::CheckError(clReleaseContext(device->Instance->Context), errorMessage))
+			return;
+	}
+
+	void OpenCLSolver::SetKernelArgs(DeviceCL *device, bool isKingMaking, const char *errorMessage)
+	{
+		if (isKingMaking)
 		{
-			return device->platformName == platformName && device->deviceEnum == deviceEnum;
-		});
-
-		if (!device->initialized) return;
-
-		bool isCUDAorIntel = device->isCUDA() | device->isINTEL(); // cache value here
-
-		onMessage(device->platformName, device->deviceEnum, "Info", "Start mining...");
-		onMessage(device->platformName, device->deviceEnum, "Debug", "Threads: " + std::to_string(device->globalWorkSize) + " Local work size: " + std::to_string(device->localWorkSize) + " Block size:" + std::to_string(device->globalWorkSize / device->localWorkSize));
-
-		device->mining = true;
-		device->hashCount.store(0ull);
-		device->hashStartTime = std::chrono::steady_clock::now() - std::chrono::milliseconds(500); // reduce excessive high hashrate reporting at start
-
-		uint64_t workPosition[MAX_WORK_POSITION_STORE];
-		char *c_currentChallenge = (char *)malloc(s_challenge.size());
-		do
+			if (!CL_Error::CheckError(clSetKernelArg(device->Instance->Kernel, 0, sizeof(cl_mem), &device->Instance->MessageBuffer)
+				, errorMessage
+				, "Error setting message buffer to kernel"))
+				return;
+		}
+		else
 		{
-			while (m_pause)
-			{
-				device->hashCount.store(0ull);
-				device->hashStartTime = std::chrono::steady_clock::now();
+			if (!CL_Error::CheckError(clSetKernelArg(device->Instance->Kernel, 0, sizeof(cl_mem), &device->Instance->MidStateBuffer)
+				, errorMessage
+				, "Error setting midsate buffer to kernel"))
+				return;
+		}
 
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));
-			}
+		if (!CL_Error::CheckError(clSetKernelArg(device->Instance->Kernel, 1, sizeof(cl_mem), &device->Instance->TargetBuffer)
+			, errorMessage
+			, "Error setting target buffer to kernel"))
+			return;
 
-			checkInputs(device, c_currentChallenge);
+		if (!CL_Error::CheckError(clSetKernelArg(device->Instance->Kernel, 3, UINT32_LENGTH, &device->MaxSolutionCount)
+			, errorMessage
+			, "Error setting maximum solution count to kernel"))
+			return;
 
-			for (uint32_t q{ 0 }; q < MAX_WORK_POSITION_STORE; ++q)
-			{
-				workPosition[q] = getNextWorkPosition(device);
+		if (!CL_Error::CheckError(clSetKernelArg(device->Instance->Kernel, 4, sizeof(cl_mem), &device->Instance->SolutionsBuffer)
+			, errorMessage
+			, "Error setting solutions buffer to kernel"))
+			return;
 
-				device->status = clSetKernelArg(device->kernel, 2u, UINT64_LENGTH, &workPosition[q]);
-				if (device->status != CL_SUCCESS)
-					onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error setting work positon buffer to kernel (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-
-				device->status = clEnqueueNDRangeKernel(device->queue, device->kernel, 1u, NULL, &device->globalWorkSize, &device->localWorkSize, 0, NULL, &device->kernelWaitEvent);
-				if (device->status != CL_SUCCESS)
-					onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error starting kernel (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-			}
-
-			if (isCUDAorIntel) // CUDA and Intel 100% CPU workaround
-			{
-				uint32_t waitStatus{ CL_QUEUED }, waitKernelCount{ 0u };
-				while (waitStatus != CL_COMPLETE)
-				{
-					std::this_thread::sleep_for(std::chrono::microseconds(device->kernelWaitSleepDuration));
-					waitKernelCount++;
-
-					device->status = clGetEventInfo(device->kernelWaitEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, UINT32_LENGTH, &waitStatus, NULL);
-					if (device->status != CL_SUCCESS)
-					{
-						onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error getting event info (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-						break;
-					}
-				}
-
-				if (waitKernelCount > 15u) device->kernelWaitSleepDuration++; // hysteresis required to avoid constant changing of kernelWaitSleepDuration that will waste CPU cycles/hashrates
-				else if (waitKernelCount < 5u && device->kernelWaitSleepDuration > 0u) device->kernelWaitSleepDuration--;
-			}
-
-			device->h_solutionCount = (uint32_t *)clEnqueueMapBuffer(device->queue, device->solutionCountBuffer, CL_TRUE, CL_MAP_READ, 0, UINT32_LENGTH, 0, NULL, NULL, &device->status);
-			if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error getting solution count from device (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-
-			if (device->h_solutionCount[0] > 0u)
-			{
-				device->h_solutions = (uint64_t *)clEnqueueMapBuffer(device->queue, device->solutionsBuffer, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, UINT64_LENGTH * MAX_SOLUTION_COUNT_DEVICE, 0, NULL, NULL, &device->status);
-				if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error getting solutions from device (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-
-				std::set<uint64_t> uniqueSolutions;
-
-				for (uint32_t i{ 0 }; i < MAX_SOLUTION_COUNT_DEVICE && i < device->h_solutionCount[0]; ++i)
-				{
-					uint64_t const tempSolution{ device->h_solutions[i] };
-					if (tempSolution != 0u && uniqueSolutions.find(tempSolution) == uniqueSolutions.end())
-						uniqueSolutions.emplace(tempSolution);
-				}
-
-				std::thread t{ &openCLSolver::submitSolutions, this, uniqueSolutions, std::string{ c_currentChallenge }, device->platformName, device->deviceEnum };
-				t.detach();
-
-				device->status = clEnqueueUnmapMemObject(device->queue, device->solutionsBuffer, device->h_solutions, 0, NULL, NULL);
-				if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error unmapping solutions from host (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-
-				device->status = clEnqueueUnmapMemObject(device->queue, device->solutionCountBuffer, device->h_solutionCount, 0, NULL, NULL);
-				if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error unmapping solution count from host (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-
-				device->h_solutionCount = (uint32_t *)clEnqueueMapBuffer(device->queue, device->solutionCountBuffer, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE, 0, UINT32_LENGTH, 0, NULL, NULL, &device->status);
-				if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error getting solution count from device (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-
-				device->h_solutionCount[0] = 0u;
-			}
-
-			device->status = clEnqueueUnmapMemObject(device->queue, device->solutionCountBuffer, device->h_solutionCount, 0, NULL, NULL);
-			if (device->status != CL_SUCCESS) onMessage(device->platformName, device->deviceEnum, "Error", std::string{ "Error unmapping solution count from host (" } +Device::getOpenCLErrorCodeStr(device->status) + ")...");
-		} while (device->mining);
-
-		onMessage(device->platformName, device->deviceEnum, "Info", "Stop mining...");
-		device->hashCount.store(0ull);
-
-		clFinish(device->queue);
-
-		clReleaseKernel(device->kernel);
-		clReleaseProgram(device->program);
-		clReleaseMemObject(device->solutionsBuffer);
-		clReleaseMemObject(device->midstateBuffer);
-		clReleaseCommandQueue(device->queue);
-		clReleaseContext(device->context);
-
-		device->initialized = false;
-		onMessage(device->platformName, device->deviceEnum, "Info", "Mining stopped.");
+		if (!CL_Error::CheckError(clSetKernelArg(device->Instance->Kernel, 5, sizeof(cl_mem), &device->Instance->SolutionCountBuffer)
+			, errorMessage
+			, "Error setting solution count buffer to kernel"))
+			return;
 	}
 }

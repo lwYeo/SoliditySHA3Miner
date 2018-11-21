@@ -1,0 +1,73 @@
+### How to start Solo mining using SoliditySHA3Miner
+
+1) Ensure that you have sufficient ETH stored in your mining address (ETH is required to mint tokens).
+
+2) Clone 0xbtcSolo.bat/0xbtcSolo.sh file and open the editor for the cloned file.
+
+3) You only need to edit the line that starts with 'dotnet' for launch parameters.
+
+4) Below are the following arguments that may/need to be changed :
+
+4a) web3api=
+  * To avoid connection issues, do change to your own web3 API such as your account from 'https://infura.io/', or if you have your own Geth/Parity set up.
+
+4b) abiFile=
+  * If omitted, the '0xBTC.abi' file will be used by default
+  * Most tokens are compatible with '0xBTC.abi', most likely no need to change here
+  * Replace the value to the available filename that ends with '.abi' in the folder for the token interface you are mining.
+
+4c) contract=
+  * If omitted, 0xBTC contract address will be used by default.
+  * Replace the value with the following address if you are mining a different token (case-sensitive):
+
+	0xBTC    0xB6eD7644C69416d67B522e20bC294A9a9B405B31
+	CLM      0xA38FcEdd23dE2191Dc27f9a0240ac170BE0A14fE
+	SEDO     0x0F00f1696218EaeFa2D2330Df3D6D1f94813b38f
+	PEPE     0xBC2AFc039d2BFa67d582aC181daB5BE17EC91f82
+	0xBCH    0xe5b9746dfCC2eF1054D47A451A77bb5f390c468d
+	0xCATE   0x8F7DbF90E71285552a687097220E1035C2e87639
+	0xLTC    0x33D99EFc0C3cC4F93dA6931EC2CCcF19Ca874b6D
+	0xGOLD   0x291DE53a16b76dfE28551Fd3335225F506dB8b82
+	ATA      0xd72F60b2E7649bBC5835d25e30Ef917f04D9131c
+	KIWI     0x2BF91c18Cd4AE9C2f2858ef9FE518180F7B5096D
+	SKO      0xb3Dc3C839a02134f9932CbD60f3566C231cc90CC
+
+  * If the token is not in the list above, I suggest that you might want to ask from the owner/moderator from their relavant Discord/Telegram/forums.
+
+4d) gasToMine=
+  * If omitted, 5 GWei will be used.
+  * Replace the value with the amount of gas you prefer to mint a block with (decimals allowed, no alphabets).
+  * This value will override dynamic gas price if this value, whichever is higher.
+
+4e) gasApiURL=
+  * Required for dynamic gas price minting
+  * If using 'EthGasStation.info', fill the value with https://ethgasstation.info/json/ethgasAPI.json
+  
+4f) gasApiPath=
+  * If using 'EthGasStation.info', fill the value with (without quotes) '$.safeLow'
+  
+4g) gasApiMultiplier=
+  * If using 'EthGasStation.info', fill the value with 0.1
+  
+4h) gasApiOffset=
+  * Depends on how much you want to offset (decimals allowed, no alphabets).
+  
+4i) privateKey=
+  * Replace the value with your own ETH private key (64 characters long excluding '0x' prefix)
+  * It is your own responsibility to keep your private ETH account safe.
+  * One suggestion is to create a disposable ETH mining account to mine with then transfer the tokens to your private account later.
+
+5) Save and (run the '.bat' file)/(sh the '.sh' file) you have newly created.
+
+### Notes
+
+To withdraw your tokens, you will need ETH to perform withdrawal/transaction from your account.
+
+There is a default of 2.0% dev fee (Once every 50th nounces: starting from 50th).
+* You can set to the lowest 1.5% with 'devFee=1.5' (the formula is '(nonce mod devFee) = 0').
+* Dev fee is by sending the current reward amount after the successful minted block, using the same gas fee as provided in 'gasToMine'.
+
+Please feedback your results and suggestions so that I can improve the miner. 
+You can either add an issue in the repository, or find me in discord (Amano7). 
+
+Thanks for trying out this miner!

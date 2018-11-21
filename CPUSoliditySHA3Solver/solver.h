@@ -1,9 +1,26 @@
+/*
+   Copyright 2018 Lip Wee Yeo Amano
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 #pragma once
 
 #ifndef __SOLVER__
 #define __SOLVER__
 
 #include "cpuSolver.h"
+#include "instance.h"
 
 #ifdef __linux__
 #	define EXPORT
@@ -17,48 +34,19 @@ namespace CPUSolver
 {
 	extern "C"
 	{
-		EXPORT void __CDECL__ GetLogicalProcessorsCount(uint32_t *processorCount);
+		EXPORT void __CDECL__ SHA3(byte32_t *message, byte32_t *digest);
 
-		EXPORT void __CDECL__ GetNewSolutionTemplate(const char *kingAddress, const char *solutionTemplate);
+		EXPORT void __CDECL__ GetCpuName(const char *cpuName);
 
-		EXPORT cpuSolver *__CDECL__ GetInstance(const char *threads) noexcept;
+		EXPORT CpuSolver *__CDECL__ GetInstance() noexcept;
 
-		EXPORT void __CDECL__ DisposeInstance(cpuSolver *instance) noexcept;
+		EXPORT void __CDECL__ DisposeInstance(CpuSolver *instance) noexcept;
 
-		EXPORT GetKingAddressCallback __CDECL__ SetOnGetKingAddressHandler(cpuSolver *instance, GetKingAddressCallback getKingAddressCallback);
+		EXPORT void __CDECL__ SetThreadAffinity(CpuSolver *instance, int affinityMask, const char *errorMessage);
 
-		EXPORT GetSolutionTemplateCallback __CDECL__ SetOnGetSolutionTemplateHandler(cpuSolver *instance, GetSolutionTemplateCallback getSolutionTemplateCallback);
+		EXPORT void __CDECL__ HashMessage(CpuSolver *instance, Instance *deviceInstance, Processor *processor);
 
-		EXPORT GetWorkPositionCallback __CDECL__ SetOnGetWorkPositionHandler(cpuSolver *instance, GetWorkPositionCallback getWorkPositionCallback);
-
-		EXPORT ResetWorkPositionCallback __CDECL__ SetOnResetWorkPositionHandler(cpuSolver *instance, ResetWorkPositionCallback resetWorkPositionCallback);
-
-		EXPORT IncrementWorkPositionCallback __CDECL__ SetOnIncrementWorkPositionHandler(cpuSolver *instance, IncrementWorkPositionCallback incrementWorkPositionCallback);
-
-		EXPORT MessageCallback __CDECL__ SetOnMessageHandler(cpuSolver *instance, MessageCallback messageCallback);
-
-		EXPORT SolutionCallback __CDECL__ SetOnSolutionHandler(cpuSolver *instance, SolutionCallback solutionCallback);
-
-		EXPORT void __CDECL__ SetSubmitStale(cpuSolver *instance, const bool submitStale);
-
-		EXPORT void __CDECL__ IsMining(cpuSolver *instance, bool *isMining);
-
-		EXPORT void __CDECL__ IsPaused(cpuSolver *instance, bool *isPaused);
-
-		EXPORT void __CDECL__ GetHashRateByThreadID(cpuSolver *instance, const uint32_t threadID, uint64_t *hashRate);
-
-		EXPORT void __CDECL__ GetTotalHashRate(cpuSolver *instance, uint64_t *totalHashRate);
-
-		EXPORT void __CDECL__ UpdatePrefix(cpuSolver *instance, const char *prefix);
-
-		EXPORT void __CDECL__ UpdateTarget(cpuSolver *instance, const char *target);
-
-		EXPORT void __CDECL__ PauseFinding(cpuSolver *instance, const bool pause);
-
-		EXPORT void __CDECL__ StartFinding(cpuSolver *instance);
-
-		EXPORT void __CDECL__ StopFinding(cpuSolver *instance);
-	
+		EXPORT void __CDECL__ HashMidState(CpuSolver *instance, Instance *deviceInstance, Processor *processor);
 	}
 }
 

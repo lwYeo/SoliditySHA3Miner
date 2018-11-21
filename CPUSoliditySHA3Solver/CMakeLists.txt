@@ -13,7 +13,7 @@ set(OUTPUT_REL bin/Release/)
 #        The main options of project        #
 #############################################
 
-project(${PROJECT_NAME} CXX)
+project(${PROJECT_NAME})
 
 # Define Release by default.
 if(NOT CMAKE_BUILD_TYPE)
@@ -42,28 +42,27 @@ endif()
 if(MSVC)
    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /EHsc")
    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /EHsc")
-endif(MSVC)
-if(NOT MSVC)
+else()
+   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
    endif()
-endif(NOT MSVC)
+endif()
 
 ################ Files ################
 #   --   Add files to project.   --   #
 #######################################
 
-set(CPP_DIR_1 ./)
-set(CPP_DIR_2 uint256)
-set(HEADER_DIR_1 )
-set(HEADER_DIR_2 uint256)
+set(DIR_1 ./)
+set(DIR_2 ./sha3)
 
 file(GLOB SRC_FILES
-    ${CPP_DIR_1}/*.cpp
-    ${CPP_DIR_2}/*.cpp
-    ${HEADER_DIR_1}/*.h
-    ${HEADER_DIR_2}/*.h
+    ${DIR_1}/*.cpp
+    ${DIR_2}/*.c
+    ${DIR_2}/*.cpp
+    ${DIR_1}/*.h
+    ${DIR_2}/*.h
 )
 
 # Add library to build.

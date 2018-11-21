@@ -18,36 +18,24 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SoliditySHA3Miner", "Solidi
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
-		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8541A1A2-DD45-4F28-9303-B28D3236DCB4}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{8541A1A2-DD45-4F28-9303-B28D3236DCB4}.Debug|x64.ActiveCfg = Release|x64
-		{8541A1A2-DD45-4F28-9303-B28D3236DCB4}.Debug|x64.Build.0 = Release|x64
-		{8541A1A2-DD45-4F28-9303-B28D3236DCB4}.Release|Any CPU.ActiveCfg = Release|x64
+		{8541A1A2-DD45-4F28-9303-B28D3236DCB4}.Debug|x64.ActiveCfg = Debug|x64
+		{8541A1A2-DD45-4F28-9303-B28D3236DCB4}.Debug|x64.Build.0 = Debug|x64
 		{8541A1A2-DD45-4F28-9303-B28D3236DCB4}.Release|x64.ActiveCfg = Release|x64
 		{8541A1A2-DD45-4F28-9303-B28D3236DCB4}.Release|x64.Build.0 = Release|x64
-		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Debug|x64.ActiveCfg = Debug|x64
 		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Debug|x64.Build.0 = Debug|x64
-		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Release|Any CPU.ActiveCfg = Release|x64
 		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Release|x64.ActiveCfg = Release|x64
 		{A73B12B6-272F-4837-B5A3-C1AA545BE4C5}.Release|x64.Build.0 = Release|x64
-		{B3B05A02-57FF-4A7F-9D64-D8A5B7435B0C}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{B3B05A02-57FF-4A7F-9D64-D8A5B7435B0C}.Debug|x64.ActiveCfg = Debug|x64
 		{B3B05A02-57FF-4A7F-9D64-D8A5B7435B0C}.Debug|x64.Build.0 = Debug|x64
-		{B3B05A02-57FF-4A7F-9D64-D8A5B7435B0C}.Release|Any CPU.ActiveCfg = Release|x64
 		{B3B05A02-57FF-4A7F-9D64-D8A5B7435B0C}.Release|x64.ActiveCfg = Release|x64
 		{B3B05A02-57FF-4A7F-9D64-D8A5B7435B0C}.Release|x64.Build.0 = Release|x64
-		{AAD3C9FB-5D60-474E-B842-71C32C7365A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AAD3C9FB-5D60-474E-B842-71C32C7365A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AAD3C9FB-5D60-474E-B842-71C32C7365A2}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{AAD3C9FB-5D60-474E-B842-71C32C7365A2}.Debug|x64.Build.0 = Debug|Any CPU
-		{AAD3C9FB-5D60-474E-B842-71C32C7365A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AAD3C9FB-5D60-474E-B842-71C32C7365A2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AAD3C9FB-5D60-474E-B842-71C32C7365A2}.Release|x64.ActiveCfg = Release|Any CPU
 		{AAD3C9FB-5D60-474E-B842-71C32C7365A2}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
