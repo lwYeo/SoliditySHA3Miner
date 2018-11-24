@@ -262,6 +262,7 @@ namespace SoliditySHA3Miner.Miner
                     PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Stop mining...");
 
                 device.HashCount = 0;
+                device.IsStopped = true;
                 device.IsInitialized = false;
             }
             catch (Exception ex)

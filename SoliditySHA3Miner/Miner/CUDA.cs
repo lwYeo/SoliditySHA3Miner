@@ -361,6 +361,7 @@ namespace SoliditySHA3Miner.Miner
                     errorMessage.Clear();
                 }
 
+                deviceCUDA.IsStopped = true;
                 deviceCUDA.IsInitialized = false;
             }
             catch (Exception ex)

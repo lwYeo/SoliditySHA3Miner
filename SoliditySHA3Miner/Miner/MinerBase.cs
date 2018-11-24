@@ -69,6 +69,8 @@ namespace SoliditySHA3Miner.Miner
 
         public bool IsPause => Devices?.Any(d => d.IsPause) ?? false;
 
+        public bool IsStopped => Devices?.Any(d => d.IsStopped) ?? true;
+
         public void StartMining(int networkUpdateInterval, int hashratePrintInterval)
         {
             try

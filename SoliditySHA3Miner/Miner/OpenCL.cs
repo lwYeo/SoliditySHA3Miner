@@ -365,6 +365,7 @@ namespace SoliditySHA3Miner.Miner
                     errorMessage.Clear();
                 }
 
+                device.IsStopped = true;
                 device.IsInitialized = false;
             }
             catch (Exception ex)

@@ -332,7 +332,19 @@ namespace SoliditySHA3Miner
                 m_waitCheckTimer.Elapsed +=
                     delegate
                     {
-                        if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPause))) WaitSeconds++;
+                        if (m_allMiners.Any(d => d.IsStopped))
+                        {
+                            foreach (var miner in m_allMiners)
+                            {
+                                try { miner.StopMining(); }
+                                catch { }
+                                try { miner.Dispose(); }
+                                catch { }
+                            }
+                            Environment.Exit(22);
+                        }
+                        else if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPause)))
+                            WaitSeconds++;
                     };
                 m_waitCheckTimer.Start();
                 WaitSeconds = (ulong)(LaunchTime - DateTime.Now).TotalSeconds;
