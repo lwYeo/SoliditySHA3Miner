@@ -9,7 +9,9 @@
 4) Below are the following arguments that may/need to be changed :
 
 4a) web3api=
+  * The value provided in the sample launch files are for TESTING PURPOSE only.
   * To avoid connection issues, do change to your own web3 API such as your account from 'https://infura.io/', or if you have your own Geth/Parity set up.
+  * If you are using account(s) from Infura, try to limit 5 rigs/instances per account.
 
 4b) abiFile=
   * If omitted, the '0xBTC.abi' file will be used by default

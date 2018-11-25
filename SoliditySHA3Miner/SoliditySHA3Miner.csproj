@@ -63,9 +63,6 @@
     <None Update="0xbtc.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Scripts\0xbtcPool-allDevices.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="Scripts\0xbtcPool-ethOS-screen.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

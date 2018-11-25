@@ -12,13 +12,20 @@ goto end
 :dotNetFound
 :startMiner
 DEL /F /Q SoliditySHA3Miner.conf
+
 dotnet SoliditySHA3Miner.dll ^
+allowCPU=false ^
+allowIntel=true ^
+allowAMD=true ^
+allowCUDA=true ^
 abiFile=0xBTC.abi ^
 contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 ^
 overrideMaxTarget=27606985387162255149739023449108101809804435888681546220650096895197184 ^
 pool=http://mike.rs:8080 ^
 address=0x9172ff7884CEFED19327aDaCe9C470eF1796105c
+
 if %errorlevel% EQU 22 (
   goto startMiner
 )
+:end
 pause
