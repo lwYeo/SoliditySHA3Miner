@@ -17,6 +17,7 @@
   * Replace the value with the following address if you are mining a different token (case-sensitive):
 
 	0xBTC    0xB6eD7644C69416d67B522e20bC294A9a9B405B31
+	LIRA     0x49AAa160506F7e07E6C3F6cD6316b6866025cDcB
 	CLM      0xA38FcEdd23dE2191Dc27f9a0240ac170BE0A14fE
 	SEDO     0x0F00f1696218EaeFa2D2330Df3D6D1f94813b38f
 	PEPE     0xBC2AFc039d2BFa67d582aC181daB5BE17EC91f82
