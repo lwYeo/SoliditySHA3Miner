@@ -86,6 +86,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
         public ulong Difficulty { get; private set; }
+        public HexBigInteger LastSubmitGasPrice { get; private set; }
         public int LastSubmitLatency { get; private set; }
         public int Latency { get; private set; }
         public string MinerAddress { get; }
@@ -777,7 +778,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                     catch (Exception ex)
                     {
                         Program.Print(string.Format("[ERROR] Failed to read gas price from API: {0}\n{1}", m_gasApiURL, ex.ToString()));
-                        Program.Print(string.Format("[INFO] Using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
+                        if (LastSubmitGasPrice == null || LastSubmitGasPrice.Value <= 0)
+                            Program.Print(string.Format("[INFO] Using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
+                        else
+                        {
+                            Program.Print(string.Format("[INFO] Using last submitted gas price of {0} GWei.",
+                                                        UnitConversion.Convert.FromWeiToBigDecimal(LastSubmitGasPrice, UnitConversion.EthUnit.Gwei).ToString()));
+                            userGas = LastSubmitGasPrice;
+                        }
                     }
                 }
 
@@ -827,6 +835,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                         if (!string.IsNullOrWhiteSpace(transactionID))
                         {
                             Program.Print("[INFO] Nonce submitted with transaction ID: " + transactionID);
+                            LastSubmitGasPrice = userGas;
 
                             if (!IsChallengedSubmitted(challenge))
                             {
