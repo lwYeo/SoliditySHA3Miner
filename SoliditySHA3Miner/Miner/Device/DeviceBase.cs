@@ -43,6 +43,8 @@ namespace SoliditySHA3Miner.Miner.Device
         [JsonIgnore]
         public bool IsPause;
         [JsonIgnore]
+        public bool IsStopped;
+        [JsonIgnore]
         public bool HasNewTarget;
         [JsonIgnore]
         public bool HasNewChallenge;

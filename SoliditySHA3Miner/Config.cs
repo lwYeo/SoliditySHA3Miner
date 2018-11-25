@@ -111,15 +111,15 @@ namespace SoliditySHA3Miner
                 "  listCudaDevices         List of all CUDA devices in this system and exit (device ID: GPU name)\n" +
                 "  cudaDevice              Comma separated list of CUDA devices to use (default: all devices)\n" +
                 "  cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)\n" +
-                "  minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: " + Defaults.JsonAPIPath + "), 0 disabled\n" +
-                "  minerCcminerAPI         'IP:port' for the ccminer-style API (default: " + Defaults.CcminerAPIPath + "), 0 disabled\n" +
+                "  minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: " + Defaults.JsonAPIPath + "[0 disabled])\n" +
+                "  minerCcminerAPI         'IP:port' for the ccminer-style API (default: " + Defaults.CcminerAPIPath + " [0 disabled])\n" +
                 "  overrideMaxTarget       (Pool only) Use maximum target and skips query from web3\n" +
                 "  customDifficulty        (Pool only) Set custom difficulity (check with your pool operator)\n" +
                 "  maxScanRetry            Number of retries to scan for new work (default: " + Defaults.MaxScanRetry + ")\n" +
                 "  pauseOnFailedScans      Pauses mining when connection fails, including secondary and retries (default: true)\n" +
                 "  submitStale             Submit stale jobs, may create more rejected shares (default: " + Defaults.SubmitStale.ToString().ToLower() + ")\n" +
                 "  abiFile                 Token abi in a file (default: '0xBTC.abi' in the same folder as this miner)\n" +
-                "  web3api                 User-defined web3 provider URL (default: Infura mainnet provider)\n" +
+                "  web3api                 User-defined web3 provider URL (default: Infura mainnet provider [dev account, for TESTING PURPOSE only])\n" +
                 "  contract                Token contract address (default: 0xbtc contract address)\n" +
                 "  hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: " + Defaults.HashrateUpdateInterval + ")\n" +
                 "  networkUpdateInterval   Interval (miliseconds) to scan for new work (default: " + Defaults.NetworkUpdateInterval + ")\n" +

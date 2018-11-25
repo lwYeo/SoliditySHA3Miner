@@ -154,6 +154,7 @@ namespace SoliditySHA3Miner.Miner
                 var errorMessage = new StringBuilder(1024);
                 PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Assigning device...");
 
+                device.DeviceCUDA_Struct.DeviceID = device.DeviceID;
                 Helper.CUDA.Solver.GetDeviceProperties(UnmanagedInstance, ref device.DeviceCUDA_Struct, errorMessage);
                 if (errorMessage.Length > 0)
                 {
@@ -360,6 +361,7 @@ namespace SoliditySHA3Miner.Miner
                     errorMessage.Clear();
                 }
 
+                deviceCUDA.IsStopped = true;
                 deviceCUDA.IsInitialized = false;
             }
             catch (Exception ex)

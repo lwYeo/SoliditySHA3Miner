@@ -1,7 +1,7 @@
 # SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported EIP918 tokens in a single instance (with API).
 
-Current latest public release version: [2.1.0](https://github.com/lwYeo/SoliditySHA3Miner/releases/latest)
+Current latest public release version: [2.1.1](https://github.com/lwYeo/SoliditySHA3Miner/releases/latest)
 
 Runs on Windows 10, HiveOS, EthOS, and Ubuntu.
 
@@ -74,9 +74,9 @@ Options:
 	
     cudaIntensity           GPU (CUDA) intensity (default: auto, decimals allowed)
 	
-    minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: http://127.0.0.1:4078), 0 disabled
+    minerJsonAPI            'http://IP:port/' for the miner JSON-API (default: http://127.0.0.1:4078 [0 disabled])
 	
-    minerCcminerAPI         'IP:port' for the ccminer-style API (default: 127.0.0.1:4068), 0 disabled
+    minerCcminerAPI         'IP:port' for the ccminer-style API (default: 127.0.0.1:4068 [0 disabled])
 	
     overrideMaxTarget       (Pool only) Use maximum target and skips query from web3
 	
@@ -90,7 +90,7 @@ Options:
 	
     abiFile                 Token abi in a file (default: '0xbtc.abi' in the same folder as this miner)
 	
-    web3api                 User-defined web3 provider URL (default: Infura mainnet provider)
+    web3api                 User-defined web3 provider URL (default: Infura mainnet provider [dev account, for TESTING PURPOSE only])
 	
     contract                Token contract address (default: 0xbtc contract address)
 	

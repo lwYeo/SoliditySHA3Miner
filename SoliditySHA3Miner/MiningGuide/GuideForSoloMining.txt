@@ -9,7 +9,9 @@
 4) Below are the following arguments that may/need to be changed :
 
 4a) web3api=
+  * The value provided in the sample launch files are for TESTING PURPOSE only.
   * To avoid connection issues, do change to your own web3 API such as your account from 'https://infura.io/', or if you have your own Geth/Parity set up.
+  * If you are using account(s) from Infura, try to limit 5 rigs/instances per account.
 
 4b) abiFile=
   * If omitted, the '0xBTC.abi' file will be used by default
@@ -21,6 +23,7 @@
   * Replace the value with the following address if you are mining a different token (case-sensitive):
 
 	0xBTC    0xB6eD7644C69416d67B522e20bC294A9a9B405B31
+	LIRA     0x49AAa160506F7e07E6C3F6cD6316b6866025cDcB
 	CLM      0xA38FcEdd23dE2191Dc27f9a0240ac170BE0A14fE
 	SEDO     0x0F00f1696218EaeFa2D2330Df3D6D1f94813b38f
 	PEPE     0xBC2AFc039d2BFa67d582aC181daB5BE17EC91f82
