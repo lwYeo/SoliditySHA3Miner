@@ -106,6 +106,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             m_newChallengeResetEvent = new System.Threading.ManualResetEvent(false);
 
             Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout = MAX_TIMEOUT * 1000;
+            Difficulty = new HexBigInteger(0);
             LastSubmitLatency = -1;
             Latency = -1;
 
@@ -715,7 +716,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (m_submitDateTimeList.Count > 1)
             {
                 var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
-                hashrate = (ulong)(new BigInteger(Difficulty) * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
+                hashrate = (ulong)(Difficulty.Value * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
             }
 
             return hashrate;

@@ -64,9 +64,9 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             m_updateInterval = updateInterval;
             m_isGetMiningParameters = false;
+            Difficulty = new HexBigInteger(0);
             LastSubmitLatency = -1;
             Latency = -1;
-
             SubmitURL = masterURL;
             SubmittedShares = 0;
             RejectedShares = 0;
@@ -307,7 +307,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (m_submitDateTimeList.Count > 1)
             {
                 var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
-                hashrate = (ulong)(new BigInteger(Difficulty) * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
+                hashrate = (ulong)(Difficulty.Value * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
             }
 
             return hashrate;
@@ -367,8 +367,20 @@ namespace SoliditySHA3Miner.NetworkInterface
                         var result = response.SelectToken("$.result")?.Value<string>();
 
                         success = (result ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
-                        if (!success) RejectedShares++;
                         SubmittedShares++;
+                        submitted = true;
+
+                        if (success)
+                        {
+                            if (m_submitDateTimeList.Count > MAX_SUBMIT_DTM_COUNT)
+                                m_submitDateTimeList.RemoveAt(0);
+
+                            m_submitDateTimeList.Add(DateTime.Now);
+                        }
+                        else
+                        {
+                            RejectedShares++;
+                        }
 
                         Program.Print(string.Format("[INFO] Solution submitted to master URL({0}): {1} ({2}ms)",
                                                     SubmitURL,
@@ -378,14 +390,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                         Program.Print(submitSolution.ToString());
                         Program.Print(response.ToString());
 #endif
-                        if (success)
-                        {
-                            if (m_submitDateTimeList.Count > MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
-                            m_submitDateTimeList.Add(DateTime.Now);
-                        }
                         UpdateMiningParameters();
                     }
-                    submitted = true;
                 }
                 catch (Exception ex)
                 {

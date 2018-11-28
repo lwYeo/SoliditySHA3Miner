@@ -455,9 +455,9 @@ namespace SoliditySHA3Miner.Miner
                                          "Verification failed: invalid solution"
                                          + "\nChallenge: " + challengeString
                                          + "\nAddress: " + m_AddressString
-                                         + "\nSolution: " + nonceString
+                                         + "\nNonce: " + nonceString
                                          + "\nDigest: " + digestString
-                                         + "\nTarget: " + m_Target.HexValue);
+                                         + "\nTarget: " + Utils.Numerics.Byte32ArrayToHexString(m_Target.Value.ToByteArray(isUnsigned: true, isBigEndian: true)));
                         }
                         else
                         {
@@ -467,9 +467,9 @@ namespace SoliditySHA3Miner.Miner
                                          "Solution details..."
                                          + "\nChallenge: " + challengeString
                                          + "\nAddress: " + m_AddressString
-                                         + "\nSolution: " + nonceString
+                                         + "\nNonce: " + nonceString
                                          + "\nDigest: " + digestString
-                                         + "\nTarget: " + m_Target.HexValue);
+                                         + "\nTarget: " + Utils.Numerics.Byte32ArrayToHexString(m_Target.Value.ToByteArray(isUnsigned: true, isBigEndian: true)));
 
                             NetworkInterface.SubmitSolution(m_AddressString,
                                                             digest,

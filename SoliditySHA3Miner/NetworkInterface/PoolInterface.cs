@@ -19,7 +19,6 @@ using Nethereum.Util;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Numerics;
@@ -88,17 +87,15 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             m_retryCount = 0;
             m_maxScanRetry = maxScanRetry;
-            m_customDifficulity = new HexBigInteger(customDifficulity);
-            MaxTarget = maxTarget;
             m_updateInterval = updateInterval;
             m_isGetMiningParameters = false;
+            m_customDifficulity = new HexBigInteger(customDifficulity);
+            Difficulty = new HexBigInteger((customDifficulity > 0) ? customDifficulity : 0);
+            MaxTarget = maxTarget;
             LastSubmitLatency = -1;
             Latency = -1;
             SecondaryPool = secondaryPool;
             IsSecondaryPool = isSecondary;
-
-            if (customDifficulity > 0)
-                Difficulty = new HexBigInteger(customDifficulity);
 
             MinerAddress = minerAddress;
             s_PoolURL = poolURL;
@@ -350,7 +347,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     Difficulty = new HexBigInteger(m_customDifficulity);
                     var calculatedTarget = MaxTarget.Value / m_customDifficulity;
-                    var newTarget = new HexBigInteger(new BigInteger(m_customDifficulity));
+                    var newTarget = new HexBigInteger(calculatedTarget);
 
                     OnNewTarget(this, newTarget);
                 }
@@ -401,7 +398,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (m_submitDateTimeList.Count > 1)
             {
                 var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
-                hashrate = (ulong)(new BigInteger(Difficulty) * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
+                hashrate = (ulong)(Difficulty.Value * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
             }
 
             return hashrate;
@@ -478,8 +475,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                         var result = response.SelectToken("$.result")?.Value<string>();
 
                         success = (result ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
-                        if (!success) RejectedShares++;
                         SubmittedShares++;
+                        submitted = true;
 
                         Program.Print(string.Format("[INFO] {0} [{1}] submitted to {2} pool: {3} ({4}ms)",
                                                     (minerAddress == DevFee.Address ? "Dev. fee share" : "Miner share"),
@@ -487,12 +484,23 @@ namespace SoliditySHA3Miner.NetworkInterface
                                                     IsSecondaryPool ? "secondary" : "primary",
                                                     (success ? "success" : "failed"),
                                                     LastSubmitLatency));
+                        if (success)
+                        {
+                            if (m_submitDateTimeList.Count > MAX_SUBMIT_DTM_COUNT)
+                                m_submitDateTimeList.RemoveAt(0);
+
+                            m_submitDateTimeList.Add(DateTime.Now);
+                        }
+                        else
+                        {
+                            RejectedShares++;
+                            UpdateMiningParameters();
+                        }
 #if DEBUG
                         Program.Print(submitShare.ToString());
                         Program.Print(response.ToString());
 #endif
                     }
-                    submitted = true;
                 }
                 catch (Exception ex)
                 {
@@ -505,13 +513,6 @@ namespace SoliditySHA3Miner.NetworkInterface
                         Task.Delay(500);
                 }
             } while (!submitted && retryCount < maxRetries);
-
-            if (success)
-            {
-                if (m_submitDateTimeList.Count > MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
-                m_submitDateTimeList.Add(DateTime.Now);
-            }
-            else UpdateMiningParameters();
 
             return success;
         }
