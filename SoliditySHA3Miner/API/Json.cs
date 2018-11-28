@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -324,7 +325,7 @@ namespace SoliditySHA3Miner.API
                 if (networkInterface.CurrentChallenge != null)
                     api.CurrentChallenge = Utils.Numerics.Byte32ArrayToHexString(networkInterface.CurrentChallenge);
 
-                api.CurrentDifficulty = networkInterface.Difficulty;
+                api.CurrentDifficulty = networkInterface.Difficulty.Value;
 
                 api.LastSubmitLatencyMS = networkInterface?.LastSubmitLatency ?? -1;
 
@@ -615,7 +616,7 @@ namespace SoliditySHA3Miner.API
             public string MinerAddress { get; set; }
             public string MiningURL { get; set; }
             public string CurrentChallenge { get; set; }
-            public ulong CurrentDifficulty { get; set; }
+            public BigInteger CurrentDifficulty { get; set; }
             public long EstimateTimeLeftToSolveBlock { get; set; }
             public float EffectiveHashRate { get; set; }
             public float TotalHashRate { get; set; }

@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using System;
 using System.Linq;
@@ -325,7 +324,7 @@ namespace SoliditySHA3Miner.Miner
         {
             try
             {
-                var targetBytes = Utils.Numerics.FilterByte32Array(target.Value.ToByteArray(littleEndian: false));
+                var targetBytes = Utils.Numerics.FilterByte32Array(target.Value.ToByteArray(isUnsigned: true, isBigEndian:true));
                 var high64Bytes = targetBytes.Take(UINT64_LENGTH).Reverse().ToArray();
 
                 m_Target = target;
@@ -344,16 +343,28 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        private void NetworkInterface_OnStopSolvingCurrentChallenge(NetworkInterface.INetworkInterface sender)
+        private void NetworkInterface_OnStopSolvingCurrentChallenge(NetworkInterface.INetworkInterface sender, bool stopSolving = true)
         {
-            if (m_isCurrentChallengeStopSolving) return;
-            
-            m_isCurrentChallengeStopSolving = true;
+            if (stopSolving)
+            {
+                if (m_isCurrentChallengeStopSolving) return;
 
-            PrintMessage(string.Empty, string.Empty, -1, "Info", "Mining temporary paused until new challenge receive...");
+                m_isCurrentChallengeStopSolving = true;
 
-            foreach (var device in Devices)
-                device.IsPause = true;
+                foreach (var device in Devices)
+                    device.IsPause = true;
+
+                PrintMessage(string.Empty, string.Empty, -1, "Info", "Mining temporary paused until new challenge receive...");
+            }
+            else if (m_isCurrentChallengeStopSolving)
+            {
+                PrintMessage(string.Empty, string.Empty, -1, "Info", "Resume mining...");
+
+                m_isCurrentChallengeStopSolving = false;
+
+                foreach (var device in Devices)
+                    device.IsPause = false;
+            }
         }
 
         private void StartFindingAll(bool isKingMaking)
@@ -398,6 +409,10 @@ namespace SoliditySHA3Miner.Miner
                     {
                         if (!NetworkInterface.IsPool)
                             if (((NetworkInterface.Web3Interface)NetworkInterface).IsChallengedSubmitted(challenge))
+                                return;
+
+                        if (NetworkInterface.GetType().IsAssignableFrom(typeof(NetworkInterface.SlaveInterface)))
+                            if (((NetworkInterface.SlaveInterface)NetworkInterface).IsPause)
                                 return;
 
                         if ((!m_isSubmitStale && !challenge.SequenceEqual(NetworkInterface.CurrentChallenge)) || solution == 0)

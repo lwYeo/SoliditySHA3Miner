@@ -50,6 +50,9 @@ Options:
   contract                Token contract address (default: 0xbtc contract address)
   hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: 30000)
   networkUpdateInterval   Interval (miliseconds) to scan for new work (default: 15000)
+  masterMode              Enable Master mode that virtually acts as a \"pool\" for slave miners connecting to it (default: false [requires admin/sudo mode])
+  masterURL               Master instance IP:port, slave mode if 'masterMode' is false (default: none [if 'masterMode' is true, default: http://{localIP}:4080/])
+  slaveUpdateInterval     (Slave only)Interval (miliseconds) to scan for new work (default: 5000)
   kingAddress             Add MiningKing address to nonce, only CPU mining supported (default: none)
   address                 (Pool only) Miner's ethereum address (default: developer's address)
   privateKey              (Solo only) Miner's private key

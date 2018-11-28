@@ -33,12 +33,15 @@ namespace SoliditySHA3Miner
         public string contractAddress { get; set; }
         public string abiFile { get; set; }
         public HexBigInteger overrideMaxTarget { get; set; }
-        public ulong customDifficulty { get; set; }
+        public BigInteger customDifficulty { get; set; }
         public bool submitStale { get; set; }
         public int maxScanRetry { get; set; }
         public int pauseOnFailedScans { get; set; }
         public int networkUpdateInterval { get; set; }
         public int hashrateUpdateInterval { get; set; }
+        public bool masterMode { get; set; }
+        public string masterURL { get; set; }
+        public int slaveUpdateInterval { get; set; }
         public string kingAddress { get; set; }
         public string minerAddress { get; set; }
         public string primaryPool { get; set; }
@@ -69,14 +72,17 @@ namespace SoliditySHA3Miner
             contractAddress = Defaults.Contract0xBTC_mainnet;
             abiFile = Defaults.AbiFile0xBTC;
             overrideMaxTarget = new HexBigInteger(BigInteger.Zero);
-            customDifficulty = 0u;
+            customDifficulty = BigInteger.Zero;
             submitStale = Defaults.SubmitStale;
             maxScanRetry = Defaults.MaxScanRetry;
             pauseOnFailedScans = Defaults.PauseOnFailedScan;
             networkUpdateInterval = Defaults.NetworkUpdateInterval;
             hashrateUpdateInterval = Defaults.HashrateUpdateInterval;
+            masterMode = false;
+            masterURL = string.Empty;
             kingAddress = string.Empty;
             minerAddress = string.Empty;
+            slaveUpdateInterval = Defaults.SlaveUpdateInterval;
             primaryPool = string.Empty;
             secondaryPool = string.Empty;
             privateKey = string.Empty;
@@ -123,6 +129,9 @@ namespace SoliditySHA3Miner
                 "  contract                Token contract address (default: 0xbtc contract address)\n" +
                 "  hashrateUpdateInterval  Interval (miliseconds) for GPU hashrate logs (default: " + Defaults.HashrateUpdateInterval + ")\n" +
                 "  networkUpdateInterval   Interval (miliseconds) to scan for new work (default: " + Defaults.NetworkUpdateInterval + ")\n" +
+                "  masterMode              Enable Master mode that virtually acts as a \"pool\" for slave miners connecting to it (default: false [requires admin/sudo mode])\n" +
+                "  masterURL               Master instance IP:port, slave mode if 'masterMode' is false (default: none [if 'masterMode' is true, default: http://{localIP}:4080/])\n" +
+                "  slaveUpdateInterval     (Slave only)Interval (miliseconds) to scan for new work (default: " + Defaults.SlaveUpdateInterval + ")\n" +
                 "  kingAddress             Add MiningKing address to nonce, only CPU mining supported (default: none)\n" +
                 "  address                 (Pool only) Miner's ethereum address (default: developer's address)\n" +
                 "  privateKey              (Solo only) Miner's private key\n" +
@@ -694,7 +703,7 @@ namespace SoliditySHA3Miner
                             break;
 
                         case "customDifficulty":
-                            customDifficulty = uint.Parse(arg.Split('=')[1]);
+                            customDifficulty = BigInteger.Parse(arg.Split('=')[1]);
                             break;
 
                         case "maxScanRetry":
@@ -735,6 +744,18 @@ namespace SoliditySHA3Miner
 
                         case "address":
                             minerAddress = arg.Split('=')[1];
+                            break;
+
+                        case "masterMode":
+                            masterMode = bool.Parse(arg.Split('=')[1]);
+                            break;
+
+                        case "masterURL":
+                            masterURL = arg.Split('=')[1];
+                            break;
+
+                        case "slaveUpdateInterval":
+                            slaveUpdateInterval = int.Parse(arg.Split('=')[1]);
                             break;
 
                         case "privateKey":
@@ -804,6 +825,7 @@ namespace SoliditySHA3Miner
             public const string PoolSecondary = "http://mike.rs:8080";
             public const string JsonAPIPath = "http://127.0.0.1:4078";
             public const string CcminerAPIPath = "127.0.0.1:4068";
+            public const string MasterIpAddress = "http://{0}:4080";
 
             public const bool SubmitStale = false;
             public const float GasToMine = 3.0f;
@@ -813,6 +835,7 @@ namespace SoliditySHA3Miner
             public const int PauseOnFailedScan = 3;
             public const int NetworkUpdateInterval = 15000;
             public const int HashrateUpdateInterval = 30000;
+            public const int SlaveUpdateInterval = 5000;
 
             public const bool LogFile = false;
         }

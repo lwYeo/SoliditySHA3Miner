@@ -61,34 +61,19 @@ namespace SoliditySHA3Miner.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to #define OPENCL_PLATFORM_UNKNOWN	0
-        ///#define OPENCL_PLATFORM_NVIDIA	1
-        ///#define OPENCL_PLATFORM_AMD		2
+        ///   Looks up a localized string similar to /*
+        ///   Copyright 2018 Lip Wee Yeo Amano
         ///
-        ///#ifndef PLATFORM
-        ///#	define PLATFORM				OPENCL_PLATFORM_UNKNOWN
-        ///#endif
+        ///   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+        ///   you may not use this file except in compliance with the License.
+        ///   You may obtain a copy of the License at
         ///
-        ///#if PLATFORM == OPENCL_PLATFORM_AMD
-        ///#	pragma OPENCL EXTENSION		cl_amd_media_ops : enable
-        ///#endif
+        ///	   http://www.apache.org/licenses/LICENSE-2.0
         ///
-        ///#ifndef COMPUTE
-        ///#	define COMPUTE				0
-        ///#endif
-        ///
-        ///#define STATE_LENGTH			200u
-        ///
-        ///typedef union _nonce_t
-        ///{
-        ///	uint2		uint2_s;
-        ///	ulong		ulong_s;
-        ///} nonce_t;
-        ///
-        ///typedef union _state_t
-        ///{
-        ///	uint2		uint2_s[STATE_LENGTH / sizeof(uint2)];
-        ///	 [rest of string was truncated]&quot;;.
+        ///   Unless required by applicable law or agreed to in writing, software
+        ///   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+        ///   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        ///   See the Licens [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string sha3Kernel {
             get {
@@ -97,28 +82,19 @@ namespace SoliditySHA3Miner.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to #define OPENCL_PLATFORM_UNKNOWN	0
-        ///#define OPENCL_PLATFORM_NVIDIA	1
-        ///#define OPENCL_PLATFORM_AMD		2
+        ///   Looks up a localized string similar to /*
+        ///   Copyright 2018 Lip Wee Yeo Amano
         ///
-        ///#ifndef PLATFORM
-        ///#define PLATFORM				OPENCL_PLATFORM_UNKNOWN
-        ///#endif
+        ///   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+        ///   you may not use this file except in compliance with the License.
+        ///   You may obtain a copy of the License at
         ///
-        ///#if PLATFORM == OPENCL_PLATFORM_AMD
-        ///#pragma OPENCL EXTENSION		cl_amd_media_ops : enable
-        ///#endif
+        ///	   http://www.apache.org/licenses/LICENSE-2.0
         ///
-        ///#ifndef COMPUTE
-        ///#define COMPUTE					0
-        ///#endif
-        ///
-        ///#define ADDRESS_LENGTH			20u
-        ///#define UINT64_LENGTH			8u
-        ///#define UINT256_LENGTH			32u
-        ///#define MESSAGE_LENGTH			84u
-        ///#define SPONGE_LENGTH			200u
-        ///#define NONCE_POSITION			UINT256_LENGT [rest of string was truncated]&quot;;.
+        ///   Unless required by applicable law or agreed to in writing, software
+        ///   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+        ///   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        ///   See the Licens [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string sha3KingKernel {
             get {

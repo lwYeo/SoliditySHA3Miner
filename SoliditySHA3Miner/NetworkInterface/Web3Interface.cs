@@ -37,7 +37,6 @@ namespace SoliditySHA3Miner.NetworkInterface
     public class Web3Interface : INetworkInterface
     {
         private readonly BigInteger uint256_MaxValue = BigInteger.Pow(2, 256);
-        private HexBigInteger m_maxTarget;
         private DateTime m_challengeReceiveDateTime;
 
         private const int MAX_TIMEOUT = 10;
@@ -78,20 +77,22 @@ namespace SoliditySHA3Miner.NetworkInterface
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
         public event NewChallengeEvent OnNewChallenge;
         public event NewTargetEvent OnNewTarget;
+        public event NewDifficultyEvent OnNewDifficulty;
         public event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
-
         public event GetTotalHashrateEvent OnGetTotalHashrate;
 
         public bool IsPool => false;
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
-        public ulong Difficulty { get; private set; }
+        public HexBigInteger Difficulty { get; private set; }
+        public HexBigInteger MaxTarget { get; private set; }
         public HexBigInteger LastSubmitGasPrice { get; private set; }
         public int LastSubmitLatency { get; private set; }
         public int Latency { get; private set; }
         public string MinerAddress { get; }
         public string SubmitURL { get; private set; }
         public byte[] CurrentChallenge { get; private set; }
+        public HexBigInteger CurrentTarget { get; private set; }
 
         public bool IsChallengedSubmitted(byte[] challenge) => m_submittedChallengeList.Any(s => challenge.SequenceEqual(s));
 
@@ -471,15 +472,15 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (maxTarget.Value > 0u)
             {
                 Program.Print("[INFO] Override maximum difficulty: " + maxTarget.HexValue);
-                m_maxTarget = maxTarget;
+                MaxTarget = maxTarget;
             }
-            else { m_maxTarget = GetMaxTarget(); }
+            else { MaxTarget = GetMaxTarget(); }
         }
 
         public HexBigInteger GetMaxTarget()
         {
-            if (m_maxTarget != null && m_maxTarget.Value > 0)
-                return m_maxTarget;
+            if (MaxTarget != null && MaxTarget.Value > 0)
+                return MaxTarget;
 
             Program.Print("[INFO] Checking maximum target from network...");
             while (true)
@@ -583,29 +584,33 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         private void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            var totalHashRate = 0ul;
-            OnGetTotalHashrate(this, ref totalHashRate);
-            Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s (Effective) / {1} MH/s (Local)",
-                                        GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
-
-            var timeLeftToSolveBlock = GetTimeLeftToSolveBlock(totalHashRate);
-
-            if (timeLeftToSolveBlock.TotalSeconds < 0)
+            try
             {
-                Program.Print(string.Format("[INFO] Estimated time left to solution: -({0}d {1}h {2}m {3}s)",
-                                            Math.Abs(timeLeftToSolveBlock.Days),
-                                            Math.Abs(timeLeftToSolveBlock.Hours),
-                                            Math.Abs(timeLeftToSolveBlock.Minutes),
-                                            Math.Abs(timeLeftToSolveBlock.Seconds)));
+                var totalHashRate = 0ul;
+                OnGetTotalHashrate(this, ref totalHashRate);
+                Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s (Effective) / {1} MH/s (Local)",
+                                            GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
+
+                var timeLeftToSolveBlock = GetTimeLeftToSolveBlock(totalHashRate);
+
+                if (timeLeftToSolveBlock.TotalSeconds < 0)
+                {
+                    Program.Print(string.Format("[INFO] Estimated time left to solution: -({0}d {1}h {2}m {3}s)",
+                                                Math.Abs(timeLeftToSolveBlock.Days),
+                                                Math.Abs(timeLeftToSolveBlock.Hours),
+                                                Math.Abs(timeLeftToSolveBlock.Minutes),
+                                                Math.Abs(timeLeftToSolveBlock.Seconds)));
+                }
+                else
+                {
+                    Program.Print(string.Format("[INFO] Estimated time left to solution: {0}d {1}h {2}m {3}s",
+                                                Math.Abs(timeLeftToSolveBlock.Days),
+                                                Math.Abs(timeLeftToSolveBlock.Hours),
+                                                Math.Abs(timeLeftToSolveBlock.Minutes),
+                                                Math.Abs(timeLeftToSolveBlock.Seconds)));
+                }
             }
-            else
-            {
-                Program.Print(string.Format("[INFO] Estimated time left to solution: {0}d {1}h {2}m {3}s",
-                                            Math.Abs(timeLeftToSolveBlock.Days),
-                                            Math.Abs(timeLeftToSolveBlock.Hours),
-                                            Math.Abs(timeLeftToSolveBlock.Minutes),
-                                            Math.Abs(timeLeftToSolveBlock.Seconds)));
-            }
+            catch { }
         }
 
         private void UpdateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -636,24 +641,32 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     Program.Print(string.Format("[INFO] New target detected {0}...", miningParameters.MiningTargetByte32String));
                     OnNewTarget(this, miningParameters.MiningTarget);
+                    CurrentTarget = miningParameters.MiningTarget;
                 }
 
                 if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
                 {
                     Program.Print(string.Format("[INFO] New difficulity detected ({0})...", miningParameters.MiningDifficulty.Value));
-                    Difficulty = Convert.ToUInt64(miningParameters.MiningDifficulty.Value.ToString());
+                    OnNewDifficulty?.Invoke(this, miningParameters.MiningDifficulty);
+                    Difficulty = miningParameters.MiningDifficulty;
 
                     // Actual difficulty should have decimals
-                    var calculatedDifficulty = Math.Exp(BigInteger.Log(m_maxTarget.Value) - BigInteger.Log(miningParameters.MiningTarget.Value));
+                    var calculatedDifficulty = BigDecimal.Exp(BigInteger.Log(MaxTarget.Value) - BigInteger.Log(miningParameters.MiningTarget.Value));
+                    var calculatedDifficultyBigInteger = BigInteger.Parse(calculatedDifficulty.ToString().Split(",.".ToCharArray())[0]);
 
-                    if ((ulong)calculatedDifficulty != Difficulty) // Only replace if the integer portion is different
+                    // Only replace if the integer portion is different
+                    if (Difficulty.Value != calculatedDifficultyBigInteger)
                     {
-                        Difficulty = (ulong)calculatedDifficulty;
-                        var expValue = Math.Log10(calculatedDifficulty);
-                        var calculatedTarget = m_maxTarget.Value * (ulong)Math.Pow(10, expValue) / (ulong)(calculatedDifficulty * Math.Pow(10, expValue));
+                        Difficulty = new HexBigInteger(calculatedDifficultyBigInteger);
+                        var expValue = BigInteger.Log10(calculatedDifficultyBigInteger);
+                        var calculatedTarget = BigInteger.Parse(
+                            (BigDecimal.Parse(MaxTarget.Value.ToString()) * BigDecimal.Pow(10, expValue) / (calculatedDifficulty * BigDecimal.Pow(10, expValue))).
+                            ToString().Split(",.".ToCharArray())[0]);
+                        var calculatedTargetHex = new HexBigInteger(calculatedTarget);
 
                         Program.Print(string.Format("[INFO] Update target 0x{0}...", calculatedTarget.ToString("x64")));
-                        OnNewTarget(this, new HexBigInteger(calculatedTarget));
+                        OnNewTarget(this, calculatedTargetHex);
+                        CurrentTarget = calculatedTargetHex;
                     }
                 }
 
@@ -675,10 +688,10 @@ namespace SoliditySHA3Miner.NetworkInterface
         /// </summary>
         public TimeSpan GetTimeLeftToSolveBlock(ulong hashrate)
         {
-            if (m_maxTarget == null || m_maxTarget.Value == 0 || Difficulty == 0 || hashrate == 0 || m_challengeReceiveDateTime == DateTime.MinValue)
+            if (MaxTarget == null || MaxTarget.Value == 0 || Difficulty == null || Difficulty.Value == 0 || hashrate == 0 || m_challengeReceiveDateTime == DateTime.MinValue)
                 return TimeSpan.Zero;
 
-            var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(hashrate);
+            var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / MaxTarget.Value / new BigInteger(hashrate);
 
             var secondsLeftToSolveBlock = timeToSolveBlock - (long)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds;
 
@@ -702,7 +715,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (m_submitDateTimeList.Count > 1)
             {
                 var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
-                hashrate = (ulong)(new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(avgSolveTime));
+                hashrate = (ulong)(new BigInteger(Difficulty) * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
             }
 
             return hashrate;
@@ -726,7 +739,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
         }
 
-        public bool SubmitSolution(string address, byte[] digest, byte[] challenge, ulong difficulty, byte[] nonce, Miner.IMiner sender)
+        public bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender)
         {
             lock (this)
             {
@@ -792,14 +805,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                 object[] dataInput = null;
 
                 if (m_mintMethodInputParamCount > 1) // 0xBitcoin compatibility
-                    dataInput = new object[] { new BigInteger(nonce.Reverse().ToArray()), digest };
+                    dataInput = new object[] { new BigInteger(nonce, isBigEndian: true), digest };
 
                 else // Draft EIP-918 compatibility [2018-03-07]
-                    dataInput = new object[] { new BigInteger(nonce.Reverse().ToArray()) };
+                    dataInput = new object[] { new BigInteger(nonce, isBigEndian: true) };
 
                 var retryCount = 0;
                 var startSubmitDateTime = DateTime.Now;
-                while (string.IsNullOrWhiteSpace(transactionID))
+                do
                 {
                     try
                     {
@@ -871,18 +884,21 @@ namespace SoliditySHA3Miner.NetworkInterface
                         if (IsChallengedSubmitted(challenge) || ex.Message == "Failed to verify transaction.")
                             return false;
                     }
-                    Task.Delay(m_updateInterval / 2).Wait();
 
                     if (string.IsNullOrWhiteSpace(transactionID))
+                    {
                         retryCount++;
 
-                    if (retryCount > 10)
-                    {
-                        Program.Print("[ERROR] Failed to submit solution for more than 10 times, please check settings.");
-                        sender.StopMining();
+                        if (retryCount > 10)
+                        {
+                            Program.Print("[ERROR] Failed to submit solution for 10 times, submission cancelled.");
+                            return false;
+                        }
+                        else { Task.Delay(m_updateInterval / 2).Wait(); }
                     }
-                }
-                return true;
+                } while (string.IsNullOrWhiteSpace(transactionID));
+
+                return !string.IsNullOrWhiteSpace(transactionID);
             }
         }
 

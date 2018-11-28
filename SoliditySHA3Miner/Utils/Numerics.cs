@@ -18,7 +18,6 @@ using Nethereum.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 
 namespace SoliditySHA3Miner.Utils
 {
@@ -56,6 +55,10 @@ namespace SoliditySHA3Miner.Utils
             lock (m_Byte32ArrayToHexStringLock)
             {
                 var byte32String = prefix ? "0x" : string.Empty;
+
+                if (byte32.Length != Miner.MinerBase.UINT256_LENGTH)
+                    byte32 = FilterByte32Array(byte32);
+
                 for (var i = 0; i < Miner.MinerBase.UINT256_LENGTH; i++)
                     byte32String += ASCII[byte32[i]];
 
@@ -107,7 +110,7 @@ namespace SoliditySHA3Miner.Utils
                 for (int i = 0; i < Miner.MinerBase.UINT256_LENGTH; i++)
                     outBytes[i] = 0;
 
-                for (int i = 31, j = (bytes.Count() - 1); i >= 0 && j >= 0; i--, j--)
+                for (int i = Miner.MinerBase.UINT256_LENGTH - 1, j = (bytes.Count() - 1); i >= 0 && j >= 0; i--, j--)
                     outBytes[i] = bytes.ElementAt(j);
 
                 return outBytes;
@@ -136,6 +139,32 @@ namespace SoliditySHA3Miner.Utils
                 bytePosition++;
                 address[bytePosition] = value;
             }
+        }
+
+        public static string Byte20ArrayToAddressString(byte[] address, bool prefix = true)
+        {
+            var addressString = prefix ? "0x" : string.Empty;
+
+            if (address.Length != Miner.MinerBase.ADDRESS_LENGTH)
+                address = FilterByte20Array(address);
+
+            for (var i = 0; i < Miner.MinerBase.ADDRESS_LENGTH; i++)
+                addressString += ASCII[address[i]];
+            
+            return addressString;
+        }
+
+        public static byte[] FilterByte20Array(IEnumerable<byte> bytes)
+        {
+            var outBytes = (byte[])Array.CreateInstance(typeof(byte), Miner.MinerBase.ADDRESS_LENGTH);
+
+            for (int i = 0; i < Miner.MinerBase.ADDRESS_LENGTH; i++)
+                outBytes[i] = 0;
+
+            for (int i = Miner.MinerBase.ADDRESS_LENGTH - 1, j = (bytes.Count() - 1); i >= 0 && j >= 0; i--, j--)
+                outBytes[i] = bytes.ElementAt(j);
+
+            return outBytes;
         }
     }
 }

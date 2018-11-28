@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-using Nethereum.Hex.HexConvertors.Extensions;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace SoliditySHA3Miner.Miner
@@ -32,9 +30,10 @@ namespace SoliditySHA3Miner.Miner
 
         public static string GetKingAddressString()
         {
-            if (KingAddress == null) return string.Empty;
-
-            return HexByteConvertorExtensions.ToHex(KingAddress.ToArray(), prefix: true);
+            if (KingAddress == null)
+                return string.Empty;
+            else
+                return Utils.Numerics.Byte32ArrayToHexString(KingAddress, prefix: true);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
