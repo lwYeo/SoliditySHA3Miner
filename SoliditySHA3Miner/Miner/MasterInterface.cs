@@ -248,19 +248,24 @@ namespace SoliditySHA3Miner.Miner
 
                 m_Listener = new HttpListener();
                 m_Listener.Prefixes.Add(ipAddress);
+                m_Listener.Start();
 
                 Process(m_Listener);
             }
+            catch (HttpListenerException ex)
+            {
+                HandleException(ex, errorPostfix: string.Format("Listening failed at ({0}): Check URL validity, firewall settings, and admin/sudo mode.", ipAddress));
+                Environment.Exit(1);
+            }
             catch (Exception ex)
             {
-                HandleException(ex, "An error has occured while starting:");
+                HandleException(ex);
                 return;
             }
         }
 
         private async void Process(HttpListener listener)
         {
-            listener.Start();
             HasAssignedDevices = true;
             Program.Print(string.Format("[INFO] Master instance started at {0}...", listener.Prefixes.ElementAt(0)));
 
@@ -445,7 +450,7 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        private void HandleException(Exception ex, string errorPrefix=null)
+        private void HandleException(Exception ex, string errorPrefix = null, string errorPostfix = null)
         {
             var errorMessage = new StringBuilder("[ERROR] Occured at Master instance: ");
 
@@ -460,6 +465,10 @@ namespace SoliditySHA3Miner.Miner
                 errorMessage.AppendFormat("\n {0}", innerEx.Message);
                 innerEx = innerEx.InnerException;
             }
+
+            if (!string.IsNullOrWhiteSpace(errorPostfix))
+                errorMessage.AppendFormat("\n => {0}", errorPostfix);
+
             Program.Print(errorMessage.ToString());
         }
     }
