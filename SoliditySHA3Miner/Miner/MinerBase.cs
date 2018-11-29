@@ -259,11 +259,11 @@ namespace SoliditySHA3Miner.Miner
                             isPause = false;
                         }
                         foreach (var device in Devices)
-                            device.IsPause = IsPause;
+                            device.IsPause = isPause;
                     }
                     else
                     {
-                        m_failedScanCount += 1;
+                        m_failedScanCount++;
 
                         var isMining = Devices.Any(d => d.IsMining);
 
