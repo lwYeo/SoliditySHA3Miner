@@ -75,7 +75,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             Program.Print(string.Format("[INFO] Waiting for master instance ({0}) to start...", SubmitURL));
 
-            var getMasterAddress = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetMasterAddress);
+            var getMasterAddress = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetMinerAddress);
             var getMaximumTarget = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetMaximumTarget);
             var getKingAddress = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetKingAddress);
 

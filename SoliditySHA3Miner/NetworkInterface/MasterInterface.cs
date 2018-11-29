@@ -31,7 +31,7 @@ namespace SoliditySHA3Miner.NetworkInterface
     {
         public static class RequestMethods
         {
-            public const string GetMasterAddress = "GetMasterAddress";
+            public const string GetMinerAddress = "GetMinerAddress";
             public const string GetMaximumTarget = "GetMaximumTarget";
             public const string GetKingAddress = "GetKingAddress";
             public const string GetChallenge = "GetChallenge";
@@ -182,7 +182,6 @@ namespace SoliditySHA3Miner.NetworkInterface
                 if (Miner.Work.KingAddress != null)
                     m_kingEthAddress = Utils.Numerics.Byte20ArrayToAddressString(Miner.Work.KingAddress);
 
-                m_minerEthAddress = networkInterface.MinerAddress;
                 m_maxTarget = Utils.Numerics.Byte32ArrayToHexString(
                     networkInterface.MaxTarget.Value.ToByteArray(isUnsigned: true, isBigEndian: true));
 
@@ -190,6 +189,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     networkInterface.UpdateMiningParameters();
                 else
                 {
+                    m_minerEthAddress = networkInterface.MinerAddress;
                     m_challenge = Utils.Numerics.Byte32ArrayToHexString(networkInterface.CurrentChallenge);
                     m_difficulty = Utils.Numerics.Byte32ArrayToHexString(
                         networkInterface.Difficulty.Value.ToByteArray(isUnsigned: true, isBigEndian: true));
@@ -290,7 +290,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                             switch (jMethodName)
                             {
-                                case RequestMethods.GetMasterAddress:
+                                case RequestMethods.GetMinerAddress:
                                     jResponse = GetMasterResult(m_minerEthAddress);
                                     break;
 
@@ -377,6 +377,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         private void NetworkInterface_OnNewChallenge(INetworkInterface sender, byte[] challenge, string address)
         {
             m_challenge = Utils.Numerics.Byte32ArrayToHexString(challenge);
+            m_minerEthAddress = address;
 
             if (m_isCurrentChallengeStopSolving)
             {

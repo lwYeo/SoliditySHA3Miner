@@ -630,7 +630,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 if (m_lastParameters == null || miningParameters.Challenge.Value != m_lastParameters.Challenge.Value)
                 {
                     Program.Print(string.Format("[INFO] New challenge detected {0}...", miningParameters.ChallengeByte32String));
-                    OnNewChallenge(this, miningParameters.ChallengeByte32, miningParameters.EthAddress);
+                    OnNewChallenge(this, miningParameters.ChallengeByte32, MinerAddress);
 
                     if (m_challengeReceiveDateTime == DateTime.MinValue)
                         m_challengeReceiveDateTime = DateTime.Now;
