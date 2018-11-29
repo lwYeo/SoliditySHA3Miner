@@ -16,12 +16,7 @@
 
 #include "sha3-midstate.h"
 
-#if defined(_MSC_VER)
-#	pragma intrinsic(_rotl64)
-#	define ROTL_64(x, n)		_rotl64(x, n)
-#	pragma intrinsic(_rotr64)
-#	define ROTR_64(x, n)		_rotr64(x, n)
-#elif defined(__clang__)
+#if defined(__clang__)
 #	define ROTL_64(x, n)		__builtin_rotateleft64(x, n)
 #	define ROTR_64(x, n)		__builtin_rotateright64(x, n)
 #else
@@ -35,35 +30,34 @@
 
 static inline uint64_t bswap64(uint64_t const input)
 {
-	return  ((input << 56) & 0xff00000000000000ull) |
+	return
+		((input << 56) & 0xff00000000000000ull) |
 		((input << 40) & 0x00ff000000000000ull) |
 		((input << 24) & 0x0000ff0000000000ull) |
-		((input << 8) & 0x000000ff00000000ull) |
-		((input >> 8) & 0x00000000ff000000ull) |
+		((input <<  8) & 0x000000ff00000000ull) |
+		((input >>  8) & 0x00000000ff000000ull) |
 		((input >> 24) & 0x0000000000ff0000ull) |
 		((input >> 40) & 0x000000000000ff00ull) |
 		((input >> 56) & 0x00000000000000ffull);
 }
 
-static uint64_t const Keccak_f1600_RC[24] =
-{
-	0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
-	0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
-	0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
-	0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
-	0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
-	0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
-	0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
-	0x8000000000008080, 0x0000000080000001, 0x8000000080008008
-};
-
 void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t const workPosition,
 					uint32_t const maxSolutionCount, uint32_t *solutionCount, uint64_t *solutions)
 {
-	uint64_t nonce, state[25], C[5], D[5], n[11];
-	nonce = workPosition;
+	uint64_t state[25], C[5], D[5], n[11];
+	uint64_t const rc[24] =
+	{
+		0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
+		0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
+		0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
+		0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
+		0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
+		0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
+		0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
+		0x8000000000008080, 0x0000000080000001, 0x8000000080008008
+	};
 
-	n[0] = ROTL_64(nonce, 7);
+	n[0] = ROTL_64(workPosition, 7);
 	n[1] = ROTL_64(n[0], 1);
 	n[2] = ROTL_64(n[1], 6);
 	n[3] = ROTL_64(n[2], 2);
@@ -80,7 +74,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	C[2] = midState[2] ^ n[7];
 	C[3] = midState[3];
 	C[4] = midState[4] ^ n[2];
-	state[0] = CHI(C[0], C[1], C[2]) ^ Keccak_f1600_RC[0];
+	state[0] = CHI(C[0], C[1], C[2]) ^ rc[0];
 	state[1] = CHI(C[1], C[2], C[3]);
 	state[2] = CHI(C[2], C[3], C[4]);
 	state[3] = CHI(C[3], C[4], C[0]);
@@ -220,15 +214,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -252,7 +246,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[1];
+	state[0] = state[0] ^ rc[1];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -344,15 +338,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -376,7 +370,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[2];
+	state[0] = state[0] ^ rc[2];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -468,15 +462,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -500,7 +494,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[3];
+	state[0] = state[0] ^ rc[3];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -592,15 +586,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -624,7 +618,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[4];
+	state[0] = state[0] ^ rc[4];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -716,15 +710,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -748,7 +742,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[5];
+	state[0] = state[0] ^ rc[5];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -840,15 +834,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -872,7 +866,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[6];
+	state[0] = state[0] ^ rc[6];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -964,15 +958,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -996,7 +990,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[7];
+	state[0] = state[0] ^ rc[7];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -1088,15 +1082,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -1120,7 +1114,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[8];
+	state[0] = state[0] ^ rc[8];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -1212,15 +1206,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -1244,7 +1238,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[9];
+	state[0] = state[0] ^ rc[9];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -1336,15 +1330,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -1368,7 +1362,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[10];
+	state[0] = state[0] ^ rc[10];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -1460,15 +1454,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -1492,7 +1486,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[11];
+	state[0] = state[0] ^ rc[11];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -1584,15 +1578,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -1616,7 +1610,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[12];
+	state[0] = state[0] ^ rc[12];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -1708,15 +1702,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -1740,7 +1734,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[13];
+	state[0] = state[0] ^ rc[13];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -1832,15 +1826,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -1864,7 +1858,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[14];
+	state[0] = state[0] ^ rc[14];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -1956,15 +1950,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -1988,7 +1982,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[15];
+	state[0] = state[0] ^ rc[15];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -2080,15 +2074,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -2112,7 +2106,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[16];
+	state[0] = state[0] ^ rc[16];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -2204,15 +2198,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -2236,7 +2230,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[17];
+	state[0] = state[0] ^ rc[17];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -2328,15 +2322,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -2360,7 +2354,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[18];
+	state[0] = state[0] ^ rc[18];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -2452,15 +2446,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -2484,7 +2478,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[19];
+	state[0] = state[0] ^ rc[19];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -2576,15 +2570,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -2608,7 +2602,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[20];
+	state[0] = state[0] ^ rc[20];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -2700,15 +2694,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -2732,7 +2726,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[21];
+	state[0] = state[0] ^ rc[21];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -2824,15 +2818,15 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[9] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[10];
-	C[1] = state[10 + 1];
-	C[2] = state[10 + 2];
-	C[3] = state[10 + 3];
-	C[4] = state[10 + 4];
+	C[1] = state[11];
+	C[2] = state[12];
+	C[3] = state[13];
+	C[4] = state[14];
 	state[10] = CHI(C[0], C[1], C[2]);
-	state[10 + 1] = CHI(C[1], C[2], C[3]);
-	state[10 + 2] = CHI(C[2], C[3], C[4]);
-	state[10 + 3] = CHI(C[3], C[4], C[0]);
-	state[10 + 4] = CHI(C[4], C[0], C[1]);
+	state[11] = CHI(C[1], C[2], C[3]);
+	state[12] = CHI(C[2], C[3], C[4]);
+	state[13] = CHI(C[3], C[4], C[0]);
+	state[14] = CHI(C[4], C[0], C[1]);
 
 	C[0] = state[15];
 	C[1] = state[16];
@@ -2856,7 +2850,7 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[23] = CHI(C[3], C[4], C[0]);
 	state[24] = CHI(C[4], C[0], C[1]);
 
-	state[0] = state[0] ^ Keccak_f1600_RC[22];
+	state[0] = state[0] ^ rc[22];
 
 	C[1] = XOR5(state[0], state[5], state[10], state[15], state[20]);
 	C[2] = XOR5(state[1], state[6], state[11], state[16], state[21]);
@@ -2874,13 +2868,13 @@ void sha3_midstate(uint64_t const *midState, uint64_t const target, uint64_t con
 	state[6] = ROTR_64(state[6], 20);
 	state[12] = ROTR_64(state[12], 21);
 
-	state[0] = CHI(state[0], state[6], state[12]) ^ Keccak_f1600_RC[23];
+	state[0] = CHI(state[0], state[6], state[12]) ^ rc[23];
 
 	if (bswap64(state[0]) <= target) // LTE is allowed because target is high 64 bits of uint256
 	{
 		if (*solutionCount < maxSolutionCount)
 		{
-			solutions[*solutionCount] = nonce;
+			solutions[*solutionCount] = workPosition;
 			(*solutionCount)++;
 		}
 	}

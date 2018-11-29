@@ -88,7 +88,7 @@ namespace CPUSolver
 		std::memcpy(&currentSolution, deviceInstance->SolutionTemplate, UINT256_LENGTH);
 
 		uint64_t const endWorkPosition = processor->WorkPosition + processor->WorkSize;
-		uint32_t const maxSolutionCount = deviceInstance->MaxSolutionCount;
+		uint32_t const maxSolutionCount = processor->MaxSolutionCount;
 
 		for (auto currentWorkPosition = processor->WorkPosition; currentWorkPosition < endWorkPosition; ++currentWorkPosition)
 		{
@@ -99,10 +99,10 @@ namespace CPUSolver
 
 			if (IslessThan(digest, currentTarget))
 			{
-				if (deviceInstance->SolutionCount < maxSolutionCount)
+				if (processor->SolutionCount < maxSolutionCount)
 				{
-					deviceInstance->Solutions[deviceInstance->SolutionCount] = currentWorkPosition;
-					deviceInstance->SolutionCount++;
+					processor->Solutions[processor->SolutionCount] = currentWorkPosition;
+					processor->SolutionCount++;
 				}
 			}
 		}
@@ -112,7 +112,7 @@ namespace CPUSolver
 	{
 		uint64_t const endWorkPosition = processor->WorkPosition + processor->WorkSize;
 		uint64_t const currentHigh64Target = *deviceInstance->High64Target;
-		uint32_t const maxSolutionCount = deviceInstance->MaxSolutionCount;
+		uint32_t const maxSolutionCount = processor->MaxSolutionCount;
 
 		uint64_t currentMidState[SPONGE_LENGTH / UINT64_LENGTH];
 		std::memcpy(&currentMidState, deviceInstance->MidState, SPONGE_LENGTH);
@@ -120,7 +120,7 @@ namespace CPUSolver
 		for (auto currentWorkPosition = processor->WorkPosition; currentWorkPosition < endWorkPosition; ++currentWorkPosition)
 		{
 			sha3_midstate(currentMidState, currentHigh64Target, currentWorkPosition, maxSolutionCount,
-				&deviceInstance->SolutionCount, deviceInstance->Solutions);
+				&processor->SolutionCount, processor->Solutions);
 		}
 	}
 

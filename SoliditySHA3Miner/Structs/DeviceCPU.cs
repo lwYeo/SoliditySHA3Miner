@@ -25,6 +25,10 @@ namespace SoliditySHA3Miner.Structs
         public int Affinity;
         public ulong WorkSize;
         public ulong WorkPosition;
+
+        public uint MaxSolutionCount;
+        public uint SolutionCount;
+        public IntPtr Solutions;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -39,9 +43,5 @@ namespace SoliditySHA3Miner.Structs
 
         public IntPtr Target;
         public IntPtr High64Target;
-
-        public uint MaxSolutionCount;
-        public uint SolutionCount;
-        public IntPtr Solutions;
     }
 }

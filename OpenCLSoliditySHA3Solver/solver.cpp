@@ -45,8 +45,7 @@ namespace OpenCLSolver
 
 	void DisposeInstance(OpenCLSolver *instance) noexcept
 	{
-		instance->~OpenCLSolver();
-		free(instance);
+		delete instance;
 	}
 
 	void InitializeDevice(OpenCLSolver *instance, DeviceCL *device, bool isKingMaking, const char *errorMessage)

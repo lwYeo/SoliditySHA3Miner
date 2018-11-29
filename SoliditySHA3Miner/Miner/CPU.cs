@@ -123,14 +123,20 @@ namespace SoliditySHA3Miner.Miner
                 {
                     PrintMessage(device.Type, device.Platform, device.DeviceID, "Info", "Initializing device...");
 
-                    device.DeviceCPU_Struct.MaxSolutionCount = Device.DeviceBase.MAX_SOLUTION_COUNT;
                     device.DeviceCPU_Struct.ProcessorCount = device.Affinities.Length;
                     device.Processor_Structs = (Structs.Processor[])Array.CreateInstance(typeof(Structs.Processor), device.Affinities.Length);
-
-                    for (var i = 0; i < device.Processor_Structs.Length; i++)
+                    device.Solutions = (ulong[][])Array.CreateInstance(typeof(ulong[]), device.Affinities.Length);
+                    
+                    for (var i = 0; i < device.Affinities.Length; i++)
                     {
                         device.Processor_Structs[i].Affinity = device.Affinities[i];
                         device.Processor_Structs[i].WorkSize = (ulong)Math.Pow(2, 16);
+                        device.Processor_Structs[i].MaxSolutionCount = Device.DeviceBase.MAX_SOLUTION_COUNT;
+
+                        device.Solutions[i] = (ulong[])Array.CreateInstance(typeof(ulong), Device.DeviceBase.MAX_SOLUTION_COUNT);
+                        var solutionsHandle = GCHandle.Alloc(device.Solutions[i], GCHandleType.Pinned);
+                        device.Processor_Structs[i].Solutions = solutionsHandle.AddrOfPinnedObject();
+                        device.AddHandle(solutionsHandle);
                     }
 
                     var processorsHandle = GCHandle.Alloc(device.Processor_Structs, GCHandleType.Pinned);
@@ -141,11 +147,6 @@ namespace SoliditySHA3Miner.Miner
                     var solutionTemplateHandle = GCHandle.Alloc(device.SolutionTemplate, GCHandleType.Pinned);
                     device.DeviceCPU_Struct.SolutionTemplate = solutionTemplateHandle.AddrOfPinnedObject();
                     device.AddHandle(solutionTemplateHandle);
-
-                    device.Solutions = (ulong[])Array.CreateInstance(typeof(ulong), Device.DeviceBase.MAX_SOLUTION_COUNT);
-                    var solutionsHandle = GCHandle.Alloc(device.Solutions, GCHandleType.Pinned);
-                    device.DeviceCPU_Struct.Solutions = solutionsHandle.AddrOfPinnedObject();
-                    device.AddHandle(solutionsHandle);
 
                     device.DeviceCPU_Struct.Message = device.CommonPointers.Message;
                     device.DeviceCPU_Struct.MidState = device.CommonPointers.MidState;
@@ -201,15 +202,20 @@ namespace SoliditySHA3Miner.Miner
                 var errorMessage = new StringBuilder(1024);
                 var currentChallenge = (byte[])Array.CreateInstance(typeof(byte), UINT256_LENGTH);
 
-                double timeAccuracy;
-                int loopTimeElapsed;
                 DateTime loopStartTime;
+                int loopTimeElapsed;
+                double timeAccuracy;
                 var loopTimeTarget = (int)(m_hashPrintTimer.Interval * 0.1);
+
+                var processorIndex = -1;
+                for (var i = 0; i < device.Processor_Structs.Length; i++)
+                    if (device.Processor_Structs[i].Affinity == processor.Affinity)
+                        processorIndex = i;
 
                 Helper.CPU.Solver.SetThreadAffinity(UnmanagedInstance, processor.Affinity, errorMessage);
                 if (errorMessage.Length > 0)
                 {
-                    PrintMessage(device.Type, device.Platform, Array.IndexOf(device.Processor_Structs, processor), "Error", errorMessage.ToString());
+                    PrintMessage(device.Type, device.Platform, processorIndex, "Error", errorMessage.ToString());
                     return;
                 }
 
@@ -246,16 +252,18 @@ namespace SoliditySHA3Miner.Miner
                     if (timeAccuracy > 1.2f || timeAccuracy < 0.8f)
                         processor.WorkSize = (ulong)(timeAccuracy * processor.WorkSize);
 
-                    if (device.DeviceCPU_Struct.SolutionCount > 0)
-                        lock (this)
-                            if (device.DeviceCPU_Struct.SolutionCount > 0)
-                            {
-                                SubmitSolutions(device.Solutions.ToArray(), currentChallenge,
-                                                device.Type, device.Platform, device.DeviceID,
-                                                device.DeviceCPU_Struct.SolutionCount, isKingMaking);
+                    if (processor.SolutionCount > 0)
+                    {
+                        SubmitSolutions(device.Solutions[processorIndex].ToArray(),
+                                        currentChallenge,
+                                        device.Type,
+                                        device.Platform,
+                                        device.DeviceID,
+                                        processor.SolutionCount,
+                                        isKingMaking);
 
-                                device.DeviceCPU_Struct.SolutionCount = 0;
-                            }
+                        processor.SolutionCount = 0;
+                    }
                 } while (device.IsMining);
 
                 if (processor.Affinity == device.Processor_Structs.First().Affinity)
