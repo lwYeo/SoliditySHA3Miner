@@ -174,7 +174,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                             RejectedShares++;
                         }
 
-                        Program.Print(string.Format("[INFO] Solution submitted to master URL({0}): {1} ({2}ms)",
+                        Program.Print(string.Format("[INFO] Nonce [{0}] submitted to master URL({1}): {2} ({3}ms)",
+                                                    SubmittedShares,
                                                     SubmitURL,
                                                     (success ? "success" : "failed"),
                                                     LastSubmitLatency));
