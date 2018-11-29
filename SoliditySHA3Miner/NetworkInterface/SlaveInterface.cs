@@ -29,16 +29,20 @@ namespace SoliditySHA3Miner.NetworkInterface
 {
     public class SlaveInterface : INetworkInterface
     {
-        private readonly BigInteger uint256_MaxValue = BigInteger.Pow(2, 256);
-        private DateTime m_challengeReceiveDateTime;
+        public bool IsPause { get; private set; }
 
         private const int MAX_SUBMIT_DTM_COUNT = 50;
+        private readonly BigInteger uint256_MaxValue = BigInteger.Pow(2, 256);
         private readonly List<DateTime> m_submitDateTimeList;
         private readonly int m_updateInterval;
+
         private bool m_isGetMiningParameters;
+        private DateTime m_challengeReceiveDateTime;
         private Timer m_updateMinerTimer;
         private Timer m_hashPrintTimer;
         private MiningParameters m_lastParameters;
+
+        #region INetworkInterface
 
         public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
         public event NewChallengeEvent OnNewChallenge;
@@ -48,7 +52,6 @@ namespace SoliditySHA3Miner.NetworkInterface
         public event GetTotalHashrateEvent OnGetTotalHashrate;
 
         public bool IsPool => true;
-        public bool IsPause { get; private set; }
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
         public HexBigInteger Difficulty { get; private set; }
@@ -59,6 +62,145 @@ namespace SoliditySHA3Miner.NetworkInterface
         public string SubmitURL { get; }
         public byte[] CurrentChallenge { get; private set; }
         public HexBigInteger CurrentTarget { get; private set; }
+
+        /// <summary>
+        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
+        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
+        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
+        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
+        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
+        /// </summary>
+        public TimeSpan GetTimeLeftToSolveBlock(ulong hashrate)
+        {
+            if (MaxTarget == null || MaxTarget.Value == 0 || Difficulty == null || Difficulty.Value == 0 || hashrate == 0 || m_challengeReceiveDateTime == DateTime.MinValue)
+                return TimeSpan.Zero;
+
+            var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / MaxTarget.Value / new BigInteger(hashrate);
+
+            var secondsLeftToSolveBlock = timeToSolveBlock - (long)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds;
+
+            return (secondsLeftToSolveBlock > (long)TimeSpan.MaxValue.TotalSeconds)
+                ? TimeSpan.MaxValue
+                : TimeSpan.FromSeconds((long)secondsLeftToSolveBlock);
+        }
+
+        /// <summary>
+        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
+        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
+        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
+        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
+        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
+        /// <para>Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T</para>
+        /// </summary>
+        public ulong GetEffectiveHashrate()
+        {
+            var hashrate = 0ul;
+
+            if (m_submitDateTimeList.Count > 1)
+            {
+                var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
+                hashrate = (ulong)(Difficulty.Value * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
+            }
+
+            return hashrate;
+        }
+
+        public void ResetEffectiveHashrate()
+        {
+            m_submitDateTimeList.Clear();
+            m_submitDateTimeList.Add(DateTime.Now);
+        }
+
+        public void UpdateMiningParameters()
+        {
+            UpdateMinerTimer_Elapsed(this, null);
+
+            if (m_updateMinerTimer == null && m_updateInterval > 0)
+            {
+                m_updateMinerTimer = new Timer(m_updateInterval);
+                m_updateMinerTimer.Elapsed += UpdateMinerTimer_Elapsed;
+                m_updateMinerTimer.Start();
+            }
+        }
+
+        public bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender)
+        {
+            m_challengeReceiveDateTime = DateTime.Now;
+            var startSubmitDateTime = DateTime.Now;
+
+            bool success = false, submitted = false;
+            int retryCount = 0, maxRetries = 10;
+            do
+            {
+                try
+                {
+                    lock (this)
+                    {
+                        if (IsPause) return false;
+
+                        if (SubmittedShares == ulong.MaxValue)
+                        {
+                            SubmittedShares = 0;
+                            RejectedShares = 0;
+                        }
+
+                        Program.Print(string.Format("[INFO] Submitting solution to master URL({0})...", SubmitURL));
+
+                        JObject submitSolution = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.SubmitSolution,
+                                                                                          Utils.Numerics.Byte32ArrayToHexString(digest),
+                                                                                          Utils.Numerics.Byte32ArrayToHexString(challenge),
+                                                                                          Utils.Numerics.Byte32ArrayToHexString(difficulty.Value.ToByteArray(isUnsigned: true, isBigEndian: true)),
+                                                                                          Utils.Numerics.Byte32ArrayToHexString(nonce));
+
+                        var response = Utils.Json.InvokeJObjectRPC(SubmitURL, submitSolution, customTimeout: 10 * 60);
+
+                        LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+
+                        var result = response.SelectToken("$.result")?.Value<string>();
+
+                        success = (result ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
+                        SubmittedShares++;
+                        submitted = true;
+
+                        if (success)
+                        {
+                            if (m_submitDateTimeList.Count > MAX_SUBMIT_DTM_COUNT)
+                                m_submitDateTimeList.RemoveAt(0);
+
+                            m_submitDateTimeList.Add(DateTime.Now);
+                        }
+                        else
+                        {
+                            RejectedShares++;
+                        }
+
+                        Program.Print(string.Format("[INFO] Solution submitted to master URL({0}): {1} ({2}ms)",
+                                                    SubmitURL,
+                                                    (success ? "success" : "failed"),
+                                                    LastSubmitLatency));
+#if DEBUG
+                        Program.Print(submitSolution.ToString());
+                        Program.Print(response.ToString());
+#endif
+                        UpdateMiningParameters();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    retryCount += 1;
+
+                    if (retryCount >= Math.Min(maxRetries, 3))
+                        HandleException(ex, "Master not receiving nonce:");
+
+                    if (retryCount < maxRetries)
+                        Task.Delay(500);
+                }
+            } while (!submitted && retryCount < maxRetries);
+
+            return success;
+        }
+
+        #endregion
 
         public SlaveInterface(string masterURL, int updateInterval, int hashratePrintInterval)
         {
@@ -75,9 +217,9 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             Program.Print(string.Format("[INFO] Waiting for master instance ({0}) to start...", SubmitURL));
 
-            var getMasterAddress = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetMinerAddress);
-            var getMaximumTarget = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetMaximumTarget);
-            var getKingAddress = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetKingAddress);
+            var getMasterAddress = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetMinerAddress);
+            var getMaximumTarget = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetMaximumTarget);
+            var getKingAddress = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetKingAddress);
 
             var retryCount = 0;
             while (true)
@@ -143,10 +285,10 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             Program.Print(string.Format("[INFO] Checking latest parameters from master URL: {0}", SubmitURL));
 
-            var getChallenge = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetChallenge);
-            var getDifficulty = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetDifficulty);
-            var getTarget = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetTarget);
-            var getPause = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.GetPause);
+            var getChallenge = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetChallenge);
+            var getDifficulty = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetDifficulty);
+            var getTarget = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetTarget);
+            var getPause = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetPause);
 
             var success = true;
             var startTime = DateTime.Now;
@@ -269,143 +411,6 @@ namespace SoliditySHA3Miner.NetworkInterface
                 HandleException(ex);
             }
             finally { m_isGetMiningParameters = false; }
-        }
-
-        /// <summary>
-        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
-        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
-        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
-        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
-        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
-        /// </summary>
-        public TimeSpan GetTimeLeftToSolveBlock(ulong hashrate)
-        {
-            if (MaxTarget == null || MaxTarget.Value == 0 || Difficulty == null || Difficulty.Value == 0 || hashrate == 0 || m_challengeReceiveDateTime == DateTime.MinValue)
-                return TimeSpan.Zero;
-
-            var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / MaxTarget.Value / new BigInteger(hashrate);
-
-            var secondsLeftToSolveBlock = timeToSolveBlock - (long)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds;
-
-            return (secondsLeftToSolveBlock > (long)TimeSpan.MaxValue.TotalSeconds)
-                ? TimeSpan.MaxValue
-                : TimeSpan.FromSeconds((long)secondsLeftToSolveBlock);
-        }
-
-        /// <summary>
-        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
-        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
-        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
-        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
-        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
-        /// <para>Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T</para>
-        /// </summary>
-        public ulong GetEffectiveHashrate()
-        {
-            var hashrate = 0ul;
-
-            if (m_submitDateTimeList.Count > 1)
-            {
-                var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
-                hashrate = (ulong)(Difficulty.Value * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
-            }
-
-            return hashrate;
-        }
-
-        public void ResetEffectiveHashrate()
-        {
-            m_submitDateTimeList.Clear();
-            m_submitDateTimeList.Add(DateTime.Now);
-        }
-
-        public void UpdateMiningParameters()
-        {
-            UpdateMinerTimer_Elapsed(this, null);
-
-            if (m_updateMinerTimer == null && m_updateInterval > 0)
-            {
-                m_updateMinerTimer = new Timer(m_updateInterval);
-                m_updateMinerTimer.Elapsed += UpdateMinerTimer_Elapsed;
-                m_updateMinerTimer.Start();
-            }
-        }
-
-        public bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender)
-        {
-            m_challengeReceiveDateTime = DateTime.Now;
-            var startSubmitDateTime = DateTime.Now;
-
-            bool success = false, submitted = false;
-            int retryCount = 0, maxRetries = 10;
-            do
-            {
-                try
-                {
-                    lock (this)
-                    {
-                        if (IsPause) return false;
-
-                        if (SubmittedShares == ulong.MaxValue)
-                        {
-                            SubmittedShares = 0;
-                            RejectedShares = 0;
-                        }
-
-                        Program.Print(string.Format("[INFO] Submitting solution to master URL({0})...", SubmitURL));
-
-                        JObject submitSolution = MasterInterface.GetMasterParameter(MasterInterface.RequestMethods.SubmitSolution,
-                                                                                    Utils.Numerics.Byte32ArrayToHexString(digest),
-                                                                                    Utils.Numerics.Byte32ArrayToHexString(challenge),
-                                                                                    Utils.Numerics.Byte32ArrayToHexString(difficulty.Value.ToByteArray(isUnsigned: true, isBigEndian: true)),
-                                                                                    Utils.Numerics.Byte32ArrayToHexString(nonce));
-
-                        var response = Utils.Json.InvokeJObjectRPC(SubmitURL, submitSolution, customTimeout: 10 * 60);
-
-                        LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
-
-                        var result = response.SelectToken("$.result")?.Value<string>();
-
-                        success = (result ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
-                        SubmittedShares++;
-                        submitted = true;
-
-                        if (success)
-                        {
-                            if (m_submitDateTimeList.Count > MAX_SUBMIT_DTM_COUNT)
-                                m_submitDateTimeList.RemoveAt(0);
-
-                            m_submitDateTimeList.Add(DateTime.Now);
-                        }
-                        else
-                        {
-                            RejectedShares++;
-                        }
-
-                        Program.Print(string.Format("[INFO] Solution submitted to master URL({0}): {1} ({2}ms)",
-                                                    SubmitURL,
-                                                    (success ? "success" : "failed"),
-                                                    LastSubmitLatency));
-#if DEBUG
-                        Program.Print(submitSolution.ToString());
-                        Program.Print(response.ToString());
-#endif
-                        UpdateMiningParameters();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    retryCount += 1;
-
-                    if (retryCount >= Math.Min(maxRetries, 3))
-                        HandleException(ex, "Master not receiving nonce:");
-
-                    if (retryCount < maxRetries)
-                        Task.Delay(500);
-                }
-            } while (!submitted && retryCount < maxRetries);
-
-            return success;
         }
 
         private void HandleException(Exception ex, string errorPrefix = null)

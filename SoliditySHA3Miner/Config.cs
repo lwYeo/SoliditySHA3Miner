@@ -81,13 +81,17 @@ namespace SoliditySHA3Miner
             masterMode = false;
             masterURL = string.Empty;
             kingAddress = string.Empty;
-            minerAddress = string.Empty;
+            minerAddress = DevFee.Address;
             slaveUpdateInterval = Defaults.SlaveUpdateInterval;
-            primaryPool = string.Empty;
+            primaryPool = Defaults.PoolPrimary;
             secondaryPool = string.Empty;
             privateKey = string.Empty;
             gasToMine = Defaults.GasToMine;
             gasLimit = Defaults.GasLimit;
+            gasApiURL = Defaults.GasApiURL;
+            gasApiPath = Defaults.GasApiPath;
+            gasApiMultiplier = Defaults.GasApiMultiplier;
+            gasApiOffset = Defaults.GasApiOffset;
             gasApiMax = Defaults.GasApiMax;
             allowCPU = false;
             cpuDevice = new Miner.Device.CPU();
@@ -820,6 +824,11 @@ namespace SoliditySHA3Miner
             public const string Contract0xBTC_mainnet = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31";
             public const string Contract0xBTC_ropsten = "0x9D2Cc383E677292ed87f63586086CfF62a009010";
             public const string AbiFile0xBTC = "0xBTC.abi";
+
+            public const string GasApiURL = "https://ethgasstation.info/json/ethgasAPI.json";
+            public const string GasApiPath = "$.safeLow";
+            public const float GasApiMultiplier = 0.1f;
+            public const float GasApiOffset = 0.5f;
 
             public const string PoolPrimary = "http://mike.rs:8080";
             public const string PoolSecondary = "http://mike.rs:8080";

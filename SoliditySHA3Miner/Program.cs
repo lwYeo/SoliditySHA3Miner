@@ -74,7 +74,6 @@ namespace SoliditySHA3Miner
                         Task.WaitAll(m_allMiners.Select(m => Task.Factory.StartNew(() => m.StopMining())).ToArray());
                         Task.WaitAll(m_allMiners.Select(m => Task.Factory.StartNew(() => m.Dispose())).ToArray());
                     }
-                    m_MasterInterface?.Dispose();
 
                     if (m_waitCheckTimer != null) m_waitCheckTimer.Stop();
                 }
@@ -170,9 +169,9 @@ namespace SoliditySHA3Miner
         private static Miner.CPU m_cpuMiner;
         private static Miner.CUDA m_cudaMiner;
         private static Miner.OpenCL m_openCLMiner;
+        private static Miner.MasterInterface m_MasterInterface;
         private static Miner.IMiner[] m_allMiners;
         private static API.Json m_apiJson;
-        private static NetworkInterface.MasterInterface m_MasterInterface;
 
         private static string GetHeader()
         {
@@ -312,21 +311,16 @@ namespace SoliditySHA3Miner
                 if (AllowCPU && Config.cpuDevice.AllowDevice)
                     m_cpuMiner = new Miner.CPU(mainNetworkInterface, Config.cpuDevice, Config.submitStale, Config.pauseOnFailedScans);
 
-                m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner }.Where(m => m != null).ToArray();
+                if (Config.masterMode)
+                    m_MasterInterface = new Miner.MasterInterface(mainNetworkInterface, Config.pauseOnFailedScans, Config.masterURL);
+
+                m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner, m_MasterInterface }.Where(m => m != null).ToArray();
 
                 if (!m_allMiners.Any() || m_allMiners.All(m => !m.HasAssignedDevices))
                 {
-                    if (Config.masterMode)
-                        Print("[WARN] No miner assigned.");
-                    else
-                    {
-                        Print("[ERROR] No miner assigned.");
-                        Environment.Exit(1);
-                    }
+                    Print("[ERROR] No miner assigned.");
+                    Environment.Exit(1);
                 }
-
-                if (Config.masterMode)
-                    m_MasterInterface = new NetworkInterface.MasterInterface(mainNetworkInterface, Config.pauseOnFailedScans, Config.masterURL);
 
                 if (!Utils.Json.SerializeToFile(Config, GetAppConfigPath()))
                     Print(string.Format("[ERROR] Failed to write config file at {0}", GetAppConfigPath()));

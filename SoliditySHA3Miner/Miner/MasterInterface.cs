@@ -17,6 +17,8 @@
 using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SoliditySHA3Miner.Miner.Device;
+using SoliditySHA3Miner.NetworkInterface;
 using System;
 using System.Linq;
 using System.Net;
@@ -25,10 +27,12 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SoliditySHA3Miner.NetworkInterface
+namespace SoliditySHA3Miner.Miner
 {
-    public class MasterInterface : IDisposable
+    public class MasterInterface : IMiner
     {
+        #region static
+
         public static class RequestMethods
         {
             public const string GetMinerAddress = "GetMinerAddress";
@@ -105,12 +109,15 @@ namespace SoliditySHA3Miner.NetworkInterface
             return string.Format(Config.Defaults.MasterIpAddress, defaultIP);
         }
 
-        private readonly HttpListener m_Listener;
+        #endregion
 
+        public bool IsSupported { get; }
+        public string IpAddress { get; }
+
+        private readonly HttpListener m_Listener;
         private int m_failedScanCount;
         private int m_pauseOnFailedScan;
         private bool m_isOngoing;
-        private bool m_isPause;
         private bool m_isCurrentChallengeStopSolving;
         private string m_minerEthAddress;
         private string m_kingEthAddress;
@@ -119,11 +126,53 @@ namespace SoliditySHA3Miner.NetworkInterface
         private string m_difficulty;
         private string m_target;
 
-        public bool IsSupported { get; }
-
-        public string IpAddress { get; }
+        #region IMiner
 
         public INetworkInterface NetworkInterface { get; }
+        public DeviceBase[] Devices => Enumerable.Empty<DeviceBase>().ToArray();
+        public bool HasMonitoringAPI => false;
+        public bool IsAnyInitialised => true;
+        public bool IsMining => true;
+        public bool IsStopped => false;
+        public bool IsPause { get; private set; }
+        public bool HasAssignedDevices { get; private set; }
+
+        public void Dispose()
+        {
+            // Do nothing
+        }
+
+        public void StartMining(int networkUpdateInterval, int hashratePrintInterval)
+        {
+            // Do nothing
+        }
+
+        public void StopMining()
+        {
+            Program.Print("[INFO] Master instance stopping...");
+            m_isOngoing = false;
+
+            NetworkInterface.OnGetMiningParameterStatus -= NetworkInterface_OnGetMiningParameterStatus;
+            NetworkInterface.OnNewChallenge -= NetworkInterface_OnNewChallenge;
+            NetworkInterface.OnNewTarget -= NetworkInterface_OnNewTarget;
+            NetworkInterface.OnNewDifficulty -= NetworkInterface_OnNewDifficulty;
+            NetworkInterface.OnStopSolvingCurrentChallenge -= NetworkInterface_OnStopSolvingCurrentChallenge;
+
+            m_Listener?.Stop();
+            m_Listener?.Close();
+        }
+
+        public ulong GetTotalHashrate()
+        {
+            return 0ul;
+        }
+
+        public ulong GetHashRateByDevice(DeviceBase device)
+        {
+            return 0ul;
+        }
+
+        #endregion
 
         public MasterInterface(INetworkInterface networkInterface, int pauseOnFailedScans, string ipAddress = null)
         {
@@ -179,8 +228,8 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             try
             {
-                if (Miner.Work.KingAddress != null)
-                    m_kingEthAddress = Utils.Numerics.Byte20ArrayToAddressString(Miner.Work.KingAddress);
+                if (Work.KingAddress != null)
+                    m_kingEthAddress = Utils.Numerics.Byte20ArrayToAddressString(Work.KingAddress);
 
                 m_maxTarget = Utils.Numerics.Byte32ArrayToHexString(
                     networkInterface.MaxTarget.Value.ToByteArray(isUnsigned: true, isBigEndian: true));
@@ -209,25 +258,11 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
         }
 
-        public void Dispose()
-        {
-            Program.Print("[INFO] Master instance stopping...");
-            m_isOngoing = false;
-            
-            NetworkInterface.OnGetMiningParameterStatus -= NetworkInterface_OnGetMiningParameterStatus;
-            NetworkInterface.OnNewChallenge -= NetworkInterface_OnNewChallenge;
-            NetworkInterface.OnNewTarget -= NetworkInterface_OnNewTarget;
-            NetworkInterface.OnNewDifficulty -= NetworkInterface_OnNewDifficulty;
-            NetworkInterface.OnStopSolvingCurrentChallenge -= NetworkInterface_OnStopSolvingCurrentChallenge;
-
-            m_Listener?.Stop();
-            m_Listener?.Close();
-        }
-
         private async void Process(HttpListener listener)
         {
             listener.Start();
-            Program.Print(string.Format("[INFO] Master instance service started at {0}...", listener.Prefixes.ElementAt(0)));
+            HasAssignedDevices = true;
+            Program.Print(string.Format("[INFO] Master instance started at {0}...", listener.Prefixes.ElementAt(0)));
 
             m_isOngoing = true;
             while (m_isOngoing)
@@ -281,7 +316,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                         if (request.HasEntityBody)
                             using (var body = request.InputStream)
-                                using (var reader = new System.IO.StreamReader(body, request.ContentEncoding))
+                            using (var reader = new System.IO.StreamReader(body, request.ContentEncoding))
                                 requestJSON = reader.ReadToEnd();
                         try
                         {
@@ -315,7 +350,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                                     break;
 
                                 case RequestMethods.GetPause:
-                                    jResponse = GetMasterResult(m_isPause.ToString());
+                                    jResponse = GetMasterResult(IsPause.ToString());
                                     break;
 
                                 case RequestMethods.SubmitSolution:
@@ -354,14 +389,14 @@ namespace SoliditySHA3Miner.NetworkInterface
                         try { response.Close(); }
                         catch (Exception ex) { HandleException(ex); }
                     }
-            },
+                },
             TaskCreationOptions.LongRunning);
         }
 
         private void NetworkInterface_OnStopSolvingCurrentChallenge(INetworkInterface sender, bool stopSolving = true)
         {
             m_isCurrentChallengeStopSolving = true;
-            m_isPause = true;
+            IsPause = true;
         }
 
         private void NetworkInterface_OnNewTarget(INetworkInterface sender, HexBigInteger target)
@@ -381,7 +416,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             if (m_isCurrentChallengeStopSolving)
             {
-                m_isPause = false;
+                IsPause = false;
                 m_isCurrentChallengeStopSolving = false;
             }
         }
@@ -391,14 +426,14 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (success)
             {
                 if (m_isCurrentChallengeStopSolving)
-                    m_isPause = true;
+                    IsPause = true;
 
-                else if (m_isPause)
+                else if (IsPause)
                 {
                     if (m_failedScanCount > m_pauseOnFailedScan)
                         m_failedScanCount = 0;
 
-                    m_isPause = false;
+                    IsPause = false;
                 }
             }
             else
@@ -406,7 +441,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 m_failedScanCount++;
                 
                 if (m_failedScanCount > m_pauseOnFailedScan)
-                    m_isPause = true;
+                    IsPause = true;
             }
         }
 

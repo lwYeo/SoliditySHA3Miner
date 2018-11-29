@@ -255,30 +255,44 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         private void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            var totalHashRate = 0ul;
             try
             {
-                var totalHashRate = 0ul;
                 OnGetTotalHashrate(this, ref totalHashRate);
                 Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s (Effective) / {1} MH/s (Local)",
                                             GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
-
-                var timeLeftToSolveBlock = GetTimeLeftToSolveBlock(totalHashRate);
-
-                if (timeLeftToSolveBlock.TotalSeconds < 0)
+            }
+            catch (Exception)
+            {
+                try
                 {
-                    Program.Print(string.Format("[INFO] Estimated time left to solution: -({0}d {1}h {2}m {3}s)",
-                                                Math.Abs(timeLeftToSolveBlock.Days),
-                                                Math.Abs(timeLeftToSolveBlock.Hours),
-                                                Math.Abs(timeLeftToSolveBlock.Minutes),
-                                                Math.Abs(timeLeftToSolveBlock.Seconds)));
+                    totalHashRate = GetEffectiveHashrate();
+                    Program.Print(string.Format("[INFO] Effective Hashrate: {0} MH/s", totalHashRate / 1000000.0f));
                 }
-                else
+                catch { }
+            }
+            try
+            {
+                if (totalHashRate > 0)
                 {
-                    Program.Print(string.Format("[INFO] Estimated time left to solution: {0}d {1}h {2}m {3}s",
-                                                Math.Abs(timeLeftToSolveBlock.Days),
-                                                Math.Abs(timeLeftToSolveBlock.Hours),
-                                                Math.Abs(timeLeftToSolveBlock.Minutes),
-                                                Math.Abs(timeLeftToSolveBlock.Seconds)));
+                    var timeLeftToSolveBlock = GetTimeLeftToSolveBlock(totalHashRate);
+
+                    if (timeLeftToSolveBlock.TotalSeconds < 0)
+                    {
+                        Program.Print(string.Format("[INFO] Estimated time left to solution: -({0}d {1}h {2}m {3}s)",
+                                                    Math.Abs(timeLeftToSolveBlock.Days),
+                                                    Math.Abs(timeLeftToSolveBlock.Hours),
+                                                    Math.Abs(timeLeftToSolveBlock.Minutes),
+                                                    Math.Abs(timeLeftToSolveBlock.Seconds)));
+                    }
+                    else
+                    {
+                        Program.Print(string.Format("[INFO] Estimated time left to solution: {0}d {1}h {2}m {3}s",
+                                                    Math.Abs(timeLeftToSolveBlock.Days),
+                                                    Math.Abs(timeLeftToSolveBlock.Hours),
+                                                    Math.Abs(timeLeftToSolveBlock.Minutes),
+                                                    Math.Abs(timeLeftToSolveBlock.Seconds)));
+                    }
                 }
             }
             catch { }
