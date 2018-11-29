@@ -44,6 +44,7 @@ namespace SoliditySHA3Miner.Structs
         public unsafe string NameToString()
         {
             byte* namePtr = (byte*)Name.ToPointer();
+            if (namePtr == null) return null;
             return string.Concat(Encoding.ASCII.GetString(namePtr, 256).TakeWhile(c => c != '\0').ToArray());
         }
 
