@@ -116,13 +116,13 @@ namespace SoliditySHA3Miner.Miner
         public string IpAddress { get; }
 
         private readonly HttpListener m_Listener;
+        private readonly int m_pauseOnFailedScan;
+        private readonly string m_kingEthAddress;
+        private readonly string m_maxTarget;
         private int m_failedScanCount;
-        private int m_pauseOnFailedScan;
         private bool m_isOngoing;
         private bool m_isCurrentChallengeStopSolving;
         private string m_minerEthAddress;
-        private string m_kingEthAddress;
-        private string m_maxTarget;
         private string m_challenge;
         private string m_difficulty;
         private string m_target;
@@ -457,10 +457,10 @@ namespace SoliditySHA3Miner.Miner
 
         private void HandleException(Exception ex, string errorPrefix = null, string errorPostfix = null)
         {
-            var errorMessage = new StringBuilder("[ERROR] Occured at Master instance: ");
+            var errorMessage = new StringBuilder("[ERROR] Occured at Master instance => ");
 
             if (!string.IsNullOrWhiteSpace(errorPrefix))
-                errorMessage.AppendFormat("({0}) ", errorPrefix);
+                errorMessage.AppendFormat("{0}: ", errorPrefix);
 
             errorMessage.Append(ex.Message);
 

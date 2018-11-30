@@ -27,109 +27,25 @@ using System.Timers;
 
 namespace SoliditySHA3Miner.NetworkInterface
 {
-    public class SlaveInterface : INetworkInterface
+    public class SlaveInterface : NetworkInterfaceBase
     {
         public bool IsPause { get; private set; }
 
-        private const int MAX_SUBMIT_DTM_COUNT = 50;
-        private readonly BigInteger uint256_MaxValue = BigInteger.Pow(2, 256);
-        private readonly List<DateTime> m_submitDateTimeList;
-        private readonly int m_updateInterval;
-
-        private readonly List<byte[]> m_submittedChallengeList;
+        private readonly bool m_isPool;
         private bool m_isGetMiningParameters;
-        private DateTime m_challengeReceiveDateTime;
-        private Timer m_updateMinerTimer;
-        private Timer m_hashPrintTimer;
-        private MiningParameters m_lastParameters;
 
-        #region INetworkInterface
+        #region NetworkInterfaceBase
 
-        public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
-        public event NewChallengeEvent OnNewChallenge;
-        public event NewTargetEvent OnNewTarget;
-        public event NewDifficultyEvent OnNewDifficulty;
-        public event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
-        public event GetTotalHashrateEvent OnGetTotalHashrate;
+        public override bool IsPool => m_isPool;
 
-        public bool IsPool { get; private set; }
-        public ulong SubmittedShares { get; private set; }
-        public ulong RejectedShares { get; private set; }
-        public HexBigInteger Difficulty { get; private set; }
-        public HexBigInteger MaxTarget { get; private set; }
-        public int LastSubmitLatency { get; private set; }
-        public int Latency { get; private set; }
-        public string MinerAddress { get; }
-        public string SubmitURL { get; }
-        public byte[] CurrentChallenge { get; private set; }
-        public HexBigInteger CurrentTarget { get; private set; }
+        public override event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
+        public override event NewChallengeEvent OnNewChallenge;
+        public override event NewTargetEvent OnNewTarget;
+        public override event NewDifficultyEvent OnNewDifficulty;
+        public override event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
+        public override event GetTotalHashrateEvent OnGetTotalHashrate;
 
-        public bool IsChallengedSubmitted(byte[] challenge)
-        {
-            return m_submittedChallengeList.Any(s => challenge.SequenceEqual(s));
-        }
-
-        /// <summary>
-        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
-        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
-        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
-        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
-        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
-        /// </summary>
-        public TimeSpan GetTimeLeftToSolveBlock(ulong hashrate)
-        {
-            if (MaxTarget == null || MaxTarget.Value == 0 || Difficulty == null || Difficulty.Value == 0 || hashrate == 0 || m_challengeReceiveDateTime == DateTime.MinValue)
-                return TimeSpan.Zero;
-
-            var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / MaxTarget.Value / new BigInteger(hashrate);
-
-            var secondsLeftToSolveBlock = timeToSolveBlock - (long)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds;
-
-            return (secondsLeftToSolveBlock > (long)TimeSpan.MaxValue.TotalSeconds)
-                ? TimeSpan.MaxValue
-                : TimeSpan.FromSeconds((long)secondsLeftToSolveBlock);
-        }
-
-        /// <summary>
-        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
-        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
-        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
-        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
-        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
-        /// <para>Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T</para>
-        /// </summary>
-        public ulong GetEffectiveHashrate()
-        {
-            var hashrate = 0ul;
-
-            if (m_submitDateTimeList.Count > 1)
-            {
-                var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
-                hashrate = (ulong)(Difficulty.Value * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
-            }
-
-            return hashrate;
-        }
-
-        public void ResetEffectiveHashrate()
-        {
-            m_submitDateTimeList.Clear();
-            m_submitDateTimeList.Add(DateTime.Now);
-        }
-
-        public void UpdateMiningParameters()
-        {
-            UpdateMinerTimer_Elapsed(this, null);
-
-            if (m_updateMinerTimer == null && m_updateInterval > 0)
-            {
-                m_updateMinerTimer = new Timer(m_updateInterval);
-                m_updateMinerTimer.Elapsed += UpdateMinerTimer_Elapsed;
-                m_updateMinerTimer.Start();
-            }
-        }
-
-        public bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender)
+        public override bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender)
         {
             m_challengeReceiveDateTime = DateTime.Now;
             var startSubmitDateTime = DateTime.Now;
@@ -213,127 +129,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             return success;
         }
 
-        #endregion
-
-        public SlaveInterface(string masterURL, int updateInterval, int hashratePrintInterval)
-        {
-            m_submittedChallengeList = new List<byte[]>();
-            m_updateInterval = updateInterval;
-            m_isGetMiningParameters = false;
-            Difficulty = new HexBigInteger(0);
-            LastSubmitLatency = -1;
-            Latency = -1;
-            SubmitURL = masterURL;
-            SubmittedShares = 0;
-            RejectedShares = 0;
-
-            m_submitDateTimeList = new List<DateTime>(MAX_SUBMIT_DTM_COUNT + 1);
-
-            Program.Print(string.Format("[INFO] Waiting for master instance ({0}) to start...", SubmitURL));
-
-            var getMasterAddress = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetMinerAddress);
-            var getMaximumTarget = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetMaximumTarget);
-            var getKingAddress = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetKingAddress);
-            var getPoolMining = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetPoolMining);
-
-            var retryCount = 0;
-            while (true)
-                try
-                {
-                    var parameters = MiningParameters.GetMiningParameters(SubmitURL,
-                                                                          getEthAddress: getMasterAddress,
-                                                                          getMaximumTarget: getMaximumTarget,
-                                                                          getKingAddress: getKingAddress,
-                                                                          getPoolMining: getPoolMining);
-                    MinerAddress = parameters.EthAddress;
-                    MaxTarget = parameters.MaximumTarget;
-                    Miner.Work.KingAddress = parameters.KingAddressByte20;
-                    IsPool = parameters.IsPoolMining;
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    retryCount++;
-                    if (retryCount > 3)
-                        HandleException(ex);
-
-                    Task.Delay(1000).Wait();
-                }
-
-            if (hashratePrintInterval > 0)
-            {
-                m_hashPrintTimer = new Timer(hashratePrintInterval);
-                m_hashPrintTimer.Elapsed += HashPrintTimer_Elapsed;
-                m_hashPrintTimer.Start();
-            }
-        }
-
-        public void Dispose()
-        {
-            if (m_submitDateTimeList != null)
-                m_submitDateTimeList.Clear();
-
-            if (m_submittedChallengeList != null)
-                m_submittedChallengeList.Clear();
-
-            if (m_updateMinerTimer != null)
-            {
-                try
-                {
-                    m_updateMinerTimer.Elapsed -= UpdateMinerTimer_Elapsed;
-                    m_updateMinerTimer.Stop();
-                    m_updateMinerTimer.Dispose();
-                }
-                catch { }
-                m_updateMinerTimer = null;
-            }
-
-            if (m_hashPrintTimer != null)
-            {
-                try
-                {
-                    m_hashPrintTimer.Elapsed -= HashPrintTimer_Elapsed;
-                    m_hashPrintTimer.Stop();
-                    m_hashPrintTimer.Dispose();
-                }
-                catch { }
-                m_hashPrintTimer = null;
-            }
-        }
-
-        public MiningParameters GetMiningParameters()
-        {
-            Program.Print(string.Format("[INFO] Checking latest parameters from master URL: {0}", SubmitURL));
-
-            var getChallenge = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetChallenge);
-            var getDifficulty = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetDifficulty);
-            var getTarget = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetTarget);
-            var getPause = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetPause);
-
-            var success = true;
-            var startTime = DateTime.Now;
-            try
-            {
-                return MiningParameters.GetMiningParameters(SubmitURL,
-                                                            getChallenge: getChallenge,
-                                                            getDifficulty: getDifficulty,
-                                                            getTarget: getTarget,
-                                                            getPause: getPause);
-            }
-            catch (Exception ex)
-            {
-                HandleException(ex);
-                success = false;
-            }
-            finally
-            {
-                if (success)
-                    Latency = (int)(DateTime.Now - startTime).TotalMilliseconds;
-            }
-            return null;
-        }
-
-        private void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
+        protected override void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             try
             {
@@ -364,7 +160,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             catch { }
         }
 
-        private void UpdateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
+        protected override void UpdateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             if (m_isGetMiningParameters) return;
             try
@@ -376,7 +172,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     OnGetMiningParameterStatus(this, false);
                     return;
                 }
-                
+
                 CurrentChallenge = miningParameters.ChallengeByte32;
 
                 if (m_lastParameters == null || miningParameters.Challenge.Value != m_lastParameters.Challenge.Value)
@@ -433,12 +229,91 @@ namespace SoliditySHA3Miner.NetworkInterface
             finally { m_isGetMiningParameters = false; }
         }
 
+        #endregion
+
+        public SlaveInterface(string masterURL, int updateInterval, int hashratePrintInterval)
+            : base(updateInterval, hashratePrintInterval)
+        {
+            m_isGetMiningParameters = false;
+            SubmitURL = masterURL;
+
+            Program.Print(string.Format("[INFO] Waiting for master instance ({0}) to start...", SubmitURL));
+
+            var getMasterAddress = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetMinerAddress);
+            var getMaximumTarget = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetMaximumTarget);
+            var getKingAddress = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetKingAddress);
+            var getPoolMining = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetPoolMining);
+
+            var retryCount = 0;
+            while (true)
+                try
+                {
+                    var parameters = MiningParameters.GetMiningParameters(SubmitURL,
+                                                                          getEthAddress: getMasterAddress,
+                                                                          getMaximumTarget: getMaximumTarget,
+                                                                          getKingAddress: getKingAddress,
+                                                                          getPoolMining: getPoolMining);
+                    m_isPool = parameters.IsPoolMining;
+                    MinerAddress = parameters.EthAddress;
+                    MaxTarget = parameters.MaximumTarget;
+                    Miner.Work.KingAddress = parameters.KingAddressByte20;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    if (retryCount > 3)
+                        HandleException(ex);
+
+                    Task.Delay(1000).Wait();
+                }
+
+            if (hashratePrintInterval > 0)
+            {
+                m_hashPrintTimer = new Timer(hashratePrintInterval);
+                m_hashPrintTimer.Elapsed += HashPrintTimer_Elapsed;
+                m_hashPrintTimer.Start();
+            }
+        }
+
+        private MiningParameters GetMiningParameters()
+        {
+            Program.Print(string.Format("[INFO] Checking latest parameters from master URL: {0}", SubmitURL));
+
+            var getChallenge = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetChallenge);
+            var getDifficulty = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetDifficulty);
+            var getTarget = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetTarget);
+            var getPause = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetPause);
+
+            var success = true;
+            var startTime = DateTime.Now;
+            try
+            {
+                return MiningParameters.GetMiningParameters(SubmitURL,
+                                                            getChallenge: getChallenge,
+                                                            getDifficulty: getDifficulty,
+                                                            getTarget: getTarget,
+                                                            getPause: getPause);
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex);
+                success = false;
+            }
+            finally
+            {
+                if (success)
+                    Latency = (int)(DateTime.Now - startTime).TotalMilliseconds;
+            }
+            return null;
+        }
+
         private void HandleException(Exception ex, string errorPrefix = null)
         {
-            var errorMessage = new StringBuilder("[ERROR] Occured at Slave instance: ");
+            var errorMessage = new StringBuilder("[ERROR] Occured at Slave instance => ");
 
             if (!string.IsNullOrWhiteSpace(errorPrefix))
-                errorMessage.AppendFormat("({0}) ", errorPrefix);
+                errorMessage.AppendFormat("{0}: ", errorPrefix);
 
             errorMessage.Append(ex.Message);
 

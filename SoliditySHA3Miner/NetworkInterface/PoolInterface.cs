@@ -18,7 +18,6 @@ using Nethereum.Hex.HexTypes;
 using Nethereum.Util;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Numerics;
@@ -28,237 +27,154 @@ using System.Timers;
 
 namespace SoliditySHA3Miner.NetworkInterface
 {
-    public class PoolInterface : INetworkInterface
+    public class PoolInterface : NetworkInterfaceBase
     {
-        private readonly BigInteger uint256_MaxValue = BigInteger.Pow(2, 256);
-        private DateTime m_challengeReceiveDateTime;
+        public bool IsSecondaryPool { get; }
+        public PoolInterface SecondaryPool { get; }
 
-        private const int MAX_SUBMIT_DTM_COUNT = 50;
-        private readonly List<DateTime> m_submitDateTimeList;
-
-        private readonly List<byte[]> m_submittedChallengeList;
-        private readonly string s_PoolURL;
         private readonly HexBigInteger m_customDifficulity;
         private readonly int m_maxScanRetry;
-        private readonly int m_updateInterval;
         private bool m_isGetMiningParameters;
-        private Timer m_updateMinerTimer;
-        private Timer m_hashPrintTimer;
         private bool m_runFailover;
         private int m_retryCount;
-        private MiningParameters m_lastParameters;
+        private string m_PoolURL;
 
-        public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
-        public event NewChallengeEvent OnNewChallenge;
-        public event NewTargetEvent OnNewTarget;
-        public event NewDifficultyEvent OnNewDifficulty;
+        #region NetworkInterfaceBase
 
-#   pragma warning disable 67 // Unused event
-        public event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
-#   pragma warning restore 67
+        public override bool IsPool => true;
 
-        public event GetTotalHashrateEvent OnGetTotalHashrate;
-
-        public bool IsPool => true;
-        public bool IsSecondaryPool { get; }
-        public ulong SubmittedShares { get; private set; }
-        public ulong RejectedShares { get; private set; }
-        public PoolInterface SecondaryPool { get; }
-        public HexBigInteger Difficulty { get; private set; }
-        public HexBigInteger MaxTarget { get; private set; }
-        public int LastSubmitLatency { get; private set; }
-        public int Latency { get; private set; }
-        public string MinerAddress { get; }
-        public HexBigInteger CurrentTarget { get; private set; }
-
-        public string SubmitURL
+        public override string SubmitURL
         {
             get
             {
                 return m_runFailover
                     ? SecondaryPool.SubmitURL
-                    : s_PoolURL;
+                    : m_PoolURL;
             }
+            protected set => m_PoolURL = value;
         }
 
-        public byte[] CurrentChallenge { get; private set; }
+        public override event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
+        public override event NewChallengeEvent OnNewChallenge;
+        public override event NewTargetEvent OnNewTarget;
+        public override event NewDifficultyEvent OnNewDifficulty;
 
-        public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, int updateInterval, int hashratePrintInterval,
-                             BigInteger customDifficulity, bool isSecondary, HexBigInteger maxTarget, PoolInterface secondaryPool = null)
+#   pragma warning disable 67 // Unused event
+        public override event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
+#   pragma warning restore 67
+
+        public override event GetTotalHashrateEvent OnGetTotalHashrate;
+
+        public override bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender)
         {
-            m_submittedChallengeList = new List<byte[]>();
-            m_retryCount = 0;
-            m_maxScanRetry = maxScanRetry;
-            m_updateInterval = updateInterval;
-            m_isGetMiningParameters = false;
-            m_customDifficulity = new HexBigInteger(customDifficulity);
-            Difficulty = new HexBigInteger((customDifficulity > 0) ? customDifficulity : 0);
-            MaxTarget = maxTarget;
-            LastSubmitLatency = -1;
-            Latency = -1;
-            SecondaryPool = secondaryPool;
-            IsSecondaryPool = isSecondary;
+            m_challengeReceiveDateTime = DateTime.Now;
+            var startSubmitDateTime = DateTime.Now;
 
-            MinerAddress = minerAddress;
-            s_PoolURL = poolURL;
-            SubmittedShares = 0ul;
-            RejectedShares = 0ul;
-
-            m_submitDateTimeList = new List<DateTime>(MAX_SUBMIT_DTM_COUNT + 1);
-
-            if (hashratePrintInterval > 0)
+            if (m_runFailover)
             {
-                m_hashPrintTimer = new Timer(hashratePrintInterval);
-                m_hashPrintTimer.Elapsed += HashPrintTimer_Elapsed;
-                m_hashPrintTimer.Start();
+                if (SecondaryPool.SubmitSolution(address, digest, challenge, difficulty, nonce, sender))
+                {
+                    LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+                    Program.Print(string.Format("[INFO] Submission roundtrip latency: {0}ms", LastSubmitLatency));
+
+                    if (m_submitDateTimeList.Count >= MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
+                    m_submitDateTimeList.Add(DateTime.Now);
+                }
+                return false;
             }
-        }
 
-        public void Dispose()
-        {
-            if (SecondaryPool != null) SecondaryPool.Dispose();
-
-            if (m_submitDateTimeList != null)
-                m_submitDateTimeList.Clear();
-
-            if (m_submittedChallengeList != null)
-                m_submittedChallengeList.Clear();
-
-            if (m_updateMinerTimer != null)
+            bool success = false, submitted = false;
+            int retryCount = 0, maxRetries = 10;
+            var devFee = (long)Math.Round(100 / Math.Abs(DevFee.UserPercent));
+            const long devShareOffset = 10;
+            do
             {
                 try
                 {
-                    m_updateMinerTimer.Elapsed -= UpdateMinerTimer_Elapsed;
-                    m_updateMinerTimer.Stop();
-                    m_updateMinerTimer.Dispose();
-                }
-                catch { }
-                m_updateMinerTimer = null;
-            }
-
-            if (m_hashPrintTimer != null)
-            {
-                try
-                {
-                    m_hashPrintTimer.Elapsed -= HashPrintTimer_Elapsed;
-                    m_hashPrintTimer.Stop();
-                    m_hashPrintTimer.Dispose();
-                }
-                catch { }
-                m_hashPrintTimer = null;
-            }
-        }
-
-        private JObject GetPoolParameter(string method, params string[] parameters)
-        {
-            var paramObject = new JObject
-            {
-                ["jsonrpc"] = "2.0",
-                ["id"] = "1",
-                ["method"] = method
-            };
-            if (parameters != null)
-            {
-                if (parameters.Length > 0)
-                {
-                    JArray props = new JArray();
-                    foreach (var p in parameters) { props.Add(p); }
-                    paramObject.Add(new JProperty("params", props));
-                }
-            }
-            return paramObject;
-        }
-
-        public MiningParameters GetMiningParameters()
-        {
-            Program.Print(string.Format("[INFO] Checking latest parameters from {0} pool...", IsSecondaryPool ? "secondary" : "primary"));
-
-            var getPoolEthAddress = GetPoolParameter("getPoolEthAddress");
-            var getPoolChallengeNumber = GetPoolParameter("getChallengeNumber");
-            var getPoolMinimumShareDifficulty = GetPoolParameter("getMinimumShareDifficulty", MinerAddress);
-            var getPoolMinimumShareTarget = GetPoolParameter("getMinimumShareTarget", MinerAddress);
-
-            var success = true;
-            var startTime = DateTime.Now;
-            try
-            {
-                return MiningParameters.GetMiningParameters(s_PoolURL,
-                                                            getEthAddress: getPoolEthAddress,
-                                                            getChallenge: getPoolChallengeNumber,
-                                                            getDifficulty: getPoolMinimumShareDifficulty,
-                                                            getTarget: getPoolMinimumShareTarget);
-            }
-            catch (Exception ex)
-            {
-                m_retryCount++;
-                success = false;
-                var errorMessage = new StringBuilder("[ERROR] " + ex.Message);
-
-                var innerEx = ex.InnerException;
-                while (innerEx != null)
-                {
-                    errorMessage.AppendFormat("\n {0}", innerEx.Message);
-                    innerEx = innerEx.InnerException;
-                }
-
-                Program.Print(errorMessage.ToString());
-            }
-            finally
-            {
-                if (success)
-                {
-                    m_runFailover = false;
-                    var tempLatency = (int)(DateTime.Now - startTime).TotalMilliseconds;
-                    try
+                    lock (this)
                     {
-                        using (var ping = new Ping())
+                        if (SubmittedShares == ulong.MaxValue)
                         {
-                            var poolURL = s_PoolURL.Contains("://") ? s_PoolURL.Split(new string[] { "://" }, StringSplitOptions.None)[1] : s_PoolURL;
-                            try
-                            {
-                                var response = ping.Send(poolURL);
-                                if (response.RoundtripTime > 0)
-                                    tempLatency = (int)response.RoundtripTime;
-                            }
-                            catch
-                            {
-                                try
-                                {
-                                    poolURL = poolURL.Split('/').First();
-                                    var response = ping.Send(poolURL);
-                                    if (response.RoundtripTime > 0)
-                                        tempLatency = (int)response.RoundtripTime;
-                                }
-                                catch
-                                {
-                                    try
-                                    {
-                                        poolURL = poolURL.Split(':').First();
-                                        var response = ping.Send(poolURL);
-                                        if (response.RoundtripTime > 0)
-                                            tempLatency = (int)response.RoundtripTime;
-                                    }
-                                    catch { }
-                                }
-                            }
+                            SubmittedShares = 0;
+                            RejectedShares = 0;
                         }
+                        var minerAddress = (((long)(SubmittedShares - RejectedShares) - devShareOffset) % devFee) == 0
+                                         ? DevFee.Address
+                                         : MinerAddress;
+
+                        JObject submitShare = GetPoolParameter("submitShare",
+                                                               Utils.Numerics.Byte32ArrayToHexString(nonce),
+                                                               minerAddress,
+                                                               Utils.Numerics.Byte32ArrayToHexString(digest),
+                                                               difficulty.Value.ToString(),
+                                                               Utils.Numerics.Byte32ArrayToHexString(challenge),
+                                                               m_customDifficulity.Value > 0 ? "true" : "false",
+                                                               Miner.Work.GetKingAddressString());
+
+                        var response = Utils.Json.InvokeJObjectRPC(m_PoolURL, submitShare);
+
+                        LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+
+                        if (!IsChallengedSubmitted(challenge))
+                        {
+                            m_submittedChallengeList.Insert(0, challenge.ToArray());
+                            if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
+                        }
+
+                        var result = response.SelectToken("$.result")?.Value<string>();
+
+                        success = (result ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
+                        SubmittedShares++;
+                        submitted = true;
+
+                        Program.Print(string.Format("[INFO] {0} [{1}] submitted to {2} pool: {3} ({4}ms)",
+                                                    (minerAddress == DevFee.Address ? "Dev. fee share" : "Miner share"),
+                                                    SubmittedShares,
+                                                    IsSecondaryPool ? "secondary" : "primary",
+                                                    (success ? "success" : "failed"),
+                                                    LastSubmitLatency));
+                        if (success)
+                        {
+                            if (m_submitDateTimeList.Count > MAX_SUBMIT_DTM_COUNT)
+                                m_submitDateTimeList.RemoveAt(0);
+
+                            m_submitDateTimeList.Add(DateTime.Now);
+                        }
+                        else
+                        {
+                            RejectedShares++;
+                            UpdateMiningParameters();
+                        }
+#if DEBUG
+                        Program.Print(submitShare.ToString());
+                        Program.Print(response.ToString());
+#endif
                     }
-                    catch { }
-                    Latency = tempLatency;
                 }
-            }
+                catch (Exception ex)
+                {
+                    retryCount++;
 
-            var runFailover = (!success && SecondaryPool != null && m_maxScanRetry > -1 && m_retryCount >= m_maxScanRetry);
-            try
-            {
-                if (runFailover) return SecondaryPool.GetMiningParameters(); 
-            }
-            finally { m_runFailover = runFailover; }
+                    if (retryCount >= Math.Min(maxRetries, 3))
+                        HandleException(ex);
 
-            return null;
+                    if (retryCount < maxRetries)
+                        Task.Delay(500);
+                }
+            } while (!submitted && retryCount < maxRetries);
+
+            return success;
         }
 
-        private void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            if (SecondaryPool != null)
+                SecondaryPool.Dispose();
+        }
+
+        protected override void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             var totalHashRate = 0ul;
             try
@@ -303,7 +219,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             catch { }
         }
 
-        private void UpdateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
+        protected override void UpdateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             if (m_isGetMiningParameters) return;
             try
@@ -315,7 +231,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                     OnGetMiningParameterStatus(this, false);
                     return;
                 }
-                
+
                 CurrentChallenge = miningParameters.ChallengeByte32;
 
                 if (m_lastParameters == null || miningParameters.Challenge.Value != m_lastParameters.Challenge.Value)
@@ -376,175 +292,151 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
             catch (Exception ex)
             {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
+                HandleException(ex);
             }
             finally { m_isGetMiningParameters = false; }
         }
 
-        public bool IsChallengedSubmitted(byte[] challenge)
+        #endregion
+
+        public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, int updateInterval, int hashratePrintInterval,
+                             BigInteger customDifficulity, bool isSecondary, HexBigInteger maxTarget, PoolInterface secondaryPool = null)
+            : base(updateInterval, hashratePrintInterval)
         {
-            return m_submittedChallengeList.Any(s => challenge.SequenceEqual(s));
+            m_retryCount = 0;
+            m_maxScanRetry = maxScanRetry;
+            m_PoolURL = poolURL;
+            m_isGetMiningParameters = false;
+            m_customDifficulity = new HexBigInteger(customDifficulity);
+
+            Difficulty = new HexBigInteger((customDifficulity > 0) ? customDifficulity : 0);
+            SecondaryPool = secondaryPool;
+            IsSecondaryPool = isSecondary;
+            MaxTarget = maxTarget;
+            MinerAddress = minerAddress;
+
+            if (m_hashPrintTimer != null)
+                m_hashPrintTimer.Start();
         }
 
-        /// <summary>
-        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
-        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
-        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
-        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
-        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
-        /// </summary>
-        public TimeSpan GetTimeLeftToSolveBlock(ulong hashrate)
+        private JObject GetPoolParameter(string method, params string[] parameters)
         {
-            if (MaxTarget == null || MaxTarget.Value == 0 || Difficulty == null || Difficulty.Value == 0 || hashrate == 0 || m_challengeReceiveDateTime == DateTime.MinValue)
-                return TimeSpan.Zero;
-
-            var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / MaxTarget.Value / new BigInteger(hashrate);
-
-            var secondsLeftToSolveBlock = timeToSolveBlock - (long)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds;
-
-            return (secondsLeftToSolveBlock > (long)TimeSpan.MaxValue.TotalSeconds)
-                ? TimeSpan.MaxValue
-                : TimeSpan.FromSeconds((long)secondsLeftToSolveBlock);
-        }
-
-        /// <summary>
-        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
-        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
-        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
-        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
-        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
-        /// <para>Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T</para>
-        /// </summary>
-        public ulong GetEffectiveHashrate()
-        {
-            var hashrate = 0ul;
-
-            if (m_submitDateTimeList.Count > 1)
+            var paramObject = new JObject
             {
-                var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
-                hashrate = (ulong)(Difficulty.Value * uint256_MaxValue / MaxTarget.Value / new BigInteger(avgSolveTime));
-            }
-
-            return hashrate;
-        }
-
-        public void ResetEffectiveHashrate()
-        {
-            m_submitDateTimeList.Clear();
-            m_submitDateTimeList.Add(DateTime.Now);
-        }
-
-        public void UpdateMiningParameters()
-        {
-            UpdateMinerTimer_Elapsed(this, null);
-
-            if (m_updateMinerTimer == null && m_updateInterval > 0)
+                ["jsonrpc"] = "2.0",
+                ["id"] = "1",
+                ["method"] = method
+            };
+            if (parameters != null)
             {
-                m_updateMinerTimer = new Timer(m_updateInterval);
-                m_updateMinerTimer.Elapsed += UpdateMinerTimer_Elapsed;
-                m_updateMinerTimer.Start();
-            }
-        }
-
-        public bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender)
-        {
-            m_challengeReceiveDateTime = DateTime.Now;
-            var startSubmitDateTime = DateTime.Now;
-
-            if (m_runFailover)
-            {
-                if (SecondaryPool.SubmitSolution(address, digest, challenge, difficulty, nonce, sender))
+                if (parameters.Length > 0)
                 {
-                    LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
-                    Program.Print(string.Format("[INFO] Submission roundtrip latency: {0}ms", LastSubmitLatency));
+                    JArray props = new JArray();
+                    foreach (var p in parameters)
+                        props.Add(p);
 
-                    if (m_submitDateTimeList.Count >= MAX_SUBMIT_DTM_COUNT) m_submitDateTimeList.RemoveAt(0);
-                    m_submitDateTimeList.Add(DateTime.Now);
+                    paramObject.Add(new JProperty("params", props));
                 }
-                return false;
             }
+            return paramObject;
+        }
 
-            bool success = false, submitted = false;
-            int retryCount = 0, maxRetries = 10;
-            var devFee = (long)Math.Round(100 / Math.Abs(DevFee.UserPercent));
-            const long devShareOffset = 10;
-            do
+        private MiningParameters GetMiningParameters()
+        {
+            Program.Print(string.Format("[INFO] Checking latest parameters from {0} pool...", IsSecondaryPool ? "secondary" : "primary"));
+
+            var getPoolEthAddress = GetPoolParameter("getPoolEthAddress");
+            var getPoolChallengeNumber = GetPoolParameter("getChallengeNumber");
+            var getPoolMinimumShareDifficulty = GetPoolParameter("getMinimumShareDifficulty", MinerAddress);
+            var getPoolMinimumShareTarget = GetPoolParameter("getMinimumShareTarget", MinerAddress);
+
+            var success = true;
+            var startTime = DateTime.Now;
+            try
             {
-                try
+                return MiningParameters.GetMiningParameters(m_PoolURL,
+                                                            getEthAddress: getPoolEthAddress,
+                                                            getChallenge: getPoolChallengeNumber,
+                                                            getDifficulty: getPoolMinimumShareDifficulty,
+                                                            getTarget: getPoolMinimumShareTarget);
+            }
+            catch (Exception ex)
+            {
+                m_retryCount++;
+                success = false;
+                HandleException(ex);
+            }
+            finally
+            {
+                if (success)
                 {
-                    lock (this)
+                    m_runFailover = false;
+                    var tempLatency = (int)(DateTime.Now - startTime).TotalMilliseconds;
+                    try
                     {
-                        if (SubmittedShares == ulong.MaxValue)
+                        using (var ping = new Ping())
                         {
-                            SubmittedShares = 0;
-                            RejectedShares = 0;
+                            var poolURL = m_PoolURL.Contains("://") ? m_PoolURL.Split(new string[] { "://" }, StringSplitOptions.None)[1] : m_PoolURL;
+                            try
+                            {
+                                var response = ping.Send(poolURL);
+                                if (response.RoundtripTime > 0)
+                                    tempLatency = (int)response.RoundtripTime;
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    poolURL = poolURL.Split('/').First();
+                                    var response = ping.Send(poolURL);
+                                    if (response.RoundtripTime > 0)
+                                        tempLatency = (int)response.RoundtripTime;
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        poolURL = poolURL.Split(':').First();
+                                        var response = ping.Send(poolURL);
+                                        if (response.RoundtripTime > 0)
+                                            tempLatency = (int)response.RoundtripTime;
+                                    }
+                                    catch { }
+                                }
+                            }
                         }
-                        var minerAddress = (((long)(SubmittedShares - RejectedShares) - devShareOffset) % devFee) == 0
-                                         ? DevFee.Address
-                                         : MinerAddress;
-
-                        JObject submitShare = GetPoolParameter("submitShare",
-                                                               Utils.Numerics.Byte32ArrayToHexString(nonce),
-                                                               minerAddress,
-                                                               Utils.Numerics.Byte32ArrayToHexString(digest),
-                                                               difficulty.Value.ToString(),
-                                                               Utils.Numerics.Byte32ArrayToHexString(challenge),
-                                                               m_customDifficulity.Value > 0 ? "true" : "false",
-                                                               Miner.Work.GetKingAddressString());
-
-                        var response = Utils.Json.InvokeJObjectRPC(s_PoolURL, submitShare);
-
-                        LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
-
-                        if (!IsChallengedSubmitted(challenge))
-                        {
-                            m_submittedChallengeList.Insert(0, challenge.ToArray());
-                            if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
-                        }
-
-                        var result = response.SelectToken("$.result")?.Value<string>();
-
-                        success = (result ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
-                        SubmittedShares++;
-                        submitted = true;
-
-                        Program.Print(string.Format("[INFO] {0} [{1}] submitted to {2} pool: {3} ({4}ms)",
-                                                    (minerAddress == DevFee.Address ? "Dev. fee share" : "Miner share"),
-                                                    SubmittedShares,
-                                                    IsSecondaryPool ? "secondary" : "primary",
-                                                    (success ? "success" : "failed"),
-                                                    LastSubmitLatency));
-                        if (success)
-                        {
-                            if (m_submitDateTimeList.Count > MAX_SUBMIT_DTM_COUNT)
-                                m_submitDateTimeList.RemoveAt(0);
-
-                            m_submitDateTimeList.Add(DateTime.Now);
-                        }
-                        else
-                        {
-                            RejectedShares++;
-                            UpdateMiningParameters();
-                        }
-#if DEBUG
-                        Program.Print(submitShare.ToString());
-                        Program.Print(response.ToString());
-#endif
                     }
+                    catch { }
+                    Latency = tempLatency;
                 }
-                catch (Exception ex)
-                {
-                    retryCount += 1;
+            }
 
-                    if (retryCount >= Math.Min(maxRetries, 3))
-                        Program.Print(string.Format("[ERROR] Pool not receiving nonce: {0}", ex.Message));
+            var runFailover = (!success && SecondaryPool != null && m_maxScanRetry > -1 && m_retryCount >= m_maxScanRetry);
+            try
+            {
+                if (runFailover) return SecondaryPool.GetMiningParameters(); 
+            }
+            finally { m_runFailover = runFailover; }
 
-                    if (retryCount < maxRetries)
-                        Task.Delay(500);
-                }
-            } while (!submitted && retryCount < maxRetries);
+            return null;
+        }
 
-            return success;
+        private void HandleException(Exception ex, string errorPrefix = null)
+        {
+            var errorMessage = new StringBuilder("[ERROR] ");
+
+            if (!string.IsNullOrWhiteSpace(errorPrefix))
+                errorMessage.AppendFormat("{0}: ", errorPrefix);
+
+            errorMessage.Append(ex.Message);
+
+            var innerEx = ex.InnerException;
+            while (innerEx != null)
+            {
+                errorMessage.AppendFormat("\n {0}", innerEx.Message);
+                innerEx = innerEx.InnerException;
+            }
+            Program.Print(errorMessage.ToString());
         }
     }
 }

@@ -24,37 +24,49 @@ namespace SoliditySHA3Miner.NetworkInterface
     public delegate void NewTargetEvent(INetworkInterface sender, HexBigInteger target);
     public delegate void NewDifficultyEvent(INetworkInterface sender, HexBigInteger difficulty);
     public delegate void StopSolvingCurrentChallengeEvent(INetworkInterface sender, bool stopSolving = true);
-
     public delegate void GetTotalHashrateEvent(INetworkInterface sender, ref ulong totalHashrate);
 
     public interface INetworkInterface : IDisposable
     {
+        bool IsPool { get; }
+
+        ulong SubmittedShares { get; }
+
+        ulong RejectedShares { get; }
+
+        HexBigInteger Difficulty { get; }
+
+        HexBigInteger MaxTarget { get; }
+
+        int LastSubmitLatency { get; }
+
+        int Latency { get; }
+
+        string MinerAddress { get; }
+
+        string SubmitURL { get; }
+
+        byte[] CurrentChallenge { get; }
+
+        HexBigInteger CurrentTarget { get; }
+
         event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
         event NewChallengeEvent OnNewChallenge;
         event NewTargetEvent OnNewTarget;
         event NewDifficultyEvent OnNewDifficulty;
         event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
-
         event GetTotalHashrateEvent OnGetTotalHashrate;
 
-        bool IsPool { get; }
-        ulong SubmittedShares { get; }
-        ulong RejectedShares { get; }
-        HexBigInteger Difficulty { get; }
-        HexBigInteger MaxTarget { get; }
-        int LastSubmitLatency { get; }
-        int Latency { get; }
-        string MinerAddress { get; }
-        string SubmitURL { get; }
-        byte[] CurrentChallenge { get; }
-        HexBigInteger CurrentTarget { get; }
+        bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender);
+
+        ulong GetEffectiveHashrate();
+
+        TimeSpan GetTimeLeftToSolveBlock(ulong hashrate);
 
         bool IsChallengedSubmitted(byte[] challenge);
-        TimeSpan GetTimeLeftToSolveBlock(ulong hashrate);
-        ulong GetEffectiveHashrate();
-        void ResetEffectiveHashrate();
-        void UpdateMiningParameters();
 
-        bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender);
+        void ResetEffectiveHashrate();
+
+        void UpdateMiningParameters();
     }
 }
