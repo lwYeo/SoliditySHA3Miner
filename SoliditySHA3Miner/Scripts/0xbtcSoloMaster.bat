@@ -29,7 +29,7 @@ gasLimit=600000 ^
 gasApiURL=https://ethgasstation.info/json/ethgasAPI.json ^
 gasApiPath=$.safeLow ^
 gasApiMultiplier=0.1 ^
-gasApiOffset=0.5 ^
+gasApiOffset=1.0 ^
 privateKey=YOUR_ETH_PRIVATE_KEY
 
 goto startMiner
