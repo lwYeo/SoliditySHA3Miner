@@ -407,17 +407,17 @@ namespace SoliditySHA3Miner.Miner
                 {
                     foreach (var solution in solutions)
                     {
-                        if (!NetworkInterface.IsPool)
-                            if (((NetworkInterface.Web3Interface)NetworkInterface).IsChallengedSubmitted(challenge))
-                                return;
-
                         if (NetworkInterface.GetType().IsAssignableFrom(typeof(NetworkInterface.SlaveInterface)))
                             if (((NetworkInterface.SlaveInterface)NetworkInterface).IsPause)
                                 return;
 
-                        if ((!m_isSubmitStale && !challenge.SequenceEqual(NetworkInterface.CurrentChallenge)) || solution == 0)
-                            continue;
-                        else if (m_isSubmitStale && !challenge.SequenceEqual(NetworkInterface.CurrentChallenge))
+                        if (!NetworkInterface.IsPool && NetworkInterface.IsChallengedSubmitted(challenge))
+                            return; // Solo mining should submit only 1 valid nonce per challange
+
+                        if (!m_isSubmitStale && !challenge.SequenceEqual(NetworkInterface.CurrentChallenge))
+                            return;
+
+                        if (m_isSubmitStale && !challenge.SequenceEqual(NetworkInterface.CurrentChallenge))
                             PrintMessage(platformType, platform, deviceID, "Warn", "Found stale solution, verifying...");
                         else
                             PrintMessage(platformType, platform, deviceID, "Info", "Found solution, verifying...");

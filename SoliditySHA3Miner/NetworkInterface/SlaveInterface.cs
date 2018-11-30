@@ -36,6 +36,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly List<DateTime> m_submitDateTimeList;
         private readonly int m_updateInterval;
 
+        private readonly List<byte[]> m_submittedChallengeList;
         private bool m_isGetMiningParameters;
         private DateTime m_challengeReceiveDateTime;
         private Timer m_updateMinerTimer;
@@ -51,7 +52,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
         public event GetTotalHashrateEvent OnGetTotalHashrate;
 
-        public bool IsPool => true;
+        public bool IsPool { get; private set; }
         public ulong SubmittedShares { get; private set; }
         public ulong RejectedShares { get; private set; }
         public HexBigInteger Difficulty { get; private set; }
@@ -62,6 +63,11 @@ namespace SoliditySHA3Miner.NetworkInterface
         public string SubmitURL { get; }
         public byte[] CurrentChallenge { get; private set; }
         public HexBigInteger CurrentTarget { get; private set; }
+
+        public bool IsChallengedSubmitted(byte[] challenge)
+        {
+            return m_submittedChallengeList.Any(s => challenge.SequenceEqual(s));
+        }
 
         /// <summary>
         /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
@@ -156,6 +162,12 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                         LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
 
+                        if (!IsChallengedSubmitted(challenge))
+                        {
+                            m_submittedChallengeList.Insert(0, challenge.ToArray());
+                            if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
+                        }
+
                         var result = response.SelectToken("$.result")?.Value<string>();
 
                         success = (result ?? string.Empty).Equals("true", StringComparison.OrdinalIgnoreCase);
@@ -205,6 +217,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
         public SlaveInterface(string masterURL, int updateInterval, int hashratePrintInterval)
         {
+            m_submittedChallengeList = new List<byte[]>();
             m_updateInterval = updateInterval;
             m_isGetMiningParameters = false;
             Difficulty = new HexBigInteger(0);
@@ -221,6 +234,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             var getMasterAddress = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetMinerAddress);
             var getMaximumTarget = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetMaximumTarget);
             var getKingAddress = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetKingAddress);
+            var getPoolMining = Miner.MasterInterface.GetMasterParameter(Miner.MasterInterface.RequestMethods.GetPoolMining);
 
             var retryCount = 0;
             while (true)
@@ -229,10 +243,12 @@ namespace SoliditySHA3Miner.NetworkInterface
                     var parameters = MiningParameters.GetMiningParameters(SubmitURL,
                                                                           getEthAddress: getMasterAddress,
                                                                           getMaximumTarget: getMaximumTarget,
-                                                                          getKingAddress: getKingAddress);
+                                                                          getKingAddress: getKingAddress,
+                                                                          getPoolMining: getPoolMining);
                     MinerAddress = parameters.EthAddress;
                     MaxTarget = parameters.MaximumTarget;
                     Miner.Work.KingAddress = parameters.KingAddressByte20;
+                    IsPool = parameters.IsPoolMining;
                     break;
                 }
                 catch (Exception ex)
@@ -256,6 +272,9 @@ namespace SoliditySHA3Miner.NetworkInterface
         {
             if (m_submitDateTimeList != null)
                 m_submitDateTimeList.Clear();
+
+            if (m_submittedChallengeList != null)
+                m_submittedChallengeList.Clear();
 
             if (m_updateMinerTimer != null)
             {

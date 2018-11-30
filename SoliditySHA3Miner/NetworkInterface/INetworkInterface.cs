@@ -49,6 +49,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         byte[] CurrentChallenge { get; }
         HexBigInteger CurrentTarget { get; }
 
+        bool IsChallengedSubmitted(byte[] challenge);
         TimeSpan GetTimeLeftToSolveBlock(ulong hashrate);
         ulong GetEffectiveHashrate();
         void ResetEffectiveHashrate();

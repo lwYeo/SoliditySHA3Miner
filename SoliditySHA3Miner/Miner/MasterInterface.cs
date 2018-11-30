@@ -42,6 +42,7 @@ namespace SoliditySHA3Miner.Miner
             public const string GetDifficulty = "GetDifficulty";
             public const string GetTarget = "GetTarget";
             public const string GetPause = "GetPause";
+            public const string GetPoolMining = "GetPoolMining";
             public const string SubmitSolution = "SubmitSolution";
         }
 
@@ -356,6 +357,10 @@ namespace SoliditySHA3Miner.Miner
 
                                 case RequestMethods.GetPause:
                                     jResponse = GetMasterResult(IsPause.ToString());
+                                    break;
+
+                                case RequestMethods.GetPoolMining:
+                                    jResponse = GetMasterResult(NetworkInterface.IsPool.ToString());
                                     break;
 
                                 case RequestMethods.SubmitSolution:

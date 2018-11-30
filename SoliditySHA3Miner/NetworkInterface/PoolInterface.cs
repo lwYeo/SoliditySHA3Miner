@@ -36,6 +36,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         private const int MAX_SUBMIT_DTM_COUNT = 50;
         private readonly List<DateTime> m_submitDateTimeList;
 
+        private readonly List<byte[]> m_submittedChallengeList;
         private readonly string s_PoolURL;
         private readonly HexBigInteger m_customDifficulity;
         private readonly int m_maxScanRetry;
@@ -85,6 +86,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public PoolInterface(string minerAddress, string poolURL, int maxScanRetry, int updateInterval, int hashratePrintInterval,
                              BigInteger customDifficulity, bool isSecondary, HexBigInteger maxTarget, PoolInterface secondaryPool = null)
         {
+            m_submittedChallengeList = new List<byte[]>();
             m_retryCount = 0;
             m_maxScanRetry = maxScanRetry;
             m_updateInterval = updateInterval;
@@ -118,6 +120,9 @@ namespace SoliditySHA3Miner.NetworkInterface
 
             if (m_submitDateTimeList != null)
                 m_submitDateTimeList.Clear();
+
+            if (m_submittedChallengeList != null)
+                m_submittedChallengeList.Clear();
 
             if (m_updateMinerTimer != null)
             {
@@ -376,6 +381,11 @@ namespace SoliditySHA3Miner.NetworkInterface
             finally { m_isGetMiningParameters = false; }
         }
 
+        public bool IsChallengedSubmitted(byte[] challenge)
+        {
+            return m_submittedChallengeList.Any(s => challenge.SequenceEqual(s));
+        }
+
         /// <summary>
         /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
         /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
@@ -485,6 +495,12 @@ namespace SoliditySHA3Miner.NetworkInterface
                         var response = Utils.Json.InvokeJObjectRPC(s_PoolURL, submitShare);
 
                         LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+
+                        if (!IsChallengedSubmitted(challenge))
+                        {
+                            m_submittedChallengeList.Insert(0, challenge.ToArray());
+                            if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
+                        }
 
                         var result = response.SelectToken("$.result")?.Value<string>();
 

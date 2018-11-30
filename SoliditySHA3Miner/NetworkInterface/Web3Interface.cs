@@ -94,8 +94,6 @@ namespace SoliditySHA3Miner.NetworkInterface
         public byte[] CurrentChallenge { get; private set; }
         public HexBigInteger CurrentTarget { get; private set; }
 
-        public bool IsChallengedSubmitted(byte[] challenge) => m_submittedChallengeList.Any(s => challenge.SequenceEqual(s));
-
         public Web3Interface(string web3ApiPath, string contractAddress, string minerAddress, string privateKey,
                              float gasToMine, string abiFileName, int updateInterval, int hashratePrintInterval,
                              ulong gasLimit, string gasApiURL, string gasApiPath, float gasApiMultiplier, float gasApiOffset, float gasApiMax)
@@ -692,6 +690,11 @@ namespace SoliditySHA3Miner.NetworkInterface
             {
                 Program.Print(string.Format("[ERROR] {0}", ex.Message));
             }
+        }
+
+        public bool IsChallengedSubmitted(byte[] challenge)
+        {
+            return m_submittedChallengeList.Any(s => challenge.SequenceEqual(s));
         }
 
         /// <summary>

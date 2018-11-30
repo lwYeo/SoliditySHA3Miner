@@ -40,6 +40,7 @@ namespace SoliditySHA3Miner.NetworkInterface
         public string ChallengeByte32String { get; private set; }
         public string KingAddress { get; private set; }
         public bool IsPause { get; private set; }
+        public bool IsPoolMining { get; private set; }
 
         public static MiningParameters GetSoloMiningParameters(string ethAddress,
                                                                Function getMiningDifficulty,
@@ -56,7 +57,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                                                            JObject getTarget = null,
                                                            JObject getMaximumTarget = null,
                                                            JObject getKingAddress = null,
-                                                           JObject getPause = null)
+                                                           JObject getPause = null,
+                                                           JObject getPoolMining = null)
         {
             return new MiningParameters(masterURL,
                                         getEthAddress: getEthAddress,
@@ -65,7 +67,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                                         getTarget: getTarget,
                                         getMaximumTarget: getMaximumTarget,
                                         getKingAddress: getKingAddress,
-                                        getPause: getPause);
+                                        getPause: getPause,
+                                        getPoolMining: getPoolMining);
         }
 
         private MiningParameters(string ethAddress,
@@ -137,7 +140,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                                  JObject getTarget = null,
                                  JObject getMaximumTarget = null,
                                  JObject getKingAddress = null,
-                                 JObject getPause = null)
+                                 JObject getPause = null,
+                                 JObject getPoolMining = null)
         {
             var retryCount = 0;
             
@@ -274,7 +278,23 @@ namespace SoliditySHA3Miner.NetworkInterface
                     if (retryCount < 10)
                         Task.Delay(500).Wait();
                     else
-                        throw new OperationCanceledException("Failed to get king address: " + ex.Message, ex.InnerException);
+                        throw new OperationCanceledException("Failed to get pause: " + ex.Message, ex.InnerException);
+                }
+
+            while (getPoolMining != null)
+                try
+                {
+                    var poolMiningString = Utils.Json.InvokeJObjectRPC(url, getPoolMining).SelectToken("$.result").Value<string>();
+                    IsPoolMining = bool.Parse(poolMiningString);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    if (retryCount < 10)
+                        Task.Delay(500).Wait();
+                    else
+                        throw new OperationCanceledException("Failed to get pool mining: " + ex.Message, ex.InnerException);
                 }
         }
     }
