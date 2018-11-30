@@ -364,6 +364,9 @@ namespace SoliditySHA3Miner.Miner
                                     break;
 
                                 case RequestMethods.SubmitSolution:
+                                    var slaveURL = request.RemoteEndPoint.ToString();
+                                    Program.Print("[INFO] Solution received from slave URL: http://" + slaveURL);
+
                                     var jParams = jRequest.SelectToken("$.params").Value<JArray>();
                                     var digest = Utils.Numerics.HexStringToByte32Array(jParams[0].Value<string>());
                                     var challenge = Utils.Numerics.HexStringToByte32Array(jParams[1].Value<string>());
