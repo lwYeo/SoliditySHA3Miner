@@ -262,7 +262,13 @@ namespace SoliditySHA3Miner.NetworkInterface
                         var calculatedDifficulty = BigDecimal.Exp(BigInteger.Log(MaxTarget.Value) - BigInteger.Log(miningParameters.MiningTarget.Value));
                         var calculatedDifficultyBigInteger = BigInteger.Parse(calculatedDifficulty.ToString().Split(",.".ToCharArray())[0]);
 
-                        // Only replace if the integer portion is different
+                        try // Perform rounding
+                        {
+                            if (uint.Parse(calculatedDifficulty.ToString().Split(",.".ToCharArray())[1].First().ToString()) >= 5)
+                                calculatedDifficultyBigInteger++;
+                        }
+                        catch { }
+                        
                         if (Difficulty.Value != calculatedDifficultyBigInteger)
                         {
                             Difficulty = new HexBigInteger(calculatedDifficultyBigInteger);
