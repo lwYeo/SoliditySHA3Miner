@@ -1,5 +1,14 @@
 ### How to start Solo mining using SoliditySHA3Miner
 
+0) Prequisites :
+
+0a) .Net Core Runtime
+  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.1.6-windows-x64-installer]
+  * Ubuntu => run script 'sudo ./install-deps.sh'
+  * Ethos => run script 'sudo ./install-deps-ethOS.sh'
+
+0b) Nvidia driver (396, CUDA 9.2 onwards), and/or AMD driver.
+
 1) Ensure that you have sufficient ETH stored in your mining address (ETH is required to mint tokens).
 
 2) Clone 0xbtcSolo.bat/0xbtcSolo.sh file and open the editor for the cloned file.

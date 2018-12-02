@@ -63,6 +63,9 @@
     <None Update="0xbtc.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="MiningGuide\GuideForMasterSlaveMining.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Scripts\0xbtcPoolMaster.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -1,5 +1,14 @@
 ### How to start Pool mining using SoliditySHA3Miner
 
+0) Prequisites :
+
+0a) .Net Core Runtime
+  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.1.6-windows-x64-installer]
+  * Ubuntu => run script 'sudo ./install-deps.sh'
+  * Ethos => run script 'sudo ./install-deps-ethOS.sh'
+
+0b) Nvidia driver (396, CUDA 9.2 onwards), and/or AMD driver.
+
 1) Clone 0xbtcPool.bat/0xbtcPool.sh file and open the editor for the cloned file.
   * For ethOS, refer to 0xbtcPool-ethOS.sh/0xbtcPool-ethOS-screen.sh
 
