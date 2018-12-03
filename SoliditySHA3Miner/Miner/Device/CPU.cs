@@ -32,6 +32,6 @@ namespace SoliditySHA3Miner.Miner.Device
         public byte[] SolutionTemplate;
 
         [JsonIgnore]
-        public ulong[] Solutions;
+        public ulong[][] Solutions;
     }
 }

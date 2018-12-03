@@ -169,6 +169,7 @@ namespace SoliditySHA3Miner
         private static Miner.CPU m_cpuMiner;
         private static Miner.CUDA m_cudaMiner;
         private static Miner.OpenCL m_openCLMiner;
+        private static Miner.MasterInterface m_MasterInterface;
         private static Miner.IMiner[] m_allMiners;
         private static API.Json m_apiJson;
 
@@ -267,31 +268,38 @@ namespace SoliditySHA3Miner
                 Config.hashrateUpdateInterval = Config.hashrateUpdateInterval < 1000 ? Config.Defaults.HashrateUpdateInterval : Config.hashrateUpdateInterval;
 
                 Miner.Work.SolutionTemplate = Miner.Helper.CPU.GetSolutionTemplate(kingAddress: Config.kingAddress);
-
-                var web3Interface = new NetworkInterface.Web3Interface(Config.web3api, Config.contractAddress, Config.minerAddress, Config.privateKey, Config.gasToMine,
-                                                                       Config.abiFile, Config.networkUpdateInterval, Config.hashrateUpdateInterval,
-                                                                       Config.gasLimit, Config.gasApiURL, Config.gasApiPath, Config.gasApiMultiplier, Config.gasApiOffset, Config.gasApiMax);
-
-                web3Interface.OverrideMaxTarget(Config.overrideMaxTarget);
-
-                if (Config.customDifficulty > 0)
-                    Print("[INFO] Custom difficulity: " + Config.customDifficulty.ToString());
-
                 NetworkInterface.INetworkInterface mainNetworkInterface = null;
-                var isSoloMining = !(string.IsNullOrWhiteSpace(Config.privateKey));
 
-                if (isSoloMining) { mainNetworkInterface = web3Interface; }
+                if (!string.IsNullOrWhiteSpace(Config.masterURL) && !Config.masterMode) // Slave mode
+                    mainNetworkInterface = new NetworkInterface.SlaveInterface(Config.masterURL, Config.slaveUpdateInterval, Config.hashrateUpdateInterval);
+
                 else
                 {
-                    var secondaryPoolInterface = string.IsNullOrWhiteSpace(Config.secondaryPool)
-                                               ? null
-                                               : new NetworkInterface.PoolInterface(Config.minerAddress, Config.secondaryPool, Config.maxScanRetry,
-                                                                                    -1, -1, Config.customDifficulty, true, web3Interface.GetMaxTarget());
+                    var web3Interface = new NetworkInterface.Web3Interface(Config.web3api, Config.contractAddress, Config.minerAddress, Config.privateKey, Config.gasToMine,
+                                                                           Config.abiFile, Config.networkUpdateInterval, Config.hashrateUpdateInterval,
+                                                                           Config.gasLimit, Config.gasApiURL, Config.gasApiPath, Config.gasApiMultiplier, Config.gasApiOffset, Config.gasApiMax);
 
-                    var primaryPoolInterface = new NetworkInterface.PoolInterface(Config.minerAddress, Config.primaryPool, Config.maxScanRetry,
-                                                                                  Config.networkUpdateInterval, Config.hashrateUpdateInterval,
-                                                                                  Config.customDifficulty, false, web3Interface.GetMaxTarget(), secondaryPoolInterface);
-                    mainNetworkInterface = primaryPoolInterface;
+                    web3Interface.OverrideMaxTarget(Config.overrideMaxTarget);
+
+                    if (Config.customDifficulty > 0)
+                        Print("[INFO] Custom difficulity: " + Config.customDifficulty.ToString());
+
+                    var isSoloMining = !(string.IsNullOrWhiteSpace(Config.privateKey));
+
+
+                    if (isSoloMining) { mainNetworkInterface = web3Interface; }
+                    else
+                    {
+                        var secondaryPoolInterface = string.IsNullOrWhiteSpace(Config.secondaryPool)
+                                                   ? null
+                                                   : new NetworkInterface.PoolInterface(Config.minerAddress, Config.secondaryPool, Config.maxScanRetry,
+                                                                                        -1, -1, Config.customDifficulty, true, web3Interface.GetMaxTarget());
+
+                        var primaryPoolInterface = new NetworkInterface.PoolInterface(Config.minerAddress, Config.primaryPool, Config.maxScanRetry,
+                                                                                      Config.networkUpdateInterval, Config.hashrateUpdateInterval,
+                                                                                      Config.customDifficulty, false, web3Interface.GetMaxTarget(), secondaryPoolInterface);
+                        mainNetworkInterface = primaryPoolInterface;
+                    }
                 }
 
                 if (AllowCUDA && Config.cudaDevices.Any(d => d.AllowDevice))
@@ -303,11 +311,14 @@ namespace SoliditySHA3Miner
                 if (AllowCPU && Config.cpuDevice.AllowDevice)
                     m_cpuMiner = new Miner.CPU(mainNetworkInterface, Config.cpuDevice, Config.submitStale, Config.pauseOnFailedScans);
 
-                m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner }.Where(m => m != null).ToArray();
+                if (Config.masterMode)
+                    m_MasterInterface = new Miner.MasterInterface(mainNetworkInterface, Config.pauseOnFailedScans, Config.masterURL);
+
+                m_allMiners = new Miner.IMiner[] { m_openCLMiner, m_cudaMiner, m_cpuMiner, m_MasterInterface }.Where(m => m != null).ToArray();
 
                 if (!m_allMiners.Any() || m_allMiners.All(m => !m.HasAssignedDevices))
                 {
-                    Console.WriteLine("[ERROR] No miner assigned.");
+                    Print("[ERROR] No miner assigned.");
                     Environment.Exit(1);
                 }
 

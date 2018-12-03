@@ -14,24 +14,18 @@ goto end
 DEL /F /Q SoliditySHA3Miner.conf
 
 dotnet SoliditySHA3Miner.dll ^
+masterMode=true ^
 allowCPU=false ^
-allowIntel=true ^
-allowAMD=true ^
-allowCUDA=true ^
-web3api=https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE ^
+allowIntel=false ^
+allowAMD=false ^
+allowCUDA=false ^
+networkUpdateInterval=10000 ^
 abiFile=0xBTC.abi ^
 contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 ^
-gasToMine=3 ^
-gasApiMax=7 ^
-gasLimit=600000 ^
-gasApiURL=https://ethgasstation.info/json/ethgasAPI.json ^
-gasApiPath=$.safeLow ^
-gasApiMultiplier=0.1 ^
-gasApiOffset=1.0 ^
-privateKey=YOUR_ETH_PRIVATE_KEY
+overrideMaxTarget=27606985387162255149739023449108101809804435888681546220650096895197184 ^
+pool=http://mike.rs:8080 ^
+address=0x9172ff7884CEFED19327aDaCe9C470eF1796105c
 
-if %errorlevel% EQU 22 (
-  goto startMiner
-)
+goto startMiner
 :end
 pause

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <Version>2.1.1</Version>
+    <Version>2.2.0</Version>
     <Authors>lwYeo</Authors>
     <Company>lwYeo@github</Company>
     <PackageLicenseUrl>https://github.com/lwYeo/SoliditySHA3Miner/blob/master/LICENSE</PackageLicenseUrl>
@@ -63,31 +63,28 @@
     <None Update="0xbtc.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Scripts\0xbtcPool-ethOS-screen.sh">
+    <None Update="MiningGuide\GuideForMasterSlaveMining.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Scripts\0xbtcPool-ethOS.sh">
+    <None Update="Scripts\0xbtcPoolMaster.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\0xbtcSoloMaster.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Scripts\0xbtcPool.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Scripts\SoliditySHA3MinerSlave.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Scripts\0xbtcSolo.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\0xbtcPool.sh">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\0xbtcSolo.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="ABI\CLM.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Scripts\clmSolo.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\clmSolo.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="ABI\ERC-20.abi">
@@ -103,12 +100,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="MiningGuide\GuideForHiveOS.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\install-deps.sh">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\install-deps-ethOS.sh">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="0xCATE.abi">
@@ -144,13 +135,10 @@
     <None Update="SoliditySHA3Miner.conf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Scripts\SoliditySHA3Miner.sh">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(OS)' == 'Windows_NT' ">
-    <Exec Command="copy /Y &quot;$(ProjectDir)$(OutDir)ABI\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)Scripts\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)MiningGuide\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)ABI&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)Scripts&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)MiningGuide&quot;&#xD;&#xA;&#xD;&#xA;if not exist &quot;$(SolutionDir)Build\$(ConfigurationName)\&quot; mkdir &quot;$(SolutionDir)build\$(ConfigurationName)\&quot;&#xD;&#xA;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.abi&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.bat&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.bat&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.conf&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.conf&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.sh&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.sh&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.dll&quot;&#xD;&#xA;&#xD;&#xA;copy /Y &quot;$(SolutionDir)LICENSE&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\LICENSE&quot;" />
+    <Exec Command="copy /Y &quot;$(ProjectDir)$(OutDir)ABI\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)Scripts\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)MiningGuide\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)ABI&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)Scripts&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)MiningGuide&quot;&#xD;&#xA;&#xD;&#xA;if not exist &quot;$(SolutionDir)Build\$(ConfigurationName)\&quot; mkdir &quot;$(SolutionDir)build\$(ConfigurationName)\&quot;&#xD;&#xA;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.abi&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.bat&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.bat&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.conf&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.conf&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.dll&quot;&#xD;&#xA;&#xD;&#xA;copy /Y &quot;$(SolutionDir)LICENSE&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\LICENSE&quot;" />
   </Target>
 
 </Project>

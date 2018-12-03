@@ -23,7 +23,6 @@ using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -34,16 +33,11 @@ using System.Timers;
 
 namespace SoliditySHA3Miner.NetworkInterface
 {
-    public class Web3Interface : INetworkInterface
+    public class Web3Interface : NetworkInterfaceBase
     {
-        private readonly BigInteger uint256_MaxValue = BigInteger.Pow(2, 256);
-        private HexBigInteger m_maxTarget;
-        private DateTime m_challengeReceiveDateTime;
+        public HexBigInteger LastSubmitGasPrice { get; private set; }
 
-        private const int MAX_TIMEOUT = 10;
-        private const string DEFAULT_WEB3_API = Config.Defaults.InfuraAPI_mainnet;
-        private const int MAX_SUBMIT_DTM_COUNT = 50;
-        private readonly List<DateTime> m_submitDateTimeList;
+        private const int MAX_TIMEOUT = 15;
 
         private readonly Web3 m_web3;
         private readonly Contract m_contract;
@@ -63,50 +57,321 @@ namespace SoliditySHA3Miner.NetworkInterface
         private readonly float m_gasToMine;
         private readonly float m_gasApiMax;
         private readonly ulong m_gasLimit;
-        private readonly List<byte[]> m_submittedChallengeList;
-        private readonly int m_updateInterval;
-        private Timer m_updateMinerTimer;
-        private Timer m_hashPrintTimer;
-        private MiningParameters m_lastParameters;
-        private System.Threading.ManualResetEvent m_newChallengeResetEvent;
 
         private readonly string m_gasApiURL;
         private readonly string m_gasApiPath;
         private readonly float m_gasApiOffset;
         private readonly float m_gasApiMultiplier;
 
-        public event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
-        public event NewChallengeEvent OnNewChallenge;
-        public event NewTargetEvent OnNewTarget;
-        public event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
+        private System.Threading.ManualResetEvent m_newChallengeResetEvent;
 
-        public event GetTotalHashrateEvent OnGetTotalHashrate;
+        #region NetworkInterfaceBase
 
-        public bool IsPool => false;
-        public ulong SubmittedShares { get; private set; }
-        public ulong RejectedShares { get; private set; }
-        public ulong Difficulty { get; private set; }
-        public HexBigInteger LastSubmitGasPrice { get; private set; }
-        public int LastSubmitLatency { get; private set; }
-        public int Latency { get; private set; }
-        public string MinerAddress { get; }
-        public string SubmitURL { get; private set; }
-        public byte[] CurrentChallenge { get; private set; }
+        public override bool IsPool => false;
 
-        public bool IsChallengedSubmitted(byte[] challenge) => m_submittedChallengeList.Any(s => challenge.SequenceEqual(s));
+        public override event GetMiningParameterStatusEvent OnGetMiningParameterStatus;
+        public override event NewChallengeEvent OnNewChallenge;
+        public override event NewTargetEvent OnNewTarget;
+        public override event NewDifficultyEvent OnNewDifficulty;
+        public override event StopSolvingCurrentChallengeEvent OnStopSolvingCurrentChallenge;
+        public override event GetTotalHashrateEvent OnGetTotalHashrate;
+
+        public override bool SubmitSolution(string address, byte[] digest, byte[] challenge, HexBigInteger difficulty, byte[] nonce, object sender)
+        {
+            lock (this)
+            {
+                if (IsChallengedSubmitted(challenge))
+                {
+                    Program.Print(string.Format("[INFO] Submission cancelled, nonce has been submitted for the current challenge."));
+                    return false;
+                }
+                m_challengeReceiveDateTime = DateTime.MinValue;
+
+                var transactionID = string.Empty;
+                var gasLimit = new HexBigInteger(m_gasLimit);
+                var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasToMine), UnitConversion.EthUnit.Gwei));
+
+                if (!string.IsNullOrWhiteSpace(m_gasApiURL))
+                {
+                    try
+                    {
+                        var apiGasPrice = Utils.Json.DeserializeFromURL(m_gasApiURL).SelectToken(m_gasApiPath).Value<float>();
+                        if (apiGasPrice > 0)
+                        {
+                            apiGasPrice *= m_gasApiMultiplier;
+                            apiGasPrice += m_gasApiOffset;
+
+                            if (apiGasPrice < m_gasToMine)
+                            {
+                                Program.Print(string.Format("[INFO] Using 'gasToMine' price of {0} GWei, due to lower gas price from API: {1}",
+                                                            m_gasToMine, m_gasApiURL));
+                            }
+                            else if (apiGasPrice > m_gasApiMax)
+                            {
+                                userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasApiMax), UnitConversion.EthUnit.Gwei));
+                                Program.Print(string.Format("[INFO] Using 'gasApiMax' price of {0} GWei, due to higher gas price from API: {1}",
+                                                            m_gasApiMax, m_gasApiURL));
+                            }
+                            else
+                            {
+                                userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(apiGasPrice), UnitConversion.EthUnit.Gwei));
+                                Program.Print(string.Format("[INFO] Using gas price of {0} GWei (after {1} offset) from API: {2}",
+                                                            apiGasPrice, m_gasApiOffset, m_gasApiURL));
+                            }
+                        }
+                        else
+                        {
+                            Program.Print(string.Format("[ERROR] Gas price of 0 GWei was retuned by API: {0}", m_gasApiURL));
+                            Program.Print(string.Format("[INFO] Using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        HandleException(ex, string.Format("Failed to read gas price from API ({0})", m_gasApiURL));
+
+                        if (LastSubmitGasPrice == null || LastSubmitGasPrice.Value <= 0)
+                            Program.Print(string.Format("[INFO] Using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
+                        else
+                        {
+                            Program.Print(string.Format("[INFO] Using last submitted gas price of {0} GWei.",
+                                                        UnitConversion.Convert.FromWeiToBigDecimal(LastSubmitGasPrice, UnitConversion.EthUnit.Gwei).ToString()));
+                            userGas = LastSubmitGasPrice;
+                        }
+                    }
+                }
+
+                object[] dataInput = null;
+
+                if (m_mintMethodInputParamCount > 1) // 0xBitcoin compatibility
+                    dataInput = new object[] { new BigInteger(nonce, isBigEndian: true), digest };
+
+                else // Draft EIP-918 compatibility [2018-03-07]
+                    dataInput = new object[] { new BigInteger(nonce, isBigEndian: true) };
+
+                var retryCount = 0;
+                var startSubmitDateTime = DateTime.Now;
+                do
+                {
+                    try
+                    {
+                        var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(address).Result;
+
+                        // Commented as gas limit is dynamic in between submissions and confirmations
+                        //var estimatedGasLimit = m_mintMethod.EstimateGasAsync(from: address,
+                        //                                                      gas: gasLimit,
+                        //                                                      value: new HexBigInteger(0),
+                        //                                                      functionInput: dataInput).Result;
+
+                        var transaction = m_mintMethod.CreateTransactionInput(from: address,
+                                                                              gas: gasLimit /*estimatedGasLimit*/,
+                                                                              gasPrice: userGas,
+                                                                              value: new HexBigInteger(0),
+                                                                              functionInput: dataInput);
+
+                        var encodedTx = Web3.OfflineTransactionSigner.SignTransaction(privateKey: m_account.PrivateKey,
+                                                                                      to: m_contract.Address,
+                                                                                      amount: 0,
+                                                                                      nonce: txCount.Value,
+                                                                                      gasPrice: userGas,
+                                                                                      gasLimit: gasLimit /*estimatedGasLimit*/,
+                                                                                      data: transaction.Data);
+
+                        if (!Web3.OfflineTransactionSigner.VerifyTransaction(encodedTx))
+                            throw new Exception("Failed to verify transaction.");
+
+                        transactionID = m_web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encodedTx).Result;
+
+                        LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
+
+                        if (!string.IsNullOrWhiteSpace(transactionID))
+                        {
+                            Program.Print("[INFO] Nonce submitted with transaction ID: " + transactionID);
+                            LastSubmitGasPrice = userGas;
+
+                            if (!IsChallengedSubmitted(challenge))
+                            {
+                                m_submittedChallengeList.Insert(0, challenge.ToArray());
+                                if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
+                            }
+
+                            Task.Factory.StartNew(() => GetTransactionReciept(transactionID, address, gasLimit, userGas, LastSubmitLatency, DateTime.Now));
+
+                            if (challenge.SequenceEqual(CurrentChallenge))
+                                OnStopSolvingCurrentChallenge(this);
+                        }
+                    }
+                    catch (AggregateException ex)
+                    {
+                        HandleAggregateException(ex);
+
+                        if (IsChallengedSubmitted(challenge))
+                            return false;
+                    }
+                    catch (Exception ex)
+                    {
+                        HandleException(ex);
+
+                        if (IsChallengedSubmitted(challenge) || ex.Message == "Failed to verify transaction.")
+                            return false;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(transactionID))
+                    {
+                        retryCount++;
+
+                        if (retryCount > 10)
+                        {
+                            Program.Print("[ERROR] Failed to submit solution for 10 times, submission cancelled.");
+                            return false;
+                        }
+                        else { Task.Delay(m_updateInterval / 2).Wait(); }
+                    }
+                } while (string.IsNullOrWhiteSpace(transactionID));
+
+                return !string.IsNullOrWhiteSpace(transactionID);
+            }
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            if (m_newChallengeResetEvent != null)
+                try
+                {
+                    m_newChallengeResetEvent.Dispose();
+                    m_newChallengeResetEvent = null;
+                }
+                catch { }
+            m_newChallengeResetEvent = null;
+        }
+
+        protected override void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            var totalHashRate = 0ul;
+            try
+            {
+                OnGetTotalHashrate(this, ref totalHashRate);
+                Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s (Effective) / {1} MH/s (Local)",
+                                            GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    totalHashRate = GetEffectiveHashrate();
+                    Program.Print(string.Format("[INFO] Effective Hashrate: {0} MH/s", totalHashRate / 1000000.0f));
+                }
+                catch { }
+            }
+            try
+            {
+                if (totalHashRate > 0)
+                {
+                    var timeLeftToSolveBlock = GetTimeLeftToSolveBlock(totalHashRate);
+
+                    if (timeLeftToSolveBlock.TotalSeconds < 0)
+                    {
+                        Program.Print(string.Format("[INFO] Estimated time left to solution: -({0}d {1}h {2}m {3}s)",
+                                                    Math.Abs(timeLeftToSolveBlock.Days),
+                                                    Math.Abs(timeLeftToSolveBlock.Hours),
+                                                    Math.Abs(timeLeftToSolveBlock.Minutes),
+                                                    Math.Abs(timeLeftToSolveBlock.Seconds)));
+                    }
+                    else
+                    {
+                        Program.Print(string.Format("[INFO] Estimated time left to solution: {0}d {1}h {2}m {3}s",
+                                                    Math.Abs(timeLeftToSolveBlock.Days),
+                                                    Math.Abs(timeLeftToSolveBlock.Hours),
+                                                    Math.Abs(timeLeftToSolveBlock.Minutes),
+                                                    Math.Abs(timeLeftToSolveBlock.Seconds)));
+                    }
+                }
+            }
+            catch { }
+        }
+
+        protected override void UpdateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            try
+            {
+                var miningParameters = GetMiningParameters();
+                if (miningParameters == null)
+                {
+                    OnGetMiningParameterStatus(this, false);
+                    return;
+                }
+
+                CurrentChallenge = miningParameters.ChallengeByte32;
+
+                if (m_lastParameters == null || miningParameters.Challenge.Value != m_lastParameters.Challenge.Value)
+                {
+                    Program.Print(string.Format("[INFO] New challenge detected {0}...", miningParameters.ChallengeByte32String));
+                    OnNewChallenge(this, miningParameters.ChallengeByte32, MinerAddress);
+
+                    if (m_challengeReceiveDateTime == DateTime.MinValue)
+                        m_challengeReceiveDateTime = DateTime.Now;
+
+                    m_newChallengeResetEvent.Set();
+                }
+
+                if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
+                {
+                    Program.Print(string.Format("[INFO] New target detected {0}...", miningParameters.MiningTargetByte32String));
+                    OnNewTarget(this, miningParameters.MiningTarget);
+                    CurrentTarget = miningParameters.MiningTarget;
+                }
+
+                if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
+                {
+                    Program.Print(string.Format("[INFO] New difficulity detected ({0})...", miningParameters.MiningDifficulty.Value));
+                    OnNewDifficulty?.Invoke(this, miningParameters.MiningDifficulty);
+                    Difficulty = miningParameters.MiningDifficulty;
+
+                    // Actual difficulty should have decimals
+                    var calculatedDifficulty = BigDecimal.Exp(BigInteger.Log(MaxTarget.Value) - BigInteger.Log(miningParameters.MiningTarget.Value));
+                    var calculatedDifficultyBigInteger = BigInteger.Parse(calculatedDifficulty.ToString().Split(",.".ToCharArray())[0]);
+
+                    try // Perform rounding
+                    {
+                        if (uint.Parse(calculatedDifficulty.ToString().Split(",.".ToCharArray())[1].First().ToString()) >= 5)
+                            calculatedDifficultyBigInteger++;
+                    }
+                    catch { }
+
+                    if (Difficulty.Value != calculatedDifficultyBigInteger)
+                    {
+                        Difficulty = new HexBigInteger(calculatedDifficultyBigInteger);
+                        var expValue = BigInteger.Log10(calculatedDifficultyBigInteger);
+                        var calculatedTarget = BigInteger.Parse(
+                            (BigDecimal.Parse(MaxTarget.Value.ToString()) * BigDecimal.Pow(10, expValue) / (calculatedDifficulty * BigDecimal.Pow(10, expValue))).
+                            ToString().Split(",.".ToCharArray())[0]);
+                        var calculatedTargetHex = new HexBigInteger(calculatedTarget);
+
+                        Program.Print(string.Format("[INFO] Update target 0x{0}...", calculatedTarget.ToString("x64")));
+                        OnNewTarget(this, calculatedTargetHex);
+                        CurrentTarget = calculatedTargetHex;
+                    }
+                }
+
+                m_lastParameters = miningParameters;
+                OnGetMiningParameterStatus(this, true);
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex);
+            }
+        }
+
+        #endregion
 
         public Web3Interface(string web3ApiPath, string contractAddress, string minerAddress, string privateKey,
                              float gasToMine, string abiFileName, int updateInterval, int hashratePrintInterval,
                              ulong gasLimit, string gasApiURL, string gasApiPath, float gasApiMultiplier, float gasApiOffset, float gasApiMax)
+            : base(updateInterval, hashratePrintInterval)
         {
-            m_updateInterval = updateInterval;
-            m_submittedChallengeList = new List<byte[]>();
-            m_submitDateTimeList = new List<DateTime>(MAX_SUBMIT_DTM_COUNT + 1);
-            m_newChallengeResetEvent = new System.Threading.ManualResetEvent(false);
-
             Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout = MAX_TIMEOUT * 1000;
-            LastSubmitLatency = -1;
-            Latency = -1;
+            m_newChallengeResetEvent = new System.Threading.ManualResetEvent(false);
 
             if (string.IsNullOrWhiteSpace(contractAddress))
             {
@@ -146,7 +411,7 @@ namespace SoliditySHA3Miner.NetworkInterface
             Program.Print("[INFO] Miner's address : " + minerAddress);
 
             MinerAddress = minerAddress;
-            SubmitURL = string.IsNullOrWhiteSpace(web3ApiPath) ? DEFAULT_WEB3_API : web3ApiPath;
+            SubmitURL = string.IsNullOrWhiteSpace(web3ApiPath) ? Config.Defaults.InfuraAPI_mainnet : web3ApiPath;
 
             m_web3 = new Web3(SubmitURL);
 
@@ -421,48 +686,8 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                 #endregion
 
-                m_hashPrintTimer = new Timer(hashratePrintInterval);
-                m_hashPrintTimer.Elapsed += HashPrintTimer_Elapsed;
-                m_hashPrintTimer.Start();
-            }
-        }
-
-        public void Dispose()
-        {
-            if (m_submitDateTimeList != null)
-                m_submitDateTimeList.Clear();
-
-            if (m_submittedChallengeList != null)
-                m_submittedChallengeList.Clear();
-
-            if (m_updateMinerTimer != null)
-            {
-                try
-                {
-                    m_updateMinerTimer.Elapsed -= UpdateMinerTimer_Elapsed;
-                    m_updateMinerTimer.Stop();
-                    m_updateMinerTimer.Dispose();
-                }
-                catch { }
-                m_updateMinerTimer = null;
-            }
-
-            if (m_hashPrintTimer != null)
-            {
-                try
-                {
-                    m_hashPrintTimer.Elapsed -= HashPrintTimer_Elapsed;
-                    m_hashPrintTimer.Stop();
-                    m_hashPrintTimer.Dispose();
-                }
-                catch { }
-                m_hashPrintTimer = null;
-            }
-
-            if (m_newChallengeResetEvent != null)
-            {
-                m_newChallengeResetEvent.Dispose();
-                m_newChallengeResetEvent = null;
+                if (m_hashPrintTimer != null)
+                    m_hashPrintTimer.Start();
             }
         }
 
@@ -471,22 +696,22 @@ namespace SoliditySHA3Miner.NetworkInterface
             if (maxTarget.Value > 0u)
             {
                 Program.Print("[INFO] Override maximum difficulty: " + maxTarget.HexValue);
-                m_maxTarget = maxTarget;
+                MaxTarget = maxTarget;
             }
-            else { m_maxTarget = GetMaxTarget(); }
+            else { MaxTarget = GetMaxTarget(); }
         }
 
         public HexBigInteger GetMaxTarget()
         {
-            if (m_maxTarget != null && m_maxTarget.Value > 0)
-                return m_maxTarget;
+            if (MaxTarget != null && MaxTarget.Value > 0)
+                return MaxTarget;
 
             Program.Print("[INFO] Checking maximum target from network...");
             while (true)
             {
                 try
                 {
-                    if (m_MAXIMUM_TARGET == null) // assume the same as 0xbtc if not available
+                    if (m_MAXIMUM_TARGET == null) // assume the same as 0xBTC
                         return new HexBigInteger("0x40000000000000000000000000000000000000000000000000000000000");
 
                     var maxTarget = new HexBigInteger(m_MAXIMUM_TARGET.CallAsync<BigInteger>().Result);
@@ -498,21 +723,13 @@ namespace SoliditySHA3Miner.NetworkInterface
                 }
                 catch (Exception ex)
                 {
-                    var errorMessage = new StringBuilder("[ERROR] Failed to get maximum target: " + ex.Message);
-
-                    var innerEx = ex.InnerException;
-                    while (innerEx != null)
-                    {
-                        errorMessage.AppendFormat("\n {0}", innerEx.Message);
-                        innerEx = innerEx.InnerException;
-                    }
-                    Program.Print(errorMessage.ToString());
+                    HandleException(ex, "Failed to get maximum target");
                     Task.Delay(m_updateInterval / 2).Wait();
                 }
             }
         }
 
-        public MiningParameters GetMiningParameters()
+        private MiningParameters GetMiningParameters()
         {
             Program.Print("[INFO] Checking latest parameters from network...");
             var success = true;
@@ -523,17 +740,8 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
             catch (Exception ex)
             {
+                HandleException(ex);
                 success = false;
-                var errorMessage = new StringBuilder("[ERROR] " + ex.Message);
-
-                var innerEx = ex.InnerException;
-                while (innerEx != null)
-                {
-                    errorMessage.AppendFormat("\n {0}", innerEx.Message);
-                    innerEx = innerEx.InnerException;
-                }
-
-                Program.Print(errorMessage.ToString());
                 return null;
             }
             finally
@@ -581,311 +789,6 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
         }
 
-        private void HashPrintTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            var totalHashRate = 0ul;
-            OnGetTotalHashrate(this, ref totalHashRate);
-            Program.Print(string.Format("[INFO] Total Hashrate: {0} MH/s (Effective) / {1} MH/s (Local)",
-                                        GetEffectiveHashrate() / 1000000.0f, totalHashRate / 1000000.0f));
-
-            var timeLeftToSolveBlock = GetTimeLeftToSolveBlock(totalHashRate);
-
-            if (timeLeftToSolveBlock.TotalSeconds < 0)
-            {
-                Program.Print(string.Format("[INFO] Estimated time left to solution: -({0}d {1}h {2}m {3}s)",
-                                            Math.Abs(timeLeftToSolveBlock.Days),
-                                            Math.Abs(timeLeftToSolveBlock.Hours),
-                                            Math.Abs(timeLeftToSolveBlock.Minutes),
-                                            Math.Abs(timeLeftToSolveBlock.Seconds)));
-            }
-            else
-            {
-                Program.Print(string.Format("[INFO] Estimated time left to solution: {0}d {1}h {2}m {3}s",
-                                            Math.Abs(timeLeftToSolveBlock.Days),
-                                            Math.Abs(timeLeftToSolveBlock.Hours),
-                                            Math.Abs(timeLeftToSolveBlock.Minutes),
-                                            Math.Abs(timeLeftToSolveBlock.Seconds)));
-            }
-        }
-
-        private void UpdateMinerTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            try
-            {
-                var miningParameters = GetMiningParameters();
-                if (miningParameters == null)
-                {
-                    OnGetMiningParameterStatus(this, false);
-                    return;
-                }
-                
-                CurrentChallenge = miningParameters.ChallengeByte32;
-
-                if (m_lastParameters == null || miningParameters.Challenge.Value != m_lastParameters.Challenge.Value)
-                {
-                    Program.Print(string.Format("[INFO] New challenge detected {0}...", miningParameters.ChallengeByte32String));
-                    OnNewChallenge(this, miningParameters.ChallengeByte32, miningParameters.EthAddress);
-
-                    if (m_challengeReceiveDateTime == DateTime.MinValue)
-                        m_challengeReceiveDateTime = DateTime.Now;
-
-                    m_newChallengeResetEvent.Set();
-                }
-
-                if (m_lastParameters == null || miningParameters.MiningTarget.Value != m_lastParameters.MiningTarget.Value)
-                {
-                    Program.Print(string.Format("[INFO] New target detected {0}...", miningParameters.MiningTargetByte32String));
-                    OnNewTarget(this, miningParameters.MiningTarget);
-                }
-
-                if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
-                {
-                    Program.Print(string.Format("[INFO] New difficulity detected ({0})...", miningParameters.MiningDifficulty.Value));
-                    Difficulty = Convert.ToUInt64(miningParameters.MiningDifficulty.Value.ToString());
-
-                    // Actual difficulty should have decimals
-                    var calculatedDifficulty = Math.Exp(BigInteger.Log(m_maxTarget.Value) - BigInteger.Log(miningParameters.MiningTarget.Value));
-
-                    if ((ulong)calculatedDifficulty != Difficulty) // Only replace if the integer portion is different
-                    {
-                        Difficulty = (ulong)calculatedDifficulty;
-                        var expValue = Math.Log10(calculatedDifficulty);
-                        var calculatedTarget = m_maxTarget.Value * (ulong)Math.Pow(10, expValue) / (ulong)(calculatedDifficulty * Math.Pow(10, expValue));
-
-                        Program.Print(string.Format("[INFO] Update target 0x{0}...", calculatedTarget.ToString("x64")));
-                        OnNewTarget(this, new HexBigInteger(calculatedTarget));
-                    }
-                }
-
-                m_lastParameters = miningParameters;
-                OnGetMiningParameterStatus(this, true);
-            }
-            catch (Exception ex)
-            {
-                Program.Print(string.Format("[ERROR] {0}", ex.Message));
-            }
-        }
-
-        /// <summary>
-        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
-        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
-        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
-        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
-        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
-        /// </summary>
-        public TimeSpan GetTimeLeftToSolveBlock(ulong hashrate)
-        {
-            if (m_maxTarget == null || m_maxTarget.Value == 0 || Difficulty == 0 || hashrate == 0 || m_challengeReceiveDateTime == DateTime.MinValue)
-                return TimeSpan.Zero;
-
-            var timeToSolveBlock = new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(hashrate);
-
-            var secondsLeftToSolveBlock = timeToSolveBlock - (long)(DateTime.Now - m_challengeReceiveDateTime).TotalSeconds;
-
-            return (secondsLeftToSolveBlock > (long)TimeSpan.MaxValue.TotalSeconds)
-                ? TimeSpan.MaxValue
-                : TimeSpan.FromSeconds((long)secondsLeftToSolveBlock);
-        }
-
-        /// <summary>
-        /// <para>Since a single hash is a random number between 1 and 2^256, and difficulty [1] target = 2^234</para>
-        /// <para>Then we can find difficulty [N] target = 2^234 / N</para>
-        /// <para>Hence, # of hashes to find block with difficulty [N] = N * 2^256 / 2^234</para>
-        /// <para>Which simplifies to # of hashes to find block difficulty [N] = N * 2^22</para>
-        /// <para>Time to find block in seconds with difficulty [N] = N * 2^22 / hashes per second</para>
-        /// <para>Hashes per second with difficulty [N] and time to find block [T] = N * 2^22 / T</para>
-        /// </summary>
-        public ulong GetEffectiveHashrate()
-        {
-            var hashrate = 0ul;
-
-            if (m_submitDateTimeList.Count > 1)
-            {
-                var avgSolveTime = (ulong)((DateTime.Now - m_submitDateTimeList.First()).TotalSeconds / m_submitDateTimeList.Count - 1);
-                hashrate = (ulong)(new BigInteger(Difficulty) * uint256_MaxValue / m_maxTarget.Value / new BigInteger(avgSolveTime));
-            }
-
-            return hashrate;
-        }
-
-        public void ResetEffectiveHashrate()
-        {
-            m_submitDateTimeList.Clear();
-            m_submitDateTimeList.Add(DateTime.Now);
-        }
-
-        public void UpdateMiningParameters()
-        {
-            UpdateMinerTimer_Elapsed(this, null);
-
-            if (m_updateMinerTimer == null && m_updateInterval > 0)
-            {
-                m_updateMinerTimer = new Timer(m_updateInterval);
-                m_updateMinerTimer.Elapsed += UpdateMinerTimer_Elapsed;
-                m_updateMinerTimer.Start();
-            }
-        }
-
-        public bool SubmitSolution(string address, byte[] digest, byte[] challenge, ulong difficulty, byte[] nonce, Miner.IMiner sender)
-        {
-            lock (this)
-            {
-                if (IsChallengedSubmitted(challenge))
-                {
-                    Program.Print(string.Format("[INFO] Submission cancelled, nonce has been submitted for the current challenge."));
-                    return false;
-                }
-                m_challengeReceiveDateTime = DateTime.MinValue;
-
-                var transactionID = string.Empty;
-                var gasLimit = new HexBigInteger(m_gasLimit);
-                var userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasToMine), UnitConversion.EthUnit.Gwei));
-
-                if (!string.IsNullOrWhiteSpace(m_gasApiURL))
-                {
-                    try
-                    {
-                        var apiGasPrice = Utils.Json.DeserializeFromURL(m_gasApiURL).SelectToken(m_gasApiPath).Value<float>();
-                        if (apiGasPrice > 0)
-                        {
-                            apiGasPrice *= m_gasApiMultiplier;
-                            apiGasPrice += m_gasApiOffset;
-
-                            if (apiGasPrice < m_gasToMine)
-                            {
-                                Program.Print(string.Format("[INFO] Using 'gasToMine' price of {0} GWei, due to lower gas price from API: {1}",
-                                                            m_gasToMine, m_gasApiURL));
-                            }
-                            else if (apiGasPrice > m_gasApiMax)
-                            {
-                                userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(m_gasApiMax), UnitConversion.EthUnit.Gwei));
-                                Program.Print(string.Format("[INFO] Using 'gasApiMax' price of {0} GWei, due to higher gas price from API: {1}",
-                                                            m_gasApiMax, m_gasApiURL));
-                            }
-                            else
-                            {
-                                userGas = new HexBigInteger(UnitConversion.Convert.ToWei(new BigDecimal(apiGasPrice), UnitConversion.EthUnit.Gwei));
-                                Program.Print(string.Format("[INFO] Using gas price of {0} GWei (after {1} offset) from API: {2}",
-                                                            apiGasPrice, m_gasApiOffset, m_gasApiURL));
-                            }
-                        }
-                        else
-                        {
-                            Program.Print(string.Format("[ERROR] Gas price of 0 GWei was retuned by API: {0}", m_gasApiURL));
-                            Program.Print(string.Format("[INFO] Using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Program.Print(string.Format("[ERROR] Failed to read gas price from API: {0}\n{1}", m_gasApiURL, ex.ToString()));
-                        if (LastSubmitGasPrice == null || LastSubmitGasPrice.Value <= 0)
-                            Program.Print(string.Format("[INFO] Using 'gasToMine' parameter of {0} GWei.", m_gasToMine));
-                        else
-                        {
-                            Program.Print(string.Format("[INFO] Using last submitted gas price of {0} GWei.",
-                                                        UnitConversion.Convert.FromWeiToBigDecimal(LastSubmitGasPrice, UnitConversion.EthUnit.Gwei).ToString()));
-                            userGas = LastSubmitGasPrice;
-                        }
-                    }
-                }
-
-                object[] dataInput = null;
-
-                if (m_mintMethodInputParamCount > 1) // 0xBitcoin compatibility
-                    dataInput = new object[] { new BigInteger(nonce.Reverse().ToArray()), digest };
-
-                else // Draft EIP-918 compatibility [2018-03-07]
-                    dataInput = new object[] { new BigInteger(nonce.Reverse().ToArray()) };
-
-                var retryCount = 0;
-                var startSubmitDateTime = DateTime.Now;
-                while (string.IsNullOrWhiteSpace(transactionID))
-                {
-                    try
-                    {
-                        var txCount = m_web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(address).Result;
-
-                        // Commented as gas limit is dynamic in between submissions and confirmations
-                        //var estimatedGasLimit = m_mintMethod.EstimateGasAsync(from: address,
-                        //                                                      gas: gasLimit,
-                        //                                                      value: new HexBigInteger(0),
-                        //                                                      functionInput: dataInput).Result;
-
-                        var transaction = m_mintMethod.CreateTransactionInput(from: address,
-                                                                              gas: gasLimit /*estimatedGasLimit*/,
-                                                                              gasPrice: userGas,
-                                                                              value: new HexBigInteger(0),
-                                                                              functionInput: dataInput);
-
-                        var encodedTx = Web3.OfflineTransactionSigner.SignTransaction(privateKey: m_account.PrivateKey,
-                                                                                      to: m_contract.Address,
-                                                                                      amount: 0,
-                                                                                      nonce: txCount.Value,
-                                                                                      gasPrice: userGas,
-                                                                                      gasLimit: gasLimit /*estimatedGasLimit*/,
-                                                                                      data: transaction.Data);
-
-                        if (!Web3.OfflineTransactionSigner.VerifyTransaction(encodedTx))
-                            throw new Exception("Failed to verify transaction.");
-
-                        transactionID = m_web3.Eth.Transactions.SendRawTransaction.SendRequestAsync("0x" + encodedTx).Result;
-
-                        LastSubmitLatency = (int)((DateTime.Now - startSubmitDateTime).TotalMilliseconds);
-
-                        if (!string.IsNullOrWhiteSpace(transactionID))
-                        {
-                            Program.Print("[INFO] Nonce submitted with transaction ID: " + transactionID);
-                            LastSubmitGasPrice = userGas;
-
-                            if (!IsChallengedSubmitted(challenge))
-                            {
-                                m_submittedChallengeList.Insert(0, challenge.ToArray());
-                                if (m_submittedChallengeList.Count > 100) m_submittedChallengeList.Remove(m_submittedChallengeList.Last());
-                            }
-
-                            Task.Factory.StartNew(() => GetTransactionReciept(transactionID, address, gasLimit, userGas, LastSubmitLatency, DateTime.Now));
-
-                            if (challenge.SequenceEqual(CurrentChallenge))
-                                OnStopSolvingCurrentChallenge(this);
-                        }
-                    }
-                    catch (AggregateException ex)
-                    {
-                        var errorMessage = "[ERROR] " + ex.Message;
-
-                        foreach (var iEx in ex.InnerExceptions)
-                            errorMessage += "\n " + iEx.Message;
-
-                        Program.Print(errorMessage);
-                        if (IsChallengedSubmitted(challenge)) return false;
-                    }
-                    catch (Exception ex)
-                    {
-                        var errorMessage = "[ERROR] " + ex.Message;
-
-                        if (ex.InnerException != null)
-                            errorMessage += "\n " + ex.InnerException.Message;
-
-                        Program.Print(errorMessage);
-
-                        if (IsChallengedSubmitted(challenge) || ex.Message == "Failed to verify transaction.")
-                            return false;
-                    }
-                    Task.Delay(m_updateInterval / 2).Wait();
-
-                    if (string.IsNullOrWhiteSpace(transactionID))
-                        retryCount++;
-
-                    if (retryCount > 10)
-                    {
-                        Program.Print("[ERROR] Failed to submit solution for more than 10 times, please check settings.");
-                        sender.StopMining();
-                    }
-                }
-                return true;
-            }
-        }
-
         private void GetTransactionReciept(string transactionID, string address, HexBigInteger gasLimit, HexBigInteger userGas,
                                            int responseTime, DateTime submitDateTime)
         {
@@ -902,21 +805,11 @@ namespace SoliditySHA3Miner.NetworkInterface
                     }
                     catch (AggregateException ex)
                     {
-                        var errorMessage = "[ERROR] " + ex.Message;
-
-                        foreach (var iEx in ex.InnerExceptions)
-                            errorMessage += "\n " + iEx.Message;
-
-                        Program.Print(errorMessage);
+                        HandleAggregateException(ex);
                     }
                     catch (Exception ex)
                     {
-                        var errorMessage = "[ERROR] " + ex.Message;
-
-                        if (ex.InnerException != null)
-                            errorMessage += "\n " + ex.InnerException.Message;
-
-                        Program.Print(errorMessage);
+                        HandleException(ex);
                     }
 
                     if (reciept == null)
@@ -966,21 +859,11 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
             catch (AggregateException ex)
             {
-                var errorMessage = "[ERROR] " + ex.Message;
-
-                foreach (var iEx in ex.InnerExceptions)
-                    errorMessage += "\n " + iEx.Message;
-
-                Program.Print(errorMessage);
+                HandleAggregateException(ex);
             }
             catch (Exception ex)
             {
-                var errorMessage = "[ERROR] " + ex.Message;
-
-                if (ex.InnerException != null)
-                    errorMessage += "\n " + ex.InnerException.Message;
-
-                Program.Print(errorMessage);
+                HandleException(ex);
             }
         }
 
@@ -1053,21 +936,11 @@ namespace SoliditySHA3Miner.NetworkInterface
                     }
                     catch (AggregateException ex)
                     {
-                        var errorMessage = "[ERROR] " + ex.Message;
-
-                        foreach (var iEx in ex.InnerExceptions)
-                            errorMessage += "\n " + iEx.Message;
-
-                        Program.Print(errorMessage);
+                        HandleAggregateException(ex);
                     }
                     catch (Exception ex)
                     {
-                        var errorMessage = "[ERROR] " + ex.Message;
-
-                        if (ex.InnerException != null)
-                            errorMessage += "\n " + ex.InnerException.Message;
-
-                        Program.Print(errorMessage);
+                        HandleException(ex);
                     }
                 }
 
@@ -1086,22 +959,53 @@ namespace SoliditySHA3Miner.NetworkInterface
             }
             catch (AggregateException ex)
             {
-                var errorMessage = "[ERROR] " + ex.Message;
-
-                foreach (var iEx in ex.InnerExceptions)
-                    errorMessage += "\n " + iEx.Message;
-
-                Program.Print(errorMessage);
+                HandleAggregateException(ex);
             }
             catch (Exception ex)
             {
-                var errorMessage = "[ERROR] " + ex.Message;
-
-                if (ex.InnerException != null)
-                    errorMessage += "\n " + ex.InnerException.Message;
-
-                Program.Print(errorMessage);
+                HandleException(ex);
             }
+        }
+
+        private void HandleException(Exception ex, string errorPrefix = null)
+        {
+            var errorMessage = new StringBuilder("[ERROR] ");
+
+            if (!string.IsNullOrWhiteSpace(errorPrefix))
+                errorMessage.AppendFormat("{0}: ", errorPrefix);
+
+            errorMessage.Append(ex.Message);
+
+            var innerEx = ex.InnerException;
+            while (innerEx != null)
+            {
+                errorMessage.AppendFormat("\n {0}", innerEx.Message);
+                innerEx = innerEx.InnerException;
+            }
+            Program.Print(errorMessage.ToString());
+        }
+
+        private void HandleAggregateException(AggregateException ex, string errorPrefix = null)
+        {
+            var errorMessage = new StringBuilder("[ERROR] ");
+
+            if (!string.IsNullOrWhiteSpace(errorPrefix))
+                errorMessage.AppendFormat("{0}: ", errorPrefix);
+
+            errorMessage.Append(ex.Message);
+
+            foreach (var innerException in ex.InnerExceptions)
+            {
+                errorMessage.AppendFormat("\n {0}", innerException.Message);
+
+                var innerEx = ex.InnerException;
+                while (innerEx != null)
+                {
+                    errorMessage.AppendFormat("\n  {0}", innerEx.Message);
+                    innerEx = innerEx.InnerException;
+                }
+            }
+            Program.Print(errorMessage.ToString());
         }
     }
 }

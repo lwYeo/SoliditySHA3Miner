@@ -15,7 +15,6 @@
 */
 
 using Nethereum.Contracts;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Newtonsoft.Json.Linq;
 using System;
@@ -29,11 +28,19 @@ namespace SoliditySHA3Miner.NetworkInterface
         public HexBigInteger MiningDifficulty { get; private set; }
         public HexBigInteger MiningTarget { get; private set; }
         public HexBigInteger Challenge { get; private set; }
+        public HexBigInteger MaximumTarget { get; private set; }
         public byte[] MiningTargetByte32 { get; private set; }
         public byte[] ChallengeByte32 { get; private set; }
+        public byte[] MaximumTargetByte32 { get; private set; }
+        public byte[] EthAddressByte20 { get; private set; }
+        public byte[] KingAddressByte20 { get; private set; }
         public string EthAddress { get; private set; }
         public string MiningTargetByte32String { get; private set; }
+        public string MaximumTargetByte32String { get; private set; }
         public string ChallengeByte32String { get; private set; }
+        public string KingAddress { get; private set; }
+        public bool IsPause { get; private set; }
+        public bool IsPoolMining { get; private set; }
 
         public static MiningParameters GetSoloMiningParameters(string ethAddress,
                                                                Function getMiningDifficulty,
@@ -43,13 +50,25 @@ namespace SoliditySHA3Miner.NetworkInterface
             return new MiningParameters(ethAddress, getMiningDifficulty, getMiningTarget, getChallengeNumber);
         }
 
-        public static MiningParameters GetPoolMiningParameters(string poolURL,
-                                                               JObject getPoolEthAddress,
-                                                               JObject getChallengeNumber,
-                                                               JObject getMinimumShareDifficulty,
-                                                               JObject getMinimumShareTarget)
+        public static MiningParameters GetMiningParameters(string masterURL,
+                                                           JObject getEthAddress = null,
+                                                           JObject getChallenge = null,
+                                                           JObject getDifficulty = null,
+                                                           JObject getTarget = null,
+                                                           JObject getMaximumTarget = null,
+                                                           JObject getKingAddress = null,
+                                                           JObject getPause = null,
+                                                           JObject getPoolMining = null)
         {
-            return new MiningParameters(poolURL, getPoolEthAddress, getChallengeNumber, getMinimumShareDifficulty, getMinimumShareTarget);
+            return new MiningParameters(masterURL,
+                                        getEthAddress: getEthAddress,
+                                        getChallenge: getChallenge,
+                                        getDifficulty: getDifficulty,
+                                        getTarget: getTarget,
+                                        getMaximumTarget: getMaximumTarget,
+                                        getKingAddress: getKingAddress,
+                                        getPause: getPause,
+                                        getPoolMining: getPoolMining);
         }
 
         private MiningParameters(string ethAddress,
@@ -58,6 +77,9 @@ namespace SoliditySHA3Miner.NetworkInterface
                                  Function getChallengeNumber)
         {
             EthAddress = ethAddress;
+            var ethAddressByte20 = (byte[])Array.CreateInstance(typeof(byte), Miner.MinerBase.ADDRESS_LENGTH);
+            Utils.Numerics.AddressStringToByte20Array(EthAddress, ref ethAddressByte20);
+            EthAddressByte20 = ethAddressByte20;
 
             var retryCount = 0;
 
@@ -71,7 +93,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     retryCount++;
                     if (retryCount < 10)
-                        Task.Delay(200).Wait();
+                        Task.Delay(500).Wait();
                     else
                         throw new OperationCanceledException("Failed to get difficulty from network: " + ex.Message, ex.InnerException);
                 }
@@ -80,7 +102,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 try
                 {
                     MiningTarget = new HexBigInteger(getMiningTarget.CallAsync<BigInteger>().Result);
-                    MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false));
+                    MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(isUnsigned: true, isBigEndian: true));
                     MiningTargetByte32String = Utils.Numerics.Byte32ArrayToHexString(MiningTargetByte32);
                     break;
                 }
@@ -88,7 +110,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     retryCount++;
                     if (retryCount < 10)
-                        Task.Delay(200).Wait();
+                        Task.Delay(500).Wait();
                     else
                         throw new OperationCanceledException("Failed to get target from network: " + ex.Message, ex.InnerException);
                 }
@@ -97,48 +119,55 @@ namespace SoliditySHA3Miner.NetworkInterface
                 try
                 {
                     ChallengeByte32 = Utils.Numerics.FilterByte32Array(getChallengeNumber.CallAsync<byte[]>().Result);
-                    Challenge = new HexBigInteger(HexByteConvertorExtensions.ToHex(ChallengeByte32, prefix: true));
                     ChallengeByte32String = Utils.Numerics.Byte32ArrayToHexString(ChallengeByte32);
+                    Challenge = new HexBigInteger(new BigInteger(ChallengeByte32, isUnsigned: true, isBigEndian: true));
                     break;
                 }
                 catch (Exception ex)
                 {
                     retryCount++;
                     if (retryCount < 10)
-                        Task.Delay(200).Wait();
+                        Task.Delay(500).Wait();
                     else
                         throw new OperationCanceledException("Failed to get challenge from network: " + ex.Message, ex.InnerException);
                 }
         }
 
-        private MiningParameters(string poolURL,
-                                 JObject getPoolEthAddress,
-                                 JObject getChallengeNumber,
-                                 JObject getMinimumShareDifficulty,
-                                 JObject getMinimumShareTarget)
+        private MiningParameters(string url,
+                                 JObject getEthAddress = null,
+                                 JObject getChallenge = null,
+                                 JObject getDifficulty = null,
+                                 JObject getTarget = null,
+                                 JObject getMaximumTarget = null,
+                                 JObject getKingAddress = null,
+                                 JObject getPause = null,
+                                 JObject getPoolMining = null)
         {
             var retryCount = 0;
             
-            while (true)
+            while (getEthAddress != null)
                 try
                 {
-                    EthAddress = Utils.Json.InvokeJObjectRPC(poolURL, getPoolEthAddress).SelectToken("$.result").Value<string>();
+                    EthAddress = Utils.Json.InvokeJObjectRPC(url, getEthAddress).SelectToken("$.result").Value<string>();
+                    var ethAddressByte20 = (byte[])Array.CreateInstance(typeof(byte), Miner.MinerBase.ADDRESS_LENGTH);
+                    Utils.Numerics.AddressStringToByte20Array(EthAddress, ref ethAddressByte20);
+                    EthAddressByte20 = ethAddressByte20;
                     break;
                 }
                 catch (Exception ex)
                 {
                     retryCount++;
                     if (retryCount < 10)
-                        Task.Delay(200).Wait();
+                        Task.Delay(500).Wait();
                     else
-                        throw new OperationCanceledException("Failed to get pool address: " + ex.Message, ex.InnerException);
+                        throw new OperationCanceledException("Failed to get address: " + ex.Message, ex.InnerException);
                 }
 
-            while (true)
+            while (getChallenge != null)
                 try
                 {
-                    Challenge = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getChallengeNumber).SelectToken("$.result").Value<string>());
-                    ChallengeByte32 = Utils.Numerics.FilterByte32Array(Challenge.Value.ToByteArray(littleEndian: false));
+                    Challenge = new HexBigInteger(Utils.Json.InvokeJObjectRPC(url, getChallenge).SelectToken("$.result").Value<string>());
+                    ChallengeByte32 = Utils.Numerics.FilterByte32Array(Challenge.Value.ToByteArray(isUnsigned: true, isBigEndian: true));
                     ChallengeByte32String = Utils.Numerics.Byte32ArrayToHexString(ChallengeByte32);
                     break;
                 }
@@ -146,41 +175,126 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     retryCount++;
                     if (retryCount < 10)
-                        Task.Delay(200).Wait();
+                        Task.Delay(500).Wait();
                     else
-                        throw new OperationCanceledException("Failed to get pool challenge: " + ex.Message, ex.InnerException);
+                        throw new OperationCanceledException("Failed to get challenge: " + ex.Message, ex.InnerException);
                 }
 
-            while (true)
+            while (getDifficulty != null)
                 try
                 {
-                    MiningDifficulty = new HexBigInteger(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareDifficulty).SelectToken("$.result").Value<ulong>());
+                    var rawDifficulty = Utils.Json.InvokeJObjectRPC(url, getDifficulty).SelectToken("$.result").Value<string>();
+                    if (rawDifficulty.StartsWith("0x"))
+                        MiningDifficulty = new HexBigInteger(new BigInteger(Utils.Numerics.HexStringToByte32Array(rawDifficulty), isUnsigned: true, isBigEndian: true));
+                    else
+                        MiningDifficulty = new HexBigInteger(BigInteger.Parse(rawDifficulty));
                     break;
                 }
                 catch (Exception ex)
                 {
                     retryCount++;
                     if (retryCount < 10)
-                        Task.Delay(200).Wait();
+                        Task.Delay(500).Wait();
                     else
-                        throw new OperationCanceledException("Failed to get pool difficulty: " + ex.Message, ex.InnerException);
+                        throw new OperationCanceledException("Failed to get difficulty: " + ex.Message, ex.InnerException);
                 }
 
-            while (true)
+            while (getTarget != null)
                 try
                 {
-                    MiningTarget = new HexBigInteger(BigInteger.Parse(Utils.Json.InvokeJObjectRPC(poolURL, getMinimumShareTarget).SelectToken("$.result").Value<string>()));
-                    MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(littleEndian: false));
-                    MiningTargetByte32String = Utils.Numerics.Byte32ArrayToHexString(MiningTargetByte32);
+                    var rawMiningTarget = Utils.Json.InvokeJObjectRPC(url, getTarget).SelectToken("$.result").Value<string>();
+                    if (rawMiningTarget.StartsWith("0x"))
+                    {
+                        MiningTargetByte32String = rawMiningTarget;
+                        MiningTargetByte32 = Utils.Numerics.HexStringToByte32Array(rawMiningTarget);
+                        MiningTarget = new HexBigInteger(new BigInteger(MiningTargetByte32, isUnsigned: true, isBigEndian: true));
+                    }
+                    else // currently pool returns in decimal format
+                    {
+                        MiningTarget = new HexBigInteger(BigInteger.Parse(rawMiningTarget));
+                        MiningTargetByte32 = Utils.Numerics.FilterByte32Array(MiningTarget.Value.ToByteArray(isUnsigned: true, isBigEndian: true));
+                        MiningTargetByte32String = Utils.Numerics.Byte32ArrayToHexString(MiningTargetByte32);
+                    }
                     break;
                 }
                 catch (Exception ex)
                 {
                     retryCount++;
                     if (retryCount < 10)
-                        Task.Delay(200).Wait();
+                        Task.Delay(500).Wait();
                     else
-                        throw new OperationCanceledException("Failed to get pool target: " + ex.Message, ex.InnerException);
+                        throw new OperationCanceledException("Failed to get target: " + ex.Message, ex.InnerException);
+                }
+
+            while (getMaximumTarget != null)
+                try
+                {
+                    MaximumTargetByte32String = Utils.Json.InvokeJObjectRPC(url, getMaximumTarget).SelectToken("$.result").Value<string>();
+                    MaximumTargetByte32 = Utils.Numerics.HexStringToByte32Array(MaximumTargetByte32String);
+                    MaximumTarget = new HexBigInteger(new BigInteger(MaximumTargetByte32, isUnsigned: true, isBigEndian: true));
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    if (retryCount < 10)
+                        Task.Delay(500).Wait();
+                    else
+                        throw new OperationCanceledException("Failed to get maximum target: " + ex.Message, ex.InnerException);
+                }
+
+            while (getKingAddress != null)
+                try
+                {
+                    KingAddress = Utils.Json.InvokeJObjectRPC(url, getKingAddress).SelectToken("$.result").Value<string>();
+
+                    if (!string.IsNullOrWhiteSpace(KingAddress))
+                    {
+                        var kingAddressByte20 = (byte[])Array.CreateInstance(typeof(byte), Miner.MinerBase.ADDRESS_LENGTH);
+                        Utils.Numerics.AddressStringToByte20Array(KingAddress, ref kingAddressByte20, "king address");
+                        KingAddressByte20 = kingAddressByte20;
+                    }
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    if (retryCount < 10)
+                        Task.Delay(500).Wait();
+                    else
+                        throw new OperationCanceledException("Failed to get king address: " + ex.Message, ex.InnerException);
+                }
+
+            while (getPause != null)
+                try
+                {
+                    var pauseString = Utils.Json.InvokeJObjectRPC(url, getPause).SelectToken("$.result").Value<string>();
+                    IsPause = bool.Parse(pauseString);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    if (retryCount < 10)
+                        Task.Delay(500).Wait();
+                    else
+                        throw new OperationCanceledException("Failed to get pause: " + ex.Message, ex.InnerException);
+                }
+
+            while (getPoolMining != null)
+                try
+                {
+                    var poolMiningString = Utils.Json.InvokeJObjectRPC(url, getPoolMining).SelectToken("$.result").Value<string>();
+                    IsPoolMining = bool.Parse(poolMiningString);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    if (retryCount < 10)
+                        Task.Delay(500).Wait();
+                    else
+                        throw new OperationCanceledException("Failed to get pool mining: " + ex.Message, ex.InnerException);
                 }
         }
     }

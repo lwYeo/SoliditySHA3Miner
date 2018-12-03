@@ -1,0 +1,113 @@
+### How to start Master mining instance using SoliditySHA3Miner
+
+0) Prequisites :
+
+0a) .Net Core Runtime
+  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.1.6-windows-x64-installer]
+  * Ubuntu => run script 'sudo ./install-deps.sh'
+  * Ethos => run script 'sudo ./install-deps-ethOS.sh'
+
+0b) Nvidia driver (396, CUDA 9.2 onwards), and/or AMD driver.
+
+1) Clone and rename 0xbtcSolo/PoolMaster.bat/sh file and open the editor for the cloned file.
+
+2) You only need to edit the line that starts with 'dotnet' for launch parameters.
+
+3) Below are the following arguments that may/need to be changed :
+
+3a) allowIntel/AMD/CUDA=
+  * Set to true if the main instance is mining as well
+
+3b) networkUpdateInterval=
+  * Set the frequency (in miliseconds) to query latest information from the network.
+  * If using Infura, too low a value may get rate-limited or a temporary ban.
+  * Default value if left empty is 15000.
+
+3c) abiFile=
+  * If omitted, the '0xBTC.abi' file will be used by default
+  * Most tokens are compatible with '0xBTC.abi', most likely no need to change here
+  * Replace the value to the available filename that ends with '.abi' in the folder for the token interface you are mining.
+
+3c) contract=
+  * If omitted, 0xBTC contract address will be used by default.
+  * Replace the value with the following address if you are mining a different token (case-sensitive):
+
+	0xBTC    0xB6eD7644C69416d67B522e20bC294A9a9B405B31
+	LIRA     0x49AAa160506F7e07E6C3F6cD6316b6866025cDcB
+	CLM      0xA38FcEdd23dE2191Dc27f9a0240ac170BE0A14fE
+	SEDO     0x0F00f1696218EaeFa2D2330Df3D6D1f94813b38f
+	PEPE     0xBC2AFc039d2BFa67d582aC181daB5BE17EC91f82
+	0xBCH    0xe5b9746dfCC2eF1054D47A451A77bb5f390c468d
+	0xCATE   0x8F7DbF90E71285552a687097220E1035C2e87639
+	0xLTC    0x33D99EFc0C3cC4F93dA6931EC2CCcF19Ca874b6D
+	0xGOLD   0x291DE53a16b76dfE28551Fd3335225F506dB8b82
+	ATA      0xd72F60b2E7649bBC5835d25e30Ef917f04D9131c
+	KIWI     0x2BF91c18Cd4AE9C2f2858ef9FE518180F7B5096D
+	SKO      0xb3Dc3C839a02134f9932CbD60f3566C231cc90CC
+
+  * If the token is not in the list above, I suggest that you might want to ask from the owner/moderator from their relavant Discord/Telegram/forums.
+
+4) If pool mining, below are the following arguments that may/need to be changed : (skip to 5 for solo mining)
+
+4a) pool=
+  * If omitted, 'http://mike.rs:8080' will be used as default.
+  * Please ask for the pool address:Port from the owner/moderator from their relavant Discord/Telegram/forums.
+  * Note that 'http(s)://' is required as a prefix.
+  * Pool address:Port might change over time, it is your responsibility to keep updated of the pool status.
+
+4b) address=
+  * If omitted, you are donating 100% to the developer.
+  * Replace the value with your own mining Ethereum address (42 characters long including '0x' prefix, case-sensitive).
+
+5) If solo mining, ensure that you have sufficient ETH stored in your mining address (ETH is required to mint tokens).
+  * Below are the following arguments that may/need to be changed :
+
+5a) gasToMine=
+  * If omitted, 5 GWei will be used.
+  * Replace the value with the amount of gas you prefer to mint a block with (decimals allowed, no alphabets).
+  * This value will override dynamic gas price if this value, whichever is higher.
+
+5b) gasApiURL=
+  * Required for dynamic gas price minting
+  * If using 'EthGasStation.info', fill the value with https://ethgasstation.info/json/ethgasAPI.json
+  
+5c) gasApiPath=
+  * If using 'EthGasStation.info', fill the value with (without quotes) '$.safeLow'
+  
+5d) gasApiMultiplier=
+  * If using 'EthGasStation.info', fill the value with 0.1
+  
+5e) gasApiOffset=
+  * Depends on how much you want to offset (decimals allowed, no alphabets).
+  
+5f) privateKey=
+  * Replace the value with your own ETH private key (65 characters long excluding '0x' prefix)
+  * It is your own responsibility to keep your private ETH account safe.
+  * One suggestion is to create a disposable ETH mining account to mine with then transfer the tokens to your private account later.
+
+6) Ensure firewall settings has been set correctly.
+
+7) Save and run the '.bat/sh' file you have newly created, as Administrator/sudo.
+
+
+### How to start Slave mining instance using SoliditySHA3Miner
+
+0) Prequisites :
+
+0a) .Net Core Runtime
+  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.1.6-windows-x64-installer]
+  * Ubuntu => run script 'sudo ./install-deps.sh'
+  * Ethos => run script 'sudo ./install-deps-ethOS.sh'
+
+0b) Nvidia driver (396, CUDA 9.2 onwards), and/or AMD driver.
+
+1 ) Update the following arguments that need to be changed in SoliditySHA3MinerSlave.bat/sh:
+
+1a) masterURL=
+  * Replace the URL (http://{IP}:{port}/) with your master instance.
+
+1b) slaveUpdateInterval=
+  * Set the frequency (in miliseconds) to query latest information from the master instance.
+  * Default value if left empty is 5000.
+  
+2) Save and run SoliditySHA3MinerSlave.bat/sh.

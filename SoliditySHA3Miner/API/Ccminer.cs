@@ -141,7 +141,9 @@ namespace SoliditySHA3Miner.API
                                     var acc = solv - rej;
                                     var uptime = (DateTime.Now - Program.LaunchTime).TotalSeconds;
                                     var accmn = (60.0 * acc) / (uptime > 0.0 ? uptime : 1.0);
-                                    var diff = m_miners.Average(m => (long)m.NetworkInterface.Difficulty);
+                                    double diff;
+                                    try { diff = m_miners.Average(m => (long)m.NetworkInterface.Difficulty.Value); }
+                                    catch { diff = long.MaxValue; }
                                     var netkhs = 0; // TODO: get network hashrate
                                     var pools = m_miners.Select(m => m.NetworkInterface).OfType<NetworkInterface.PoolInterface>().Distinct().Count();
                                     var wait = Program.WaitSeconds;

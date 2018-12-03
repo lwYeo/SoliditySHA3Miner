@@ -23,6 +23,10 @@ struct Processor
 	int Affinity;
 	uint64_t WorkSize;
 	uint64_t WorkPosition;
+
+	uint32_t MaxSolutionCount;
+	uint32_t SolutionCount;
+	uint64_t *Solutions;
 };
 
 struct Instance
@@ -36,8 +40,4 @@ struct Instance
 
 	uint8_t *Target;
 	uint64_t *High64Target;
-
-	uint32_t MaxSolutionCount;
-	uint32_t SolutionCount;
-	uint64_t *Solutions;
 };

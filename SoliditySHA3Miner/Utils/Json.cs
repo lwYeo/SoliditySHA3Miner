@@ -28,7 +28,7 @@ namespace SoliditySHA3Miner.Utils
 {
     internal static class Json
     {
-        private const int MAX_TIMEOUT = 5;
+        private const int MAX_TIMEOUT = 10;
         private static object _Object1 = new object();
         private static object _Object2 = new object();
         private static object _Object3 = new object();
@@ -137,15 +137,15 @@ namespace SoliditySHA3Miner.Utils
             }
         }
 
-        public static JObject InvokeJObjectRPC(string url, JObject obj, JsonSerializerSettings settings = null)
+        public static JObject InvokeJObjectRPC(string url, JObject obj, JsonSerializerSettings settings = null, int customTimeout = 0)
         {
             lock (_Object5)
             {
                 var serializedJSON = SerializeFromObject(obj, settings);
 
                 var httpRequest = (HttpWebRequest)WebRequest.Create(url);
-                httpRequest.Timeout = MAX_TIMEOUT * 1000;
-                httpRequest.ReadWriteTimeout = MAX_TIMEOUT * 1000;
+                httpRequest.Timeout = (customTimeout > 0 ? customTimeout : MAX_TIMEOUT) * 1000;
+                httpRequest.ReadWriteTimeout = (customTimeout > 0 ? customTimeout : MAX_TIMEOUT) * 1000;
                 httpRequest.ContentLength = serializedJSON.Length;
                 httpRequest.ContentType = "application/json-rpc";
                 httpRequest.Method = "POST";

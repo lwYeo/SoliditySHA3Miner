@@ -40,8 +40,7 @@ namespace CUDASolver
 
 	void DisposeInstance(CudaSolver *instance) noexcept
 	{
-		instance->~CudaSolver();
-		free(instance);
+		delete instance;
 	}
 
 	void GetDeviceProperties(CudaSolver *instance, DeviceCUDA *device, const char *errorMessage)

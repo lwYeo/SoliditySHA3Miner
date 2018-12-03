@@ -21,13 +21,14 @@ allowCUDA=true ^
 web3api=https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE ^
 abiFile=CLM.abi ^
 contract=0xA38FcEdd23dE2191Dc27f9a0240ac170BE0A14fE ^
+overrideMaxTarget=27606985387162255149739023449108101809804435888681546220650096895197184 ^
 gasToMine=3 ^
 gasApiMax=7 ^
 gasLimit=600000 ^
 gasApiURL=https://ethgasstation.info/json/ethgasAPI.json ^
 gasApiPath=$.safeLow ^
 gasApiMultiplier=0.1 ^
-gasApiOffset=0.5 ^
+gasApiOffset=1.0 ^
 privateKey=YOUR_ETH_PRIVATE_KEY
 
 if %errorlevel% EQU 22 (

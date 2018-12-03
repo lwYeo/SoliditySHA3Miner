@@ -14,10 +14,12 @@ goto end
 DEL /F /Q SoliditySHA3Miner.conf
 
 dotnet SoliditySHA3Miner.dll ^
+masterMode=true ^
 allowCPU=false ^
-allowIntel=true ^
-allowAMD=true ^
-allowCUDA=true ^
+allowIntel=false ^
+allowAMD=false ^
+allowCUDA=false ^
+networkUpdateInterval=10000 ^
 web3api=https://mainnet.infura.io/ANueYSYQTstCr2mFJjPE ^
 abiFile=0xBTC.abi ^
 contract=0xB6eD7644C69416d67B522e20bC294A9a9B405B31 ^
@@ -30,8 +32,6 @@ gasApiMultiplier=0.1 ^
 gasApiOffset=1.0 ^
 privateKey=YOUR_ETH_PRIVATE_KEY
 
-if %errorlevel% EQU 22 (
-  goto startMiner
-)
+goto startMiner
 :end
 pause

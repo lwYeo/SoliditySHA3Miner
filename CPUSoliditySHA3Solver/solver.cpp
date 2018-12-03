@@ -35,8 +35,7 @@ namespace CPUSolver
 
 	void DisposeInstance(CpuSolver *instance) noexcept
 	{
-		instance->~CpuSolver();
-		free(instance);
+		delete instance;
 	}
 
 	void SetThreadAffinity(CpuSolver *instance, int affinityMask, const char *errorMessage)

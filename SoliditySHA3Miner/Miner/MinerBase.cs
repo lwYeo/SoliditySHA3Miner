@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using System;
 using System.Linq;
@@ -260,11 +259,11 @@ namespace SoliditySHA3Miner.Miner
                             isPause = false;
                         }
                         foreach (var device in Devices)
-                            device.IsPause = IsPause;
+                            device.IsPause = isPause;
                     }
                     else
                     {
-                        m_failedScanCount += 1;
+                        m_failedScanCount++;
 
                         var isMining = Devices.Any(d => d.IsMining);
 
@@ -325,7 +324,7 @@ namespace SoliditySHA3Miner.Miner
         {
             try
             {
-                var targetBytes = Utils.Numerics.FilterByte32Array(target.Value.ToByteArray(littleEndian: false));
+                var targetBytes = Utils.Numerics.FilterByte32Array(target.Value.ToByteArray(isUnsigned: true, isBigEndian:true));
                 var high64Bytes = targetBytes.Take(UINT64_LENGTH).Reverse().ToArray();
 
                 m_Target = target;
@@ -344,16 +343,28 @@ namespace SoliditySHA3Miner.Miner
             }
         }
 
-        private void NetworkInterface_OnStopSolvingCurrentChallenge(NetworkInterface.INetworkInterface sender)
+        private void NetworkInterface_OnStopSolvingCurrentChallenge(NetworkInterface.INetworkInterface sender, bool stopSolving = true)
         {
-            if (m_isCurrentChallengeStopSolving) return;
-            
-            m_isCurrentChallengeStopSolving = true;
+            if (stopSolving)
+            {
+                if (m_isCurrentChallengeStopSolving) return;
 
-            PrintMessage(string.Empty, string.Empty, -1, "Info", "Mining temporary paused until new challenge receive...");
+                m_isCurrentChallengeStopSolving = true;
 
-            foreach (var device in Devices)
-                device.IsPause = true;
+                foreach (var device in Devices)
+                    device.IsPause = true;
+
+                PrintMessage(string.Empty, string.Empty, -1, "Info", "Mining temporary paused until new challenge receive...");
+            }
+            else if (m_isCurrentChallengeStopSolving)
+            {
+                PrintMessage(string.Empty, string.Empty, -1, "Info", "Resume mining...");
+
+                m_isCurrentChallengeStopSolving = false;
+
+                foreach (var device in Devices)
+                    device.IsPause = false;
+            }
         }
 
         private void StartFindingAll(bool isKingMaking)
@@ -396,13 +407,17 @@ namespace SoliditySHA3Miner.Miner
                 {
                     foreach (var solution in solutions)
                     {
-                        if (!NetworkInterface.IsPool)
-                            if (((NetworkInterface.Web3Interface)NetworkInterface).IsChallengedSubmitted(challenge))
+                        if (NetworkInterface.GetType().IsAssignableFrom(typeof(NetworkInterface.SlaveInterface)))
+                            if (((NetworkInterface.SlaveInterface)NetworkInterface).IsPause)
                                 return;
 
-                        if ((!m_isSubmitStale && !challenge.SequenceEqual(NetworkInterface.CurrentChallenge)) || solution == 0)
-                            continue;
-                        else if (m_isSubmitStale && !challenge.SequenceEqual(NetworkInterface.CurrentChallenge))
+                        if (!NetworkInterface.IsPool && NetworkInterface.IsChallengedSubmitted(challenge))
+                            return; // Solo mining should submit only 1 valid nonce per challange
+
+                        if (!m_isSubmitStale && !challenge.SequenceEqual(NetworkInterface.CurrentChallenge))
+                            return;
+
+                        if (m_isSubmitStale && !challenge.SequenceEqual(NetworkInterface.CurrentChallenge))
                             PrintMessage(platformType, platform, deviceID, "Warn", "Found stale solution, verifying...");
                         else
                             PrintMessage(platformType, platform, deviceID, "Info", "Found solution, verifying...");
@@ -440,9 +455,9 @@ namespace SoliditySHA3Miner.Miner
                                          "Verification failed: invalid solution"
                                          + "\nChallenge: " + challengeString
                                          + "\nAddress: " + m_AddressString
-                                         + "\nSolution: " + nonceString
+                                         + "\nNonce: " + nonceString
                                          + "\nDigest: " + digestString
-                                         + "\nTarget: " + m_Target.HexValue);
+                                         + "\nTarget: " + Utils.Numerics.Byte32ArrayToHexString(m_Target.Value.ToByteArray(isUnsigned: true, isBigEndian: true)));
                         }
                         else
                         {
@@ -452,9 +467,9 @@ namespace SoliditySHA3Miner.Miner
                                          "Solution details..."
                                          + "\nChallenge: " + challengeString
                                          + "\nAddress: " + m_AddressString
-                                         + "\nSolution: " + nonceString
+                                         + "\nNonce: " + nonceString
                                          + "\nDigest: " + digestString
-                                         + "\nTarget: " + m_Target.HexValue);
+                                         + "\nTarget: " + Utils.Numerics.Byte32ArrayToHexString(m_Target.Value.ToByteArray(isUnsigned: true, isBigEndian: true)));
 
                             NetworkInterface.SubmitSolution(m_AddressString,
                                                             digest,
