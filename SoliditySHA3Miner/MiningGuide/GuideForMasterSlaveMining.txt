@@ -95,7 +95,7 @@
 0) Prequisites :
 
 0a) .Net Core Runtime
-  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.1.6-windows-x64-installer]
+  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.2.1-windows-x64-installer]
   * Ubuntu => run script 'sudo ./install-deps.sh'
   * Ethos => run script 'sudo ./install-deps-ethOS.sh'
 
