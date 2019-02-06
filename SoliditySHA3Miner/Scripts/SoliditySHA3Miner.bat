@@ -11,7 +11,8 @@ goto end
 
 :dotNetFound
 :startMiner
-dotnet SoliditySHA3Miner.dll
+SoliditySHA3Miner.exe
+
 if %errorlevel% EQU 22 (
   goto startMiner
 )
