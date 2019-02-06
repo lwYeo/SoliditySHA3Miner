@@ -30,4 +30,4 @@ sudo apt-get update
 rm -f packages-microsoft-prod.deb
 
 sudo apt-get install apt-transport-https -y
-sudo apt-get install dotnet-runtime-2.1 -y
+sudo apt-get install dotnet-runtime-2.2 -y

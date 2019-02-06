@@ -40,10 +40,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.1\</OutDir>
+    <OutDir>$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.2\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.1\</OutDir>
+    <OutDir>$(SolutionDir)$(SolutionName)\bin\$(Configuration)\netcoreapp2.2\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

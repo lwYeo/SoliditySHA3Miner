@@ -63,44 +63,50 @@
     <None Update="0xbtc.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="MiningGuide\GuideForMasterSlaveMining.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\0xbtcPoolMaster.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\0xbtcSoloMaster.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\0xbtcPool.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\SoliditySHA3MinerSlave.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\0xbtcSolo.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="ABI\CLM.abi">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Scripts\clmSolo.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="ABI\ERC-20.abi">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="ABI\0xBTC.abi">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="ABI\ERC-918.abi">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="MiningGuide\GuideForEthOS.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="MiningGuide\GuideForHiveOS.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="MiningGuide\GuideForMasterSlaveMining.txt">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="MiningGuide\GuideForPoolMining.txt">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="MiningGuide\GuideForSoloMining.txt">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\0xbtcPoolMaster.bat">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\0xbtcSoloMaster.bat">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\0xbtcPool.bat">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\SoliditySHA3MinerSlave.bat">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\0xbtcSolo.bat">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="ABI\CLM.abi">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\clmSolo.bat">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="ABI\ERC-20.abi">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="ABI\0xBTC.abi">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="ABI\ERC-918.abi">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="0xCATE.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -114,31 +120,25 @@
     <None Update="ATA.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="MiningGuide\GuideForPoolMining.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MiningGuide\GuideForSoloMining.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="kiwi.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Readme.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="SKO.abi">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Scripts\SoliditySHA3Miner.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="SoliditySHA3Miner.conf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(OS)' == 'Windows_NT' ">
-    <Exec Command="copy /Y &quot;$(ProjectDir)$(OutDir)ABI\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)Scripts\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)MiningGuide\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)ABI&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)Scripts&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)MiningGuide&quot;&#xD;&#xA;&#xD;&#xA;if not exist &quot;$(SolutionDir)Build\$(ConfigurationName)\&quot; mkdir &quot;$(SolutionDir)build\$(ConfigurationName)\&quot;&#xD;&#xA;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.abi&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.bat&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.bat&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.conf&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.conf&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.dll&quot;&#xD;&#xA;&#xD;&#xA;copy /Y &quot;$(SolutionDir)LICENSE&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\LICENSE&quot;" />
+    <Exec Command="copy /Y &quot;$(ProjectDir)$(OutDir)ABI\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)Scripts\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)MiningGuide\*.*&quot; &quot;$(ProjectDir)$(OutDir)*.*&quot;&#xD;&#xA;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)ABI&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)Scripts&quot;&#xD;&#xA;RD /S /Q &quot;$(ProjectDir)$(OutDir)MiningGuide&quot;&#xD;&#xA;&#xD;&#xA;if not exist &quot;$(SolutionDir)Build\$(ConfigurationName)\&quot; mkdir &quot;$(SolutionDir)build\$(ConfigurationName)\&quot;&#xD;&#xA;&#xD;&#xA;copy /Y &quot;$(ProjectDir)ABI\*.abi&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.abi&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)MiningGuide\*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)*.txt&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.txt&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)Scripts\*.bat&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.bat&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)*.conf&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.conf&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).deps.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).deps.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)$(TargetName).runtimeconfig.json&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\$(TargetName).runtimeconfig.json&quot;&#xD;&#xA;copy /Y &quot;$(ProjectDir)$(OutDir)*.dll&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\*.dll&quot;&#xD;&#xA;&#xD;&#xA;copy /Y &quot;$(SolutionDir)LICENSE&quot; &quot;$(SolutionDir)build\$(ConfigurationName)\LICENSE&quot;" />
   </Target>
 
 </Project>
