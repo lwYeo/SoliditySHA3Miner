@@ -343,12 +343,15 @@ namespace SoliditySHA3Miner.Miner
                     }
 
                     if (deviceCL.SolutionCount > 0)
-                        lock (this)
+                        lock (((Device.OpenCL)device).Solutions)
                             if (deviceCL.SolutionCount > 0)
                             {
-                                SubmitSolutions(((Device.OpenCL)device).Solutions.ToArray(), currentChallenge,
-                                            device.Type, device.Platform, device.DeviceID,
-                                            deviceCL.SolutionCount, isKingMaking);
+                                var tempSolutionCount = deviceCL.SolutionCount;
+                                var tempSolutions = ((Device.OpenCL)device).Solutions.Where(s => s != 0).ToArray();
+                                
+                                SubmitSolutions(tempSolutions, currentChallenge,
+                                                device.Type, device.Platform, device.DeviceID,
+                                                tempSolutionCount, isKingMaking);
 
                                 deviceCL.SolutionCount = 0;
                             }

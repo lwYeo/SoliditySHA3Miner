@@ -286,7 +286,6 @@ namespace SoliditySHA3Miner
 
                     var isSoloMining = !(string.IsNullOrWhiteSpace(Config.privateKey));
 
-
                     if (isSoloMining) { mainNetworkInterface = web3Interface; }
                     else
                     {
@@ -357,8 +356,8 @@ namespace SoliditySHA3Miner
                         else if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPause)))
                             WaitSeconds++;
                     };
-                m_waitCheckTimer.Start();
                 WaitSeconds = (ulong)(LaunchTime - DateTime.Now).TotalSeconds;
+                Task.Delay(3000).ContinueWith((t) => m_waitCheckTimer.Start());
             }
             catch (Exception ex)
             {

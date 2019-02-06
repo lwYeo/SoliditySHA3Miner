@@ -117,13 +117,13 @@ namespace SoliditySHA3Miner.Utils
             }
         }
 
-        public static void AddressStringToByte20Array(string addressString, ref byte[] address, string type = null)
+        public static void AddressStringToByte20Array(string addressString, ref byte[] address, string type = null, bool isChecksum = true)
         {
             if (!m_addressUtil.IsValidAddressLength(addressString))
                 throw new Exception(string.Format("Invalid {0} provided, ensure address is 42 characters long (including '0x').",
                                                   string.IsNullOrWhiteSpace(type) ? "address" : type));
 
-            else if (!m_addressUtil.IsChecksumAddress(addressString))
+            else if (isChecksum && !m_addressUtil.IsChecksumAddress(addressString))
                 throw new Exception(string.Format("Invalid {0} provided, ensure capitalization is correct.",
                                                   string.IsNullOrWhiteSpace(type) ? "address" : type));
 

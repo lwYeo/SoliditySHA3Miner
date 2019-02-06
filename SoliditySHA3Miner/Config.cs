@@ -414,17 +414,19 @@ namespace SoliditySHA3Miner
                             {
                                 var userDevice = amdDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
 
-                                tempAmdList.Add(new Miner.Device.OpenCL
+                                var newDevice = new Miner.Device.OpenCL
                                 {
                                     AllowDevice = userDevice?.AllowDevice ?? true,
                                     DeviceCL_Struct = devices[i],
                                     Type = "OpenCL",
                                     Platform = "AMD Accelerated Parallel Processing",
                                     DeviceID = i,
-                                    PciBusID = userDevice?.PciBusID ?? 0,
-                                    Name = devices[i].NameToString(),
+                                    PciBusID = userDevice?.PciBusID ?? 0,                                    
                                     Intensity = userDevice?.Intensity ?? 0
-                                });
+                                };
+                                try { newDevice.Name = devices[i].NameToString(); }
+                                catch { }
+                                tempAmdList.Add(newDevice);
                             }
                             amdDevices = tempAmdList.ToArray();
                         }

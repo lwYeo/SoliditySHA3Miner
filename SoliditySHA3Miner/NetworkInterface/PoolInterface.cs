@@ -254,7 +254,7 @@ namespace SoliditySHA3Miner.NetworkInterface
 
                     if (m_lastParameters == null || miningParameters.MiningDifficulty.Value != m_lastParameters.MiningDifficulty.Value)
                     {
-                        Program.Print(string.Format("[INFO] New difficulity detected ({0})...", miningParameters.MiningDifficulty.Value));
+                        Program.Print(string.Format("[INFO] New difficulty detected ({0})...", miningParameters.MiningDifficulty.Value));
                         OnNewDifficulty?.Invoke(this, miningParameters.MiningDifficulty);
                         Difficulty = miningParameters.MiningDifficulty;
 
@@ -274,7 +274,7 @@ namespace SoliditySHA3Miner.NetworkInterface
                             Difficulty = new HexBigInteger(calculatedDifficultyBigInteger);
                             var expValue = BigInteger.Log10(calculatedDifficultyBigInteger);
                             var calculatedTarget = BigInteger.Parse(
-                                (BigDecimal.Parse(MaxTarget.Value.ToString()) * BigDecimal.Pow(10, expValue) / (calculatedDifficulty * BigDecimal.Pow(10, expValue))).
+                                (BigDecimal.Parse(MaxTarget.Value.ToString()) * BigDecimal.Pow(10, expValue) / (BigDecimal.Parse(calculatedDifficultyBigInteger.ToString()) * BigDecimal.Pow(10, expValue))).
                                 ToString().Split(",.".ToCharArray())[0]);
                             var calculatedTargetHex = new HexBigInteger(calculatedTarget);
 

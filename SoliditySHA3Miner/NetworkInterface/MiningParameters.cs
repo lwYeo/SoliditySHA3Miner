@@ -150,7 +150,8 @@ namespace SoliditySHA3Miner.NetworkInterface
                 {
                     EthAddress = Utils.Json.InvokeJObjectRPC(url, getEthAddress).SelectToken("$.result").Value<string>();
                     var ethAddressByte20 = (byte[])Array.CreateInstance(typeof(byte), Miner.MinerBase.ADDRESS_LENGTH);
-                    Utils.Numerics.AddressStringToByte20Array(EthAddress, ref ethAddressByte20);
+                    // some pools provide invalid checksum address
+                    Utils.Numerics.AddressStringToByte20Array(EthAddress, ref ethAddressByte20, isChecksum:false);
                     EthAddressByte20 = ethAddressByte20;
                     break;
                 }

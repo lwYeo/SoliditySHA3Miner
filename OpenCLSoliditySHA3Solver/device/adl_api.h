@@ -70,6 +70,7 @@ private:
 
 	static int											numberOfAdapters;
 	static LPAdapterInfo								lpAdapterInfo;
+	static bool											apiFailedToLoad;
 
 	static void* __stdcall								ADL_Main_Memory_Alloc(int iSize);	// Memory allocation function
 
