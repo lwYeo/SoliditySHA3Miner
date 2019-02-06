@@ -40,7 +40,7 @@ command -v dotnet >/dev/null 2>&1 || {
 dotnetVersion=$(dotnet --info | grep "Version")
 dotnetVersion=${dotnetVersion#*: }
 
-if version_gt "2.1.0" $dotnetVersion; then
+if version_gt "2.2.0" $dotnetVersion; then
   echo "Found older version of dotnet, running install_deps..."
   install_deps
 fi
@@ -53,7 +53,7 @@ if [[ -z $dotnetRuntimeVersion ]]; then
   echo "dotnet runtime not found, running install_deps..."
   install_deps
 
-elif version_gt "2.1.0" $dotnetRuntimeVersion; then
+elif version_gt "2.2.0" $dotnetRuntimeVersion; then
   echo "Found older version of dotnet runtime, running install_deps..."
   install_deps
 fi

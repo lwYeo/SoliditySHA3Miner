@@ -20,6 +20,8 @@
             "args": [
                 "build",
                 "${workspaceFolder}/SoliditySHA3Miner.csproj",
+                "-f",
+                "netcoreapp2.2",
                 "-c",
                 "Release",
                 "-o",
