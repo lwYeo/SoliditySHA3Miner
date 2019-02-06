@@ -2,8 +2,8 @@
 
 0) Prequisites :
 
-0a) For NVIDIA cards, ensure CUDA 9.2 (NVIDIA driver 396) is installed
-  * Selfupgrade HiveOS to latest version (0.5-76 onwards)
+0a) For NVIDIA cards, ensure CUDA 10.0 (NVIDIA driver 410) is installed
+  * Selfupgrade HiveOS to latest version
 
 1) Add new "Custom" miner to "Flight Sheet" (Coin: ETH, select your wallet but DO NOT select a pool yet)
 

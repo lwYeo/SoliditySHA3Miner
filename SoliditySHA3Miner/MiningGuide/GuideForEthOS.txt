@@ -5,7 +5,7 @@
 0a) .Net Core Runtime
   * Ethos => run script 'sudo ./install-deps-ethOS.sh'
 
-0b) Ensure CUDA 9.2 (Nvidia driver 396) is installed
+0b) Ensure CUDA 10.0 (Nvidia driver 410) is installed (ethOS 1.3.3)
   * Run the following commands (root/sudo required)
       sudo install-nv-beta
   * This process will take about 5-10 minutes before rebooting itself.
