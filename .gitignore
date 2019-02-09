@@ -7,3 +7,4 @@ build/
 *.asm
 *.vcxproj.user
 *.csproj.user
+SoliditySHA3Miner/Properties/PublishProfiles/Publish.pubxml.user

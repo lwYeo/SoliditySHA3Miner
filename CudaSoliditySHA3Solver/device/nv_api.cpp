@@ -51,6 +51,8 @@ NV_API::DLL_ClientPowerPoliciesGetStatus_t NV_API::DLL_ClientPowerPoliciesGetSta
 NV_API::DLL_ClientThermalPoliciesGetLimit_t NV_API::DLL_ClientThermalPoliciesGetLimit{ NULL };
 NV_API::GPU_GetCoolersSettings_t NV_API::GPU_GetCoolersSettings{ NULL };
 
+NV_API::GPU_GetMemoryInfo_t NV_API::GPU_GetMemoryInfo{ NULL };
+
 NV_API::GPU_GetTachReading_t NV_API::GPU_GetTachReading{ NULL };
 NV_API::GPU_GetThermalSettings_t NV_API::GPU_GetThermalSettings{ NULL };
 NV_API::GPU_GetCurrentPstate_t NV_API::GPU_GetCurrentPstate{ NULL };
@@ -84,6 +86,8 @@ void NV_API::initialize()
 	DLL_ClientPowerPoliciesGetStatus = (DLL_ClientPowerPoliciesGetStatus_t)QueryInterface(NvAPI_FUNCTIONS::ClientPowerPoliciesGetStatus);
 	DLL_ClientThermalPoliciesGetLimit = (DLL_ClientThermalPoliciesGetLimit_t)QueryInterface(NvAPI_FUNCTIONS::ClientThermalPoliciesGetLimit);
 	GPU_GetCoolersSettings = (GPU_GetCoolersSettings_t)QueryInterface(NvAPI_FUNCTIONS::GetCoolersSettings);
+
+	GPU_GetMemoryInfo = (GPU_GetMemoryInfo_t)QueryInterface(NvAPI_FUNCTIONS::GetMemoryInfo);
 
 	GPU_GetTachReading = (GPU_GetTachReading_t)QueryInterface(NvAPI_FUNCTIONS::GetTachReading);
 	GPU_GetThermalSettings = (GPU_GetThermalSettings_t)QueryInterface(NvAPI_FUNCTIONS::GetThermalSettings);
@@ -136,6 +140,22 @@ NvAPI_Status NV_API::getErrorMessage(NvAPI_Status errStatus, std::string *messag
 	if (status != NVAPI_OK) return status;
 
 	*message = std::string{ errorMessage };
+
+	return NVAPI_OK;
+}
+
+NvAPI_Status NV_API::getDeviceMemory(int *memorySize)
+{
+	*memorySize = 0;
+	if (deviceHandle == NULL) return NVAPI_NVIDIA_DEVICE_NOT_FOUND;
+
+	NV_DISPLAY_DRIVER_MEMORY_INFO_V3 memoryInfo{ 0 };
+	memoryInfo.version = NV_DISPLAY_DRIVER_MEMORY_INFO_VER_3;
+
+	auto status = GPU_GetMemoryInfo(deviceHandle, &memoryInfo);
+	if (status != NVAPI_OK) return status;
+
+	*memorySize = memoryInfo.dedicatedVideoMemory;
 
 	return NVAPI_OK;
 }

@@ -249,6 +249,19 @@ private:
 	} NV_GPU_COOLER_SETTINGS_V2;
 #	define NV_GPU_COOLER_SETTINGS_VER_2				MAKE_NVAPI_VERSION(NV_GPU_COOLER_SETTINGS_V2, 2)
 
+	typedef struct _NV_DISPLAY_DRIVER_MEMORY_INFO_V3
+	{
+		NvU32										version;
+		NvU32										dedicatedVideoMemory;
+		NvU32										availableDedicatedVideoMemory;
+		NvU32										systemVideoMemory;
+		NvU32										sharedSystemMemory;
+		NvU32										curAvailableDedicatedVideoMemory;
+		NvU32										dedicatedVideoMemoryEvictionsSize;
+		NvU32										dedicatedVideoMemoryEvictionCount;
+	} NV_DISPLAY_DRIVER_MEMORY_INFO_V3;
+#	define NV_DISPLAY_DRIVER_MEMORY_INFO_VER_3		MAKE_NVAPI_VERSION(NV_DISPLAY_DRIVER_MEMORY_INFO_V3, 2)
+
 	typedef void *(*QueryInterface_t)							(NvAPI_FUNCTIONS offset);
 	typedef NvAPI_Status(*GetErrorMessage_t)					(NvAPI_Status status, NvAPI_ShortString message);
 
@@ -260,7 +273,9 @@ private:
 	typedef NvAPI_Status(*GPU_GetAllClockFrequencies_t)			(NvPhysicalGpuHandle handle, NV_GPU_CLOCK_FREQUENCIES_V2 *pClkFreqs);
 	typedef NvAPI_Status(*DLL_ClientPowerPoliciesGetStatus_t)	(NvPhysicalGpuHandle handle, NVAPI_GPU_POWER_STATUS *powerStatus);
 	typedef NvAPI_Status(*DLL_ClientThermalPoliciesGetLimit_t)	(NvPhysicalGpuHandle handle, NVAPI_GPU_THERMAL_LIMIT_V2 *thermalLimit);
-	typedef NvAPI_Status(*GPU_GetCoolersSettings_t)				(NvPhysicalGpuHandle handle, NvU32 coolerIndex, NV_GPU_COOLER_SETTINGS_V2* coolerSettings);
+	typedef NvAPI_Status(*GPU_GetCoolersSettings_t)				(NvPhysicalGpuHandle handle, NvU32 coolerIndex, NV_GPU_COOLER_SETTINGS_V2 *coolerSettings);
+
+	typedef NvAPI_Status(*GPU_GetMemoryInfo_t)					(NvPhysicalGpuHandle handle, NV_DISPLAY_DRIVER_MEMORY_INFO_V3 *memoryInfo);
 
 	typedef NvAPI_Status(*GPU_GetTachReading_t)					(NvPhysicalGpuHandle handle, NvU32 *value);
 	typedef NvAPI_Status(*GPU_GetThermalSettings_t)				(NvPhysicalGpuHandle handle, NvU32 sensorIndex, NV_GPU_THERMAL_SETTINGS_V2 *thermalSettings);
@@ -281,6 +296,8 @@ private:
 	static DLL_ClientPowerPoliciesGetStatus_t					DLL_ClientPowerPoliciesGetStatus;
 	static DLL_ClientThermalPoliciesGetLimit_t					DLL_ClientThermalPoliciesGetLimit;
 	static GPU_GetCoolersSettings_t								GPU_GetCoolersSettings;
+
+	static GPU_GetMemoryInfo_t									GPU_GetMemoryInfo;
 
 	static GPU_GetTachReading_t									GPU_GetTachReading;
 	static GPU_GetThermalSettings_t								GPU_GetThermalSettings;
@@ -307,6 +324,8 @@ public:
 	NV_API(const int deviceID, NvU32 pciBusID);
 
 	NvAPI_Status getErrorMessage(NvAPI_Status status, std::string *message);
+
+	NvAPI_Status getDeviceMemory(int *memorySize);
 
 	NvAPI_Status getSettingMaxCoreClock(int *maxCoreClock);
 	NvAPI_Status getSettingMaxMemoryClock(int *maxMemoryClock);

@@ -40,24 +40,33 @@ command -v dotnet >/dev/null 2>&1 || {
 dotnetVersion=$(dotnet --info | grep "Version")
 dotnetVersion=${dotnetVersion#*: }
 
-if version_gt "2.1.0" $dotnetVersion; then
+if version_gt "2.2.0" $dotnetVersion; then
   echo "Found older version of dotnet, running install_deps..."
   install_deps
 fi
 
+depsFound=false
 dotnetRuntimeVersion=$(dotnet --list-runtimes)
-dotnetRuntimeVersion=${dotnetRuntimeVersion#*App }
-dotnetRuntimeVersion=${dotnetRuntimeVersion% [*}
 
 if [[ -z $dotnetRuntimeVersion ]]; then
-  echo "dotnet runtime not found, running install_deps..."
-  install_deps
+ echo "dotnet runtime not found, running install_deps..."
+ install_deps
 
-elif version_gt "2.1.0" $dotnetRuntimeVersion; then
+else
+ while read line || [ -n "$line" ]; do
+  line=${line#*App }
+  line=${line% [*}
+
+  if version_gt $line "2.2.0"; then
+   depsFound=true
+  fi
+ done < <(printf %s "$dotnetRuntimeVersion")
+
+ if ! $depsFound; then
   echo "Found older version of dotnet runtime, running install_deps..."
   install_deps
+ fi
 fi
 
 #echo "dotnet ./SoliditySHA3Miner.dll $CUSTOM_USER_CONFIG 2>&1 | tee $CUSTOM_LOG_BASENAME.log"
 dotnet ./SoliditySHA3Miner.dll $(< ${CUSTOM_CONFIG_FILENAME}.param) 2>&1 | tee $CUSTOM_LOG_BASENAME.log
-

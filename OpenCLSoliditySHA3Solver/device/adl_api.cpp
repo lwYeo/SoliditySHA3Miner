@@ -65,6 +65,7 @@ ADL_API::ADL2_OVERDRIVEN_TEMPERATURE_GET		ADL_API::ADL2_OverdriveN_Temperature_G
 
 int ADL_API::numberOfAdapters{ -1 };
 LPAdapterInfo ADL_API::lpAdapterInfo{ NULL };
+bool ADL_API::apiFailedToLoad{ false };
 bool ADL_API::isInitialized{ false };
 
 void* __stdcall ADL_API::ADL_Main_Memory_Alloc(int iSize)
@@ -75,44 +76,49 @@ void* __stdcall ADL_API::ADL_Main_Memory_Alloc(int iSize)
 
 bool ADL_API::FoundAdlApi()
 {
+	if (apiFailedToLoad) return false;
 	return (LoadLibrary(TEXT(ADL64_API)) != NULL);
 }
 
 void ADL_API::initialize()
 {
-	hDLL = LoadLibrary(TEXT(ADL64_API));
-	if (hDLL == NULL) throw std::runtime_error("Failed to initialize ADL64_API.");
-
-	ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE)GetProcAddress(hDLL, "ADL_Main_Control_Create");
-	ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY)GetProcAddress(hDLL, "ADL_Main_Control_Destroy");
-
-	if (NULL == ADL_Main_Control_Create || NULL == ADL_Main_Control_Destroy)
-		throw std::runtime_error("Failed to get ADL function pointers.");
-
-	ADL_Adapter_NumberOfAdapters_Get = (ADL_ADAPTER_NUMBEROFADAPTERS_GET)GetProcAddress(hDLL, "ADL_Adapter_NumberOfAdapters_Get");
-	ADL_Adapter_AdapterInfo_Get = (ADL_ADAPTER_ADAPTERINFO_GET)GetProcAddress(hDLL, "ADL_Adapter_AdapterInfo_Get");
-	ADL2_OverdriveN_Capabilities_Get = (ADL2_OVERDRIVEN_CAPABILITIES_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_Capabilities_Get");
-	ADL2_OverdriveN_SystemClocks_Get = (ADL2_OVERDRIVEN_SYSTEMCLOCKS_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_SystemClocks_Get");
-	ADL2_OverdriveN_MemoryClocks_Get = (ADL2_OVERDRIVEN_MEMORYCLOCKS_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_MemoryClocks_Get");
-	ADL2_OverdriveN_PerformanceStatus_Get = (ADL2_OVERDRIVEN_PERFORMANCESTATUS_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_PerformanceStatus_Get");
-	ADL2_OverdriveN_FanControl_Get = (ADL2_OVERDRIVEN_FANCONTROL_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_FanControl_Get");
-	ADL2_OverdriveN_PowerLimit_Get = (ADL2_OVERDRIVEN_POWERLIMIT_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_PowerLimit_Get");
-	ADL2_OverdriveN_Temperature_Get = (ADL2_OVERDRIVEN_TEMPERATURE_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_Temperature_Get");
-	ADL2_Overdrive_Caps = (ADL2_OVERDRIVE_CAPS)GetProcAddress(hDLL, "ADL2_Overdrive_Caps");
-
-	if (ADL_Main_Control_Create(ADL_Main_Memory_Alloc, 1) != ADL_OK)
-		throw std::runtime_error("Failed to initialize nested ADL2 context.");
-
-	if (ADL_Adapter_NumberOfAdapters_Get(&numberOfAdapters) != ADL_OK)
-		throw std::runtime_error("Cannot get the number of adapters!\n");
-
-	if (0 < numberOfAdapters)
+	try
 	{
-		lpAdapterInfo = (LPAdapterInfo)malloc(sizeof(AdapterInfo) * numberOfAdapters);
-		std::memset(lpAdapterInfo, 0, sizeof(AdapterInfo) * numberOfAdapters);
+		hDLL = LoadLibrary(TEXT(ADL64_API));
+		if (hDLL == NULL) throw std::runtime_error("Failed to initialize ADL64_API.");
 
-		ADL_Adapter_AdapterInfo_Get(lpAdapterInfo, sizeof(AdapterInfo) * numberOfAdapters);
+		ADL_Main_Control_Create = (ADL_MAIN_CONTROL_CREATE)GetProcAddress(hDLL, "ADL_Main_Control_Create");
+		ADL_Main_Control_Destroy = (ADL_MAIN_CONTROL_DESTROY)GetProcAddress(hDLL, "ADL_Main_Control_Destroy");
+
+		if (NULL == ADL_Main_Control_Create || NULL == ADL_Main_Control_Destroy)
+			throw std::runtime_error("Failed to get ADL function pointers.");
+
+		ADL_Adapter_NumberOfAdapters_Get = (ADL_ADAPTER_NUMBEROFADAPTERS_GET)GetProcAddress(hDLL, "ADL_Adapter_NumberOfAdapters_Get");
+		ADL_Adapter_AdapterInfo_Get = (ADL_ADAPTER_ADAPTERINFO_GET)GetProcAddress(hDLL, "ADL_Adapter_AdapterInfo_Get");
+		ADL2_OverdriveN_Capabilities_Get = (ADL2_OVERDRIVEN_CAPABILITIES_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_Capabilities_Get");
+		ADL2_OverdriveN_SystemClocks_Get = (ADL2_OVERDRIVEN_SYSTEMCLOCKS_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_SystemClocks_Get");
+		ADL2_OverdriveN_MemoryClocks_Get = (ADL2_OVERDRIVEN_MEMORYCLOCKS_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_MemoryClocks_Get");
+		ADL2_OverdriveN_PerformanceStatus_Get = (ADL2_OVERDRIVEN_PERFORMANCESTATUS_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_PerformanceStatus_Get");
+		ADL2_OverdriveN_FanControl_Get = (ADL2_OVERDRIVEN_FANCONTROL_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_FanControl_Get");
+		ADL2_OverdriveN_PowerLimit_Get = (ADL2_OVERDRIVEN_POWERLIMIT_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_PowerLimit_Get");
+		ADL2_OverdriveN_Temperature_Get = (ADL2_OVERDRIVEN_TEMPERATURE_GET)GetProcAddress(hDLL, "ADL2_OverdriveN_Temperature_Get");
+		ADL2_Overdrive_Caps = (ADL2_OVERDRIVE_CAPS)GetProcAddress(hDLL, "ADL2_Overdrive_Caps");
+
+		if (ADL_Main_Control_Create(ADL_Main_Memory_Alloc, 1) != ADL_OK)
+			throw std::runtime_error("Failed to initialize nested ADL2 context.");
+
+		if (ADL_Adapter_NumberOfAdapters_Get(&numberOfAdapters) != ADL_OK)
+			throw std::runtime_error("Cannot get the number of adapters!\n");
+
+		if (numberOfAdapters > 0)
+		{
+			lpAdapterInfo = (LPAdapterInfo)malloc(sizeof(AdapterInfo) * numberOfAdapters);
+			std::memset(lpAdapterInfo, 0, sizeof(AdapterInfo) * numberOfAdapters);
+
+			ADL_Adapter_AdapterInfo_Get(lpAdapterInfo, sizeof(AdapterInfo) * numberOfAdapters);
+		}
 	}
+	catch (...) { apiFailedToLoad = true; }
 }
 
 void ADL_API::unload()
@@ -124,12 +130,45 @@ void ADL_API::unload()
 
 void ADL_API::GetAdapterName(int adapterBusID, char *adapterName)
 {
-	for (int i = 0; i < numberOfAdapters; ++i)
-		if (lpAdapterInfo[i].iBusNumber == adapterBusID)
+	if (lpAdapterInfo == NULL) return;
+	try
+	{
+		for (int i = 0; i < numberOfAdapters; ++i)
 		{
-			std::memcpy((void *)adapterName, lpAdapterInfo[i].strAdapterName, sizeof(lpAdapterInfo[i].strAdapterName));
-			return;
+			if (lpAdapterInfo[i].iBusNumber == adapterBusID)
+			{
+				std::memcpy((void *)adapterName, lpAdapterInfo[i].strAdapterName, sizeof(lpAdapterInfo[i].strAdapterName));
+				return;
+			}
 		}
+	}
+	catch (...)
+	{
+		if (apiFailedToLoad) return;
+		try
+		{
+			if (ADL_Adapter_NumberOfAdapters_Get(&numberOfAdapters) != ADL_OK)
+				throw std::runtime_error("Cannot get the number of adapters!\n");
+
+			if (numberOfAdapters > 0)
+			{
+				lpAdapterInfo = (LPAdapterInfo)malloc(sizeof(AdapterInfo) * numberOfAdapters);
+				std::memset(lpAdapterInfo, 0, sizeof(AdapterInfo) * numberOfAdapters);
+
+				ADL_Adapter_AdapterInfo_Get(lpAdapterInfo, sizeof(AdapterInfo) * numberOfAdapters);
+			}
+
+			for (int i = 0; i < numberOfAdapters; ++i)
+			{
+				if (lpAdapterInfo[i].iBusNumber == adapterBusID)
+				{
+					std::memcpy((void *)adapterName, lpAdapterInfo[i].strAdapterName, sizeof(lpAdapterInfo[i].strAdapterName));
+					return;
+				}
+			}
+		}
+		catch (...) {}
+	}
 }
 
 // --------------------------------------------------------------------
@@ -167,10 +206,20 @@ void ADL_API::AssignPciBusID(uint32_t adapterBusID)
 	m_supported = 0;
 	this->m_adapterBusID = adapterBusID;
 
-	for (int i = 0; i < numberOfAdapters; ++i)
-		if (lpAdapterInfo[i].iBusNumber == (int)adapterBusID) m_adapterInfo = lpAdapterInfo[i];
-
-	ADL2_Overdrive_Caps(m_context, m_adapterInfo.iAdapterIndex, &m_supported, &m_enabled, &m_version);
+	if (lpAdapterInfo != NULL)
+		for (int i = 0; i < numberOfAdapters; ++i)
+		{
+			try
+			{
+				if (lpAdapterInfo[i].iBusNumber == (int)adapterBusID) m_adapterInfo = lpAdapterInfo[i];
+			}
+			catch (...) {}
+		}
+	try
+	{
+		ADL2_Overdrive_Caps(m_context, m_adapterInfo.iAdapterIndex, &m_supported, &m_enabled, &m_version);
+	}
+	catch (...) {}
 }
 
 void ADL_API::GetAdapterName(std::string *adapterName)

@@ -175,9 +175,10 @@ namespace SoliditySHA3Miner
 
         private static string GetHeader()
         {
+            var cudaVersion = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "10.0" : "9.2";
             return "\n" +
-                "*** " + GetApplicationName() + " " + GetApplicationVersion() + " by " + GetCompanyName() + " (" + GetApplicationYear() + ") ***\n" +
-                "*** Built with .NET Core 2.1.5 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
+                $"*** {GetApplicationName()} {GetApplicationVersion()} by {GetCompanyName()} ({GetApplicationYear()}) ***\n" +
+                $"*** Built with .NET Core 2.2 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK {cudaVersion} 64-bit, and AMD APP SDK v3.0.130.135 (OpenCL)\n" +
                 "\n" +
                 "Donation addresses:\n" +
                 "ETH (or any ERC 20/918 tokens)	: 0x9172ff7884CEFED19327aDaCe9C470eF1796105c\n" +
@@ -188,7 +189,7 @@ namespace SoliditySHA3Miner
         private static void Main(string[] args)
         {
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            Console.Title = string.Format("{0} {1} by {2} ({3})", GetApplicationName(), GetApplicationVersion(), GetCompanyName(), GetApplicationYear());
+            Console.Title = $"{GetApplicationName()} {GetApplicationVersion()} by {GetCompanyName()} ({GetApplicationYear()})";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -286,7 +287,6 @@ namespace SoliditySHA3Miner
 
                     var isSoloMining = !(string.IsNullOrWhiteSpace(Config.privateKey));
 
-
                     if (isSoloMining) { mainNetworkInterface = web3Interface; }
                     else
                     {
@@ -357,8 +357,8 @@ namespace SoliditySHA3Miner
                         else if (m_allMiners.All(m => m != null && (!m.IsMining || m.IsPause)))
                             WaitSeconds++;
                     };
-                m_waitCheckTimer.Start();
                 WaitSeconds = (ulong)(LaunchTime - DateTime.Now).TotalSeconds;
+                Task.Delay(3000).ContinueWith((t) => m_waitCheckTimer.Start());
             }
             catch (Exception ex)
             {

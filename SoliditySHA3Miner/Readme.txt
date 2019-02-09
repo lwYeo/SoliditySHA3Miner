@@ -1,10 +1,10 @@
 ﻿SoliditySHA3Miner
 All-in-one mixed multi-GPU (nVidia, AMD, Intel) & CPU miner solves proof of work to mine supported EIP918 tokens in a single instance (with API).
 
-Current latest public release version: 2.2.0
+Current latest public release version: 2.2.2
 Runs on Windows x64, HiveOS, EthOS, and Ubuntu.
 
-Built with .NET Core 2.1.5 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 9.2 64-bits, and AMD APP SDK v3.0.130.135 (OpenCL)
+Built with .NET Core 2.2 SDK, VC++ 2017, gcc 4.8.5, nVidia CUDA SDK 10.0 64-bit, and AMD APP SDK v3.0.130.135 (OpenCL)
 .NET Core 2.1 can be downloaded from https://www.microsoft.com/net/download
 VC++ 2017 can be downloaded from https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads
 CUDA 9.2 requires a minimum nVidia driver version of 396 [https://www.nvidia.com/drivers/beta]

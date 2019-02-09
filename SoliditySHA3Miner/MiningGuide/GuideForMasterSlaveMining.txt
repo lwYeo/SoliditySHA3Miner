@@ -3,11 +3,11 @@
 0) Prequisites :
 
 0a) .Net Core Runtime
-  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.1.6-windows-x64-installer]
+  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.2.2-windows-x64-installer]
   * Ubuntu => run script 'sudo ./install-deps.sh'
   * Ethos => run script 'sudo ./install-deps-ethOS.sh'
 
-0b) Nvidia driver (396, CUDA 9.2 onwards), and/or AMD driver.
+0b) Nvidia driver (410, CUDA 10.0 onwards), and/or AMD driver.
 
 1) Clone and rename 0xbtcSolo/PoolMaster.bat/sh file and open the editor for the cloned file.
 
@@ -95,11 +95,11 @@
 0) Prequisites :
 
 0a) .Net Core Runtime
-  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.1.6-windows-x64-installer]
+  * Windows => download and run [https://www.microsoft.com/net/download/thank-you/dotnet-runtime-2.2.2-windows-x64-installer]
   * Ubuntu => run script 'sudo ./install-deps.sh'
   * Ethos => run script 'sudo ./install-deps-ethOS.sh'
 
-0b) Nvidia driver (396, CUDA 9.2 onwards), and/or AMD driver.
+0b) Nvidia driver, and/or AMD driver.
 
 1 ) Update the following arguments that need to be changed in SoliditySHA3MinerSlave.bat/sh:
 

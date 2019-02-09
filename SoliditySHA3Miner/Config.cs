@@ -351,9 +351,21 @@ namespace SoliditySHA3Miner
                 var maxPlatformCount = 5u;
                 var maxDeviceCount = 64u;
 
-                var sha3Kernel = new StringBuilder(Properties.Resources.ResourceManager.GetString("sha3Kernel"));
-                var sha3KingKernel = new StringBuilder(Properties.Resources.ResourceManager.GetString("sha3KingKernel"));
-                OpenCL.Solver.PreInitialize(sha3Kernel, sha3KingKernel, (ulong)sha3Kernel.Length, (ulong)sha3KingKernel.Length);
+                using (var sha3KernelStream = typeof(Program).Assembly.GetManifestResourceStream("SoliditySHA3Miner.Miner.Kernels.OpenCL.sha3Kernel.cl"))
+                {
+                    var sha3KernelBin = Array.CreateInstance(typeof(byte), sha3KernelStream.Length) as byte[];
+                    sha3KernelStream.Read(sha3KernelBin, 0, sha3KernelBin.Length);
+
+                    using (var sha3KingKernelStream = typeof(Program).Assembly.GetManifestResourceStream("SoliditySHA3Miner.Miner.Kernels.OpenCL.sha3KingKernel.cl"))
+                    {
+                        var sha3KingKernelBin = Array.CreateInstance(typeof(byte), sha3KingKernelStream.Length) as byte[];
+                        sha3KingKernelStream.Read(sha3KingKernelBin, 0, sha3KingKernelBin.Length);
+
+                        var sha3Kernel = new StringBuilder(Encoding.ASCII.GetString(sha3KernelBin));
+                        var sha3KingKernel = new StringBuilder(Encoding.ASCII.GetString(sha3KingKernelBin));
+                        OpenCL.Solver.PreInitialize(sha3Kernel, sha3KingKernel, (ulong)sha3KernelBin.Length, (ulong)sha3KingKernelBin.Length);
+                    }
+                }
 
                 var platformCount = 0u;
                 var platformPointer = IntPtr.Zero;
@@ -398,7 +410,7 @@ namespace SoliditySHA3Miner
                     else
                     {
                         if (deviceCount < 1)
-                            intelDevices = (Miner.Device.OpenCL[])Array.CreateInstance(typeof(Miner.Device.OpenCL), 0);
+                            amdDevices = (Miner.Device.OpenCL[])Array.CreateInstance(typeof(Miner.Device.OpenCL), 0);
                         else
                         {
                             var devices = (Structs.DeviceCL[])Array.CreateInstance(typeof(Structs.DeviceCL), deviceCount);
@@ -414,17 +426,19 @@ namespace SoliditySHA3Miner
                             {
                                 var userDevice = amdDevices?.FirstOrDefault(d => d.DeviceID.Equals(i));
 
-                                tempAmdList.Add(new Miner.Device.OpenCL
+                                var newDevice = new Miner.Device.OpenCL
                                 {
                                     AllowDevice = userDevice?.AllowDevice ?? true,
                                     DeviceCL_Struct = devices[i],
                                     Type = "OpenCL",
                                     Platform = "AMD Accelerated Parallel Processing",
                                     DeviceID = i,
-                                    PciBusID = userDevice?.PciBusID ?? 0,
-                                    Name = devices[i].NameToString(),
+                                    PciBusID = userDevice?.PciBusID ?? 0,                                    
                                     Intensity = userDevice?.Intensity ?? 0
-                                });
+                                };
+                                try { newDevice.Name = devices[i].NameToString(); }
+                                catch { }
+                                tempAmdList.Add(newDevice);
                             }
                             amdDevices = tempAmdList.ToArray();
                         }

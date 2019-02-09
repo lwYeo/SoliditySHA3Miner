@@ -13,7 +13,7 @@ goto end
 :startMiner
 DEL /F /Q SoliditySHA3Miner.conf
 
-dotnet SoliditySHA3Miner.dll ^
+SoliditySHA3Miner.exe ^
 masterMode=false ^
 allowCPU=false ^
 allowIntel=true ^

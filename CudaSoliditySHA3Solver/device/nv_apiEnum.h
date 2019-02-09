@@ -127,6 +127,8 @@ typedef enum _NvAPI_FUNCTIONS
 	ClientThermalPoliciesGetLimit =						0xE9C425A1,
 	GetCoolersSettings =								0xDA141340,
 
+	GetMemoryInfo =										0x07F9B368,
+
 	GetTachReading =									0x5F608315,
 	GetThermalSettings =								0xE3640A56,
 	GetPstates20 =										0x6FF81213,

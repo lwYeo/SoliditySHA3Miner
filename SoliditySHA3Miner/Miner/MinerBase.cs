@@ -289,7 +289,8 @@ namespace SoliditySHA3Miner.Miner
                         m_ChallengeBytes[i] = challenge[i];
 
                     m_AddressString = address;
-                    Utils.Numerics.AddressStringToByte20Array(address, ref m_AddressBytes);
+                    // some pools provide invalid checksum address
+                    Utils.Numerics.AddressStringToByte20Array(address, ref m_AddressBytes, isChecksum:false);
                     
                     m_SolutionTemplateBytes = Work.SolutionTemplate;
                     m_MidStateBytes = Helper.CPU.GetMidState(m_ChallengeBytes, m_AddressBytes, m_SolutionTemplateBytes);
