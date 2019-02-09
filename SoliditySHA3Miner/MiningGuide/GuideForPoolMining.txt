@@ -7,7 +7,7 @@
   * Ubuntu => run script 'sudo ./install-deps.sh'
   * Ethos => run script 'sudo ./install-deps-ethOS.sh'
 
-0b) Nvidia driver (410, CUDA 10.0 onwards), and/or AMD driver.
+0b) Nvidia driver, and/or AMD driver.
 
 1) Clone 0xbtcPool.bat/0xbtcPool.sh file and open the editor for the cloned file.
   * For ethOS, refer to 0xbtcPool-ethOS.sh/0xbtcPool-ethOS-screen.sh

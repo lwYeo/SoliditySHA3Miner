@@ -99,7 +99,7 @@
   * Ubuntu => run script 'sudo ./install-deps.sh'
   * Ethos => run script 'sudo ./install-deps-ethOS.sh'
 
-0b) Nvidia driver (396, CUDA 9.2 onwards), and/or AMD driver.
+0b) Nvidia driver, and/or AMD driver.
 
 1 ) Update the following arguments that need to be changed in SoliditySHA3MinerSlave.bat/sh:
 
