@@ -14,7 +14,7 @@ set(OUTPUT_REL bin/Release/)
 #############################################
 
 project(${PROJECT_NAME})
-find_package(CUDA 10.0 REQUIRED)
+find_package(CUDA 9.2 REQUIRED)
 
 # Define Release by default.
 if(NOT CMAKE_BUILD_TYPE)
@@ -54,7 +54,6 @@ set(CUDA_NVCC_FLAGS
   -gencode arch=compute_61,code=sm_61
   -gencode arch=compute_62,code=sm_62
   -gencode arch=compute_70,code=sm_70
-  -gencode arch=compute_75,code=sm_75
 )
 
 if(NOT MSVC)

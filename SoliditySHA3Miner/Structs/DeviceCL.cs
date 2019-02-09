@@ -39,7 +39,7 @@ namespace SoliditySHA3Miner.Structs
         public uint MaxSolutionCount;
         public uint SolutionCount;
         public IntPtr Solutions;
-        public Instance InstanceCL;
+        public IntPtr InstanceCL;
 
         public unsafe string NameToString()
         {
