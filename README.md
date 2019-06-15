@@ -135,11 +135,11 @@ Options:
 
 ### NOTES
 
-For HiveOS, refer to [GuideForHiveOS.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForHiveOS.txt) on how to get started.
+For HiveOS, refer to [GuideForHiveOS.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/MiningGuide/GuideForHiveOS.txt) on how to get started.
 
-For EthOS, refer to [GuideForEthOS.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForEthOS.txt) on how to get started.
+For EthOS, refer to [GuideForEthOS.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/MiningGuide/GuideForEthOS.txt) on how to get started.
 
-Do refer to [GuideForPoolMining.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForPoolMining.txt) and [GuideForSoloMining.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/GuideForSoloMining.txt) on how to get started.
+Do refer to [GuideForPoolMining.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/MiningGuide/GuideForPoolMining.txt) and [GuideForSoloMining.txt](https://github.com/lwYeo/SoliditySHA3Miner/blob/master/SoliditySHA3Miner/MiningGuide/GuideForSoloMining.txt) on how to get started.
 
 Configuration is based on CLI (similar to ccminer), except ".abi" files are required for new tokens (You can manually create one and copy from etherscan.com -> Contract -> Code -> Contract ABI).
 
